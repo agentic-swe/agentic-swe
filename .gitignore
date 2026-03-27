@@ -1,5 +1,5 @@
 # Runtime work state (generated per-run)
-.work/
+.claude/.work/
 
 # Claude Code local settings (user-specific, not project config)
 .claude/settings.local.json

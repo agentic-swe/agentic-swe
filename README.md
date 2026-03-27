@@ -7,17 +7,27 @@ Claude Code becomes a full SWE pipeline -- from task analysis through implementa
 ## Quick Start
 
 ```bash
-# 1. Clone into your project
+# 1. Clone agentic-swe
 git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
 
-# 2. Open Claude Code in your project
-cd /path/to/your/project && claude
+# 2. Install into your project (one command)
+/tmp/agentic-swe/install.sh /path/to/your/project
 
-# 3. Install the pipeline
-/install
+# 3. Open Claude Code in your project
+cd /path/to/your/project && claude
 
 # 4. Start working
 /work Add retry logic to the API client
+```
+
+Or if you prefer to run `/install` from within Claude Code:
+
+```bash
+# 1. Clone agentic-swe and open Claude Code inside it
+git clone https://github.com/surajSFDC/agentic-swe.git && cd agentic-swe && claude
+
+# 2. Run /install — it will scaffold .claude/ in the target repo
+/install
 ```
 
 See [docs/installation.md](docs/installation.md) for manual install, selective install (subagents only), and more options.
@@ -130,30 +140,34 @@ Orchestrator (Claude Code + CLAUDE.md policy)
 ```
 agentic-swe/
 ├── CLAUDE.md              # Orchestrator policy and state machine
-├── agents/                # Core agents + 135 subagents
-│   ├── developer.md
-│   ├── git-ops.md
-│   ├── pr-manager.md
-│   ├── panel/             # Design review panel
-│   └── subagents/         # 10 category directories
-├── commands/              # 13 slash commands
-├── phases/                # 17 phase prompts
-├── templates/             # State schema, evidence standard, artifact format
-├── tools/                 # Subagent catalog tool
-├── references/            # Git/GitHub reference docs
-└── docs/                  # Detailed documentation
-    ├── installation.md    # Install guide (3 methods)
-    ├── usage.md           # Usage guide + commands reference
-    ├── examples.md        # 8 practical examples
-    └── subagent-catalog.md # Full 135-agent catalog
+├── README.md
+├── install.sh             # One-command installer for target repos
+├── docs/                  # Detailed documentation
+│   ├── installation.md
+│   ├── usage.md
+│   ├── examples.md
+│   └── subagent-catalog.md
+└── .claude/               # All pipeline files (same structure when installed)
+    ├── commands/          # 13 slash commands (/work, /check, /subagent, etc.)
+    ├── phases/            # 18 phase prompts + subagent-selection policy
+    ├── agents/            # Core agents + 135 subagents
+    │   ├── developer.md
+    │   ├── git-ops.md
+    │   ├── pr-manager.md
+    │   ├── panel/         # Design review panel (3 agents)
+    │   └── subagents/     # 10 category directories
+    ├── templates/         # State schema, evidence standard, artifact format
+    ├── tools/             # Subagent catalog tool
+    ├── references/        # Git/GitHub reference docs
+    └── .work/             # Runtime state (gitignored)
 ```
 
 ## Extending
 
-- **Add a subagent**: Create a `.md` file in `agents/subagents/<category>/` with frontmatter (`name`, `description`, `tools`, `model`)
-- **Add a phase**: Create `.md` in `phases/`, add state to `CLAUDE.md`
-- **Add a core agent**: Create `.md` in `agents/`, reference in `CLAUDE.md`
-- **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `templates/state.json`
+- **Add a subagent**: Create a `.md` file in `.claude/agents/subagents/<category>/` with frontmatter (`name`, `description`, `tools`, `model`)
+- **Add a phase**: Create `.md` in `.claude/phases/`, add state to `CLAUDE.md`
+- **Add a core agent**: Create `.md` in `.claude/agents/`, reference in `CLAUDE.md`
+- **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `.claude/templates/state.json`
 
 ## Research Basis
 

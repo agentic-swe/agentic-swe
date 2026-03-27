@@ -4,13 +4,12 @@ You are the orchestrator.
 
 This repository contains no runtime orchestrator. You are the orchestrator. Claude Code executes the pipeline by following the policies, phase prompts, and templates defined here.
 
-In this source repository, pipeline files live at the repository root.
-When installed into a target repository, these files live under `.claude/`.
+All pipeline files live under `.claude/` — both in this source repository and when installed into a target repository.
 
 ## Governance
 
 - state must be explicit, not inferred from memory alone
-- artifacts should contain evidence, not just conclusions (see `templates/evidence-standard.md`)
+- artifacts should contain evidence, not just conclusions (see `.claude/templates/evidence-standard.md`)
 - decisions should be reversible where possible
 - expensive work should be conditional on risk or new information
 - human gates exist to stop unsafe guessing and unsafe release actions
@@ -38,29 +37,11 @@ Never let older memory override direct current evidence from the repository.
 
 External tools (MCP, web search, etc.) supplement local evidence but do not replace repository state. Use them when they reduce uncertainty materially. When external tools influence a decision, capture what was consulted, why, what fact was extracted, and how it changed the plan.
 
-## Deployment Context
+## Installation
 
-When running inside this source repository:
+When installing into a target repository that already has a `CLAUDE.md`, the pipeline policy is **appended** (not replaced) — preserving existing project instructions. See `.claude/commands/install.md` for the delimiter convention.
 
-- prompts, phases, agents, templates, and references are at repository root
-
-When running inside a target repository:
-
-- the same content is expected under `.claude/`
-- run state is expected under `.claude/.work/<id>/`
-
-If `.claude/` is missing in a target repository on first run, bootstrap it using `/install` before continuing.
-
-When installing into a target repository that already has a `CLAUDE.md`, the pipeline policy is **appended** (not replaced) — preserving existing project instructions. See `commands/install.md` for the delimiter convention.
-
-### Path Resolution
-
-All bare path references in pipeline files (e.g., `phases/`, `agents/`, `templates/`, `references/`) are relative to the **pipeline root**:
-
-- **Source repo**: pipeline root = repository root
-- **Target repo**: pipeline root = `.claude/`
-
-The orchestrator resolves paths based on which context it detects. Do not prefix references with `.claude/` inside pipeline files — the orchestrator handles resolution.
+If `.claude/` is missing in a target repository on first run, bootstrap it using `install.sh` or by copying the `.claude/` directory.
 
 ## Source Of Truth
 
@@ -130,7 +111,7 @@ approval-wait -> implementation | completed
 3. **Invoke `/check budget`** — verify budget is not exhausted before proceeding.
 4. Choose the next allowed transition from the state machine.
 5. **Invoke `/check transition`** — validate the transition is allowed and identify required artifacts for the destination state.
-6. Execute the phase using the matching phase prompt in `phases/`.
+6. Execute the phase using the matching phase prompt in `.claude/phases/`.
 7. Write or update artifacts directly in `.claude/.work/<id>/`.
 8. **Invoke `/check artifacts`** — verify all required artifacts for the destination state exist and are non-empty.
 9. Update `state.json` directly:
@@ -139,7 +120,7 @@ approval-wait -> implementation | completed
    - update `cost_used`
    - append a history entry with timestamp, actor, reason, and evidence summary
 10. Append a concise entry to `progress.md` and `audit.log`.
-11. Run the phase checklist from `templates/phase-checklist.md`.
+11. Run the phase checklist from `.claude/templates/phase-checklist.md`.
 12. **Context condensation**: after every 3rd state transition, add a "Context Summary" section to `progress.md` condensing key decisions and active constraints. Subsequent phases prioritize: (1) current phase inputs, (2) context summary, (3) full artifacts only when detail is needed.
 13. Continue until a stop condition is reached.
 
@@ -180,12 +161,12 @@ When code-review, validation, or design-review rejects, the rejecting phase appe
 You may spawn sub-agents for bounded phase work using the Agent tool.
 
 - Keep orchestration, state transitions, and gate decisions in the main agent.
-- Use `agents/panel/*.md` only when complexity or risk justifies it. Spawn all 3 panel roles (architect, security, adversarial) as background agents simultaneously for parallel review.
-- Use `agents/git-ops.md` for branch management, remote sync, and conflict resolution. Use `agents/pr-manager.md` for PR creation and management.
-- Use `agents/developer.md` for bounded implementation work. Consider `isolation: "worktree"` for safe experimentation.
-- Use `agents/subagents/` for specialized domain expertise (135+ agents across 10 categories). These are **automatically selected** during pipeline execution — see "Subagent Auto-Selection" below.
+- Use `.claude/agents/panel/*.md` only when complexity or risk justifies it. Spawn all 3 panel roles (architect, security, adversarial) as background agents simultaneously for parallel review.
+- Use `.claude/agents/git-ops.md` for branch management, remote sync, and conflict resolution. Use `.claude/agents/pr-manager.md` for PR creation and management.
+- Use `.claude/agents/developer.md` for bounded implementation work. Consider `isolation: "worktree"` for safe experimentation.
+- Use `.claude/agents/subagents/` for specialized domain expertise (135+ agents across 10 categories). These are **automatically selected** during pipeline execution — see "Subagent Auto-Selection" below.
 - Use `/subagent` to manually browse, search, and invoke subagents outside the pipeline.
-- Use the unified `phases/*.md` prompts as the canonical instructions for each pipeline phase.
+- Use the unified `.claude/phases/*.md` prompts as the canonical instructions for each pipeline phase.
 
 When delegating:
 
@@ -201,7 +182,7 @@ The orchestrator remains accountable for state correctness, transition validity,
 Core agents (`developer.md`, panel agents) can themselves spawn subagents when they encounter domain-specific complexity during their work:
 
 - Maximum 1 subagent spawn per calling agent per phase
-- Subagent must come from the mapping tables in `phases/subagent-selection.md`
+- Subagent must come from the mapping tables in `.claude/phases/subagent-selection.md`
 - Calling agent spawns subagent in **background** (non-blocking) and continues working
 - Calling agent integrates subagent findings into its own output
 - If subagent contradicts the calling agent, both perspectives are reported
@@ -230,21 +211,21 @@ Actor naming convention:
 When complexity or risk justifies panel review, spawn 3 background agents simultaneously:
 
 ```
-Agent(prompt=agents/panel/architect.md, run_in_background=true)
-Agent(prompt=agents/panel/security.md, run_in_background=true)
-Agent(prompt=agents/panel/adversarial.md, run_in_background=true)
+Agent(prompt=.claude/agents/panel/architect.md, run_in_background=true)
+Agent(prompt=.claude/agents/panel/security.md, run_in_background=true)
+Agent(prompt=.claude/agents/panel/adversarial.md, run_in_background=true)
 ```
 
 Collect all 3 results, synthesize into `design-panel-review.md`. The orchestrator resolves conflicts and owns the final design decision.
 
 ## Subagent Auto-Selection
 
-The pipeline automatically selects and spawns specialized subagents during phase execution. The selection policy is defined in `phases/subagent-selection.md`.
+The pipeline automatically selects and spawns specialized subagents during phase execution. The selection policy is defined in `.claude/phases/subagent-selection.md`.
 
 ### How It Works
 
 1. **Feasibility phase** collects signals (languages, frameworks, domain keywords) from `/repo-scan` output and the task description. These are written into `feasibility.md` as a `## Subagent Signals` section.
-2. **Downstream phases** read those signals and consult `phases/subagent-selection.md` mapping tables to select the right subagent(s).
+2. **Downstream phases** read those signals and consult `.claude/phases/subagent-selection.md` mapping tables to select the right subagent(s).
 3. Selected subagents run in the **background** (non-blocking). The primary workflow is never delayed.
 
 ### Selection by Phase
@@ -272,7 +253,7 @@ Set `state.json.pipeline.subagent_auto_select` to `false` to disable. Manual `/s
 
 ## Specialized Subagents
 
-135+ specialized subagents are available under `agents/subagents/`, organized into 10 categories:
+135+ specialized subagents are available under `.claude/agents/subagents/`, organized into 10 categories:
 
 | Category | Agents | Use When |
 |----------|--------|----------|
@@ -292,7 +273,7 @@ Set `state.json.pipeline.subagent_auto_select` to `false` to disable. Manual `/s
 Use `/subagent` to discover agents, then invoke via the Agent tool:
 
 ```
-Agent(prompt="agents/subagents/<category>/<name>.md", model="<model>", description="<task>")
+Agent(prompt=".claude/agents/subagents/<category>/<name>.md", model="<model>", description="<task>")
 ```
 
 Each subagent file contains frontmatter with recommended `model` (opus/sonnet/haiku) and `tools` permissions.
@@ -318,39 +299,39 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 
 | Skill | Purpose | Primary Consumers |
 |-------|---------|-------------------|
-| `/repo-scan` | Structured codebase snapshot (languages, frameworks, tests, CI, linters) | `phases/feasibility.md` |
-| `/test-runner [scope]` | Detect and execute tests with structured pass/fail results | `phases/test.md`, `phases/fast-implementation.md`, `phases/validation.md` |
-| `/lint [scope]` | Detect and run linters/formatters in check mode | `phases/validation.md` |
-| `/diff-review [range]` | Evidence-backed code review against structured criteria | `phases/code-review.md`, `phases/design-review.md` |
-| `/ci-status [PR|branch]` | Query CI/CD check status with mergeability assessment | `phases/pr-created.md`, `phases/completion.md` |
-| `/conflict-resolver [command]` | Detect, classify, and safely resolve git conflicts | `phases/completion.md`, `agents/git-ops.md` |
-| `/security-scan [scope]` | Dependency audit, secret scan, dangerous pattern detection | `phases/permissions.md`, `agents/panel/security.md` |
+| `/repo-scan` | Structured codebase snapshot (languages, frameworks, tests, CI, linters) | `.claude/phases/feasibility.md` |
+| `/test-runner [scope]` | Detect and execute tests with structured pass/fail results | `.claude/phases/test.md`, `.claude/phases/fast-implementation.md`, `.claude/phases/validation.md` |
+| `/lint [scope]` | Detect and run linters/formatters in check mode | `.claude/phases/validation.md` |
+| `/diff-review [range]` | Evidence-backed code review against structured criteria | `.claude/phases/code-review.md`, `.claude/phases/design-review.md` |
+| `/ci-status [PR|branch]` | Query CI/CD check status with mergeability assessment | `.claude/phases/pr-created.md`, `.claude/phases/completion.md` |
+| `/conflict-resolver [command]` | Detect, classify, and safely resolve git conflicts | `.claude/phases/completion.md`, `.claude/agents/git-ops.md` |
+| `/security-scan [scope]` | Dependency audit, secret scan, dangerous pattern detection | `.claude/phases/permissions.md`, `.claude/agents/panel/security.md` |
 
 ## Key Directories
 
-- `commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`
-- `phases/` — Unified phase prompts (one per pipeline state), plus `phases/subagent-selection.md` (auto-selection policy)
-- `agents/` — Specialist agent prompts for bounded delegation
-  - `agents/panel/` — Design panel specialists (architect, security, adversarial)
-  - `agents/git-ops.md` — Branch management, remote sync, conflict resolution
-  - `agents/pr-manager.md` — PR creation and management
-  - `agents/developer.md` — Implementation specialist
-  - `agents/subagents/` — 135+ specialized subagents across 10 categories (see "Specialized Subagents" section)
-- `tools/` — Reusable tooling
-  - `tools/subagent-catalog/` — Browse, search, and fetch subagent definitions
-- `templates/` — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`
-- `references/` — Authoritative tool/platform facts (readonly, consulted by `agents/git-ops.md` and `phases/pr-created.md`)
+- `.claude/commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`
+- `.claude/phases/` — Unified phase prompts (one per pipeline state), plus `.claude/phases/subagent-selection.md` (auto-selection policy)
+- `.claude/agents/` — Specialist agent prompts for bounded delegation
+  - `.claude/agents/panel/` — Design panel specialists (architect, security, adversarial)
+  - `.claude/agents/git-ops.md` — Branch management, remote sync, conflict resolution
+  - `.claude/agents/pr-manager.md` — PR creation and management
+  - `.claude/agents/developer.md` — Implementation specialist
+  - `.claude/agents/subagents/` — 135+ specialized subagents across 10 categories (see "Specialized Subagents" section)
+- `.claude/tools/` — Reusable tooling
+  - `.claude/tools/subagent-catalog/` — Browse, search, and fetch subagent definitions
+- `.claude/templates/` — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`
+- `.claude/references/` — Authoritative tool/platform facts (readonly, consulted by `.claude/agents/git-ops.md` and `.claude/phases/pr-created.md`)
 - `.work/` — Runtime work state (gitignored)
 
 ## Editing Guidelines
 
-- When modifying phase prompts or agents, follow the evidence standard in `templates/evidence-standard.md`.
+- When modifying phase prompts or agents, follow the evidence standard in `.claude/templates/evidence-standard.md`.
 - The state machine definition in this file (CLAUDE.md) is the sole authority.
-- `templates/state.json` defines the canonical schema for all work items. Changes here affect all new runs.
+- `.claude/templates/state.json` defines the canonical schema for all work items. Changes here affect all new runs.
 
 ## Common Operations
 
-**Install pipeline into a target repo:** Use `/install`
+**Install pipeline into a target repo:** Use `install.sh`
 
 **Start new work:** Use `/work` with a task description.
 

@@ -11,7 +11,7 @@
 
 ## Quick Install (Recommended)
 
-The fastest way to get started. Clone this repo, open Claude Code in your target project, and run the install command.
+The fastest way to get started. One shell command installs everything into your project.
 
 **Step 1: Clone agentic-swe**
 
@@ -19,17 +19,10 @@ The fastest way to get started. Clone this repo, open Claude Code in your target
 git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
 ```
 
-**Step 2: Open Claude Code in your project**
+**Step 2: Run the install script**
 
 ```bash
-cd /path/to/your/project
-claude
-```
-
-**Step 3: Run the install command**
-
-```
-/install
+/tmp/agentic-swe/install.sh /path/to/your/project
 ```
 
 This automatically:
@@ -37,10 +30,39 @@ This automatically:
 - Copies all pipeline files (phases, commands, agents, templates, references)
 - Copies all 135+ subagents into `.claude/agents/subagents/`
 - Copies the subagent catalog tool into `.claude/tools/`
-- Handles existing `CLAUDE.md` files (appends, doesn't overwrite)
-- Creates `.claude/.work/` for runtime state
+- Sets up `CLAUDE.md` (creates or appends to existing)
+- Adds `.claude/.work/` to `.gitignore`
 
-Done. You can now use `/work`, `/subagent`, and all other commands.
+**Step 3: Open Claude Code in your project**
+
+```bash
+cd /path/to/your/project
+claude
+```
+
+**Step 4: Start working**
+
+```
+/work Add retry logic to the API client
+```
+
+Done. All slash commands (`/work`, `/subagent`, `/check`, etc.) are now available.
+
+---
+
+## Alternative: Install from Inside Claude Code
+
+If you prefer using the `/install` slash command from within Claude Code, you must launch Claude Code **from inside the agentic-swe repo** (not your target project):
+
+```bash
+git clone https://github.com/surajSFDC/agentic-swe.git
+cd agentic-swe
+claude
+```
+
+Then run `/install` inside Claude Code. This works because the slash commands are registered in `.claude/commands/` within the agentic-swe repo.
+
+> **Why can't I run `/install` from my own project?** Claude Code discovers slash commands from `.claude/commands/` in the current project. Before installation, your project doesn't have `.claude/commands/install.md` yet — so the command doesn't exist. The shell script (`install.sh`) avoids this chicken-and-egg problem.
 
 ---
 
@@ -54,50 +76,19 @@ If you prefer to set things up yourself:
 git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
 ```
 
-**Step 2: Create the directory structure in your project**
+**Step 2: Copy `.claude/` into your project**
 
 ```bash
 cd /path/to/your/project
-
-# Core directories
-mkdir -p .claude/.work
-mkdir -p .claude/commands
-mkdir -p .claude/phases
-mkdir -p .claude/agents/panel
-mkdir -p .claude/templates
-mkdir -p .claude/references
-mkdir -p .claude/tools/subagent-catalog
-
-# Subagent category directories
-for i in 01-core-development 02-language-specialists 03-infrastructure \
-         04-quality-security 05-data-ai 06-developer-experience \
-         07-specialized-domains 08-business-product 09-meta-orchestration \
-         10-research-analysis; do
-  mkdir -p ".claude/agents/subagents/$i"
-done
+cp -r /tmp/agentic-swe/.claude .claude
 ```
 
-**Step 3: Copy all pipeline files**
+This copies everything — commands, phases, agents (including 135 subagents), templates, references, and tools.
+
+**Step 3: Create runtime state directory**
 
 ```bash
-# Core pipeline
-cp /tmp/agentic-swe/commands/*.md       .claude/commands/
-cp /tmp/agentic-swe/phases/*.md         .claude/phases/
-cp /tmp/agentic-swe/agents/*.md         .claude/agents/
-cp /tmp/agentic-swe/agents/panel/*.md   .claude/agents/panel/
-cp /tmp/agentic-swe/templates/*         .claude/templates/
-cp /tmp/agentic-swe/references/*.md     .claude/references/
-
-# Subagent catalog tool
-cp /tmp/agentic-swe/tools/subagent-catalog/* .claude/tools/subagent-catalog/
-
-# All 135+ specialized subagents
-for dir in /tmp/agentic-swe/agents/subagents/*/; do
-  category=$(basename "$dir")
-  cp "$dir"*.md ".claude/agents/subagents/$category/" 2>/dev/null
-done
-
-# Runtime state placeholder
+mkdir -p .claude/.work
 touch .claude/.work/.gitkeep
 ```
 
@@ -106,7 +97,7 @@ touch .claude/.work/.gitkeep
 If your repo has **no existing `CLAUDE.md`**:
 
 ```bash
-cp /tmp/agentic-swe/CLAUDE.md .claude/CLAUDE.md
+cp /tmp/agentic-swe/CLAUDE.md CLAUDE.md
 ```
 
 If your repo **already has a `CLAUDE.md`** (append to preserve your existing instructions):
@@ -125,10 +116,7 @@ echo ".claude/.work/" >> .gitignore
 **Step 6: Verify installation**
 
 ```bash
-# Check core files exist
 ls .claude/commands/work.md .claude/phases/feasibility.md .claude/agents/developer.md
-
-# Check subagents are installed
 find .claude/agents/subagents -name "*.md" | wc -l
 # Expected: 135
 ```
@@ -143,13 +131,13 @@ If you already have your own Claude Code setup and only want the specialized sub
 git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
 
 # Copy just the subagents
-cp -r /tmp/agentic-swe/agents/subagents/ .claude/agents/subagents/
+cp -r /tmp/agentic-swe/.claude/agents/subagents/ .claude/agents/subagents/
 
 # Copy the catalog tool (optional but recommended)
-cp -r /tmp/agentic-swe/tools/subagent-catalog/ .claude/tools/subagent-catalog/
+cp -r /tmp/agentic-swe/.claude/tools/subagent-catalog/ .claude/tools/subagent-catalog/
 
 # Copy the subagent command (optional)
-cp /tmp/agentic-swe/commands/subagent.md .claude/commands/
+cp /tmp/agentic-swe/.claude/commands/subagent.md .claude/commands/
 ```
 
 You can now invoke any subagent directly in Claude Code:
