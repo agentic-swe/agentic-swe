@@ -38,7 +38,31 @@ Write `.claude/.work/<id>/feasibility.md` following `templates/artifact-format.m
 - constraints and dependencies
 - ambiguity assessment
 - complexity rationale and fast-path risk factors
+- subagent signals (see below)
 - recommended next state
+
+### Subagent Signal Collection
+
+After `/repo-scan` completes, consult `phases/subagent-selection.md` and extract signals from:
+
+1. **Repo-scan output**: languages, frameworks, dependencies, test frameworks
+2. **Task description**: domain keywords (security, payments, ML, infrastructure, etc.)
+3. **File paths in scope**: extensions and directory patterns (`infra/`, `k8s/`, `auth/`, etc.)
+
+Write a `## Subagent Signals` section into the feasibility artifact:
+
+```markdown
+## Subagent Signals
+
+- **Primary language**: <language> (<confidence>)
+- **Framework**: <framework> (<confidence>) (if detected)
+- **Domain signals**: <keyword list>
+- **Recommended subagents**:
+  - <agent-name> (<role>: language|framework|domain, <confidence>)
+- **Subagent mode**: full | minimal
+```
+
+Set `subagent mode` to `minimal` for tasks likely to take the fast path (low complexity, narrow blast radius), `full` otherwise. Downstream phases read this section to auto-select subagents.
 
 If ambiguity is blocking, also write `.claude/.work/<id>/ambiguity-report.md` with:
 

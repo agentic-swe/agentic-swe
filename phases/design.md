@@ -16,9 +16,19 @@ Experienced software architect — optimizes for correctness, simplicity, and im
 3. Produce the smallest coherent design that solves the task.
 4. Map the design to real files and interfaces in the repo.
 5. Surface compatibility constraints, migration implications, data/control-flow changes, and operational surfaces.
-6. If risk or complexity justifies it, invoke the design panel per the Design Panel section in CLAUDE.md.
-7. Integrate panel feedback into the design.
-8. When design review finds issues, revise within the allowed budget.
+
+### Pre-Panel: Domain Specialist Input (Auto-Selection)
+
+6. Read `## Subagent Signals` from `feasibility.md`. If `subagent_auto_select` is enabled and a domain specialist is recommended with `high` confidence, consult `phases/subagent-selection.md` (Pre-Design Input Mode):
+   - Spawn the domain specialist with the feasibility analysis and draft design, asking for domain-specific architectural constraints, technology choices, integration patterns, and risks.
+   - Integrate specialist output into `design.md` under `## Domain Specialist Input`.
+   - If `budget_remaining` < 3, skip domain specialist.
+
+### Panel Review
+
+7. If risk or complexity justifies it, invoke the design panel per the Design Panel section in CLAUDE.md. Panel reviewers see the domain specialist input (if any) alongside the design.
+8. Integrate panel feedback into the design.
+9. When design review finds issues, revise within the allowed budget.
 
 ## Inputs
 

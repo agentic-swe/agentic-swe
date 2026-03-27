@@ -29,7 +29,8 @@
     "merge_iter": 0,
     "approval_iter": 0,
     "self_review_iter": 0,
-    "test_adequacy_iter": 0
+    "test_adequacy_iter": 0,
+    "subagent_spawns": 0
   },
   "ambiguity": {
     "detected": false,
@@ -94,7 +95,10 @@
     "permissions_status": null,
     "validation_status": null,
     "self_review_status": null,
-    "pr_status": null
+    "pr_status": null,
+    "subagent_auto_select": true,
+    "subagent_mode": null,
+    "subagent_selections": []
   },
   "convergence": {
     "last_failure_category": null,

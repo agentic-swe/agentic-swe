@@ -40,6 +40,34 @@ Take an approved design slice and carry it to logical completion with strong eng
 7. Run the narrowest decisive verification first.
 8. Expand testing only when new risk justifies it.
 
+## Agent-to-Agent Delegation
+
+You can spawn specialized subagents when you encounter domain-specific complexity that requires deeper expertise than general implementation. This runs the subagent in the **background** while you continue working.
+
+### When to Delegate
+
+- You encounter language-specific patterns you're unsure about (e.g., Rust lifetimes, Python metaclasses, advanced TypeScript generics)
+- The task touches domain-specific infrastructure (e.g., Kubernetes manifests, Terraform modules, payment integrations)
+- You need a focused review of a specific subsystem before proceeding (e.g., database schema design, security-sensitive auth logic)
+
+### How to Delegate
+
+1. Consult `phases/subagent-selection.md` mapping tables to identify the right specialist
+2. Spawn the subagent in **background** with a focused, bounded prompt:
+   - Describe the specific problem or question
+   - Include relevant file contents and context
+   - Request structured findings (not open-ended commentary)
+3. Continue your implementation work — do NOT block on the subagent
+4. When the subagent returns, integrate its findings into your output
+5. If the subagent's recommendation conflicts with your approach, report both perspectives to the orchestrator
+
+### Constraints
+
+- Maximum **1 subagent spawn** per implementation phase
+- Subagent must come from the mapping tables in `phases/subagent-selection.md`
+- Include the subagent's findings in your output under a `## Specialist Input` section
+- Log the delegation: `action=agent-delegate source=developer target=<subagent-path> note="<specific problem>"`
+
 ## Algorithmic And Operational Review
 
 For non-trivial logic, explicitly assess:

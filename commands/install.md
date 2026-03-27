@@ -14,6 +14,8 @@ Ensure the following directories exist under the repository root:
 - `.claude/phases/`
 - `.claude/agents/`
 - `.claude/agents/panel/`
+- `.claude/agents/subagents/` (and all 10 category subdirectories)
+- `.claude/tools/subagent-catalog/`
 - `.claude/templates/`
 - `.claude/references/`
 
@@ -61,6 +63,13 @@ Ensure these minimum files exist:
 - `.claude/commands/conflict-resolver.md`
 - `.claude/commands/security-scan.md`
 - `.claude/references/github.md`
+- `.claude/commands/subagent.md`
+- `.claude/tools/subagent-catalog/config.sh`
+- `.claude/tools/subagent-catalog/list.md`
+- `.claude/tools/subagent-catalog/search.md`
+- `.claude/tools/subagent-catalog/fetch.md`
+- `.claude/tools/subagent-catalog/invalidate.md`
+- `.claude/agents/subagents/` (all `.md` files from all 10 category directories)
 
 ### CLAUDE.md Handling
 

@@ -183,6 +183,8 @@ You may spawn sub-agents for bounded phase work using the Agent tool.
 - Use `agents/panel/*.md` only when complexity or risk justifies it. Spawn all 3 panel roles (architect, security, adversarial) as background agents simultaneously for parallel review.
 - Use `agents/git-ops.md` for branch management, remote sync, and conflict resolution. Use `agents/pr-manager.md` for PR creation and management.
 - Use `agents/developer.md` for bounded implementation work. Consider `isolation: "worktree"` for safe experimentation.
+- Use `agents/subagents/` for specialized domain expertise (135+ agents across 10 categories). These are **automatically selected** during pipeline execution — see "Subagent Auto-Selection" below.
+- Use `/subagent` to manually browse, search, and invoke subagents outside the pipeline.
 - Use the unified `phases/*.md` prompts as the canonical instructions for each pipeline phase.
 
 When delegating:
@@ -194,19 +196,33 @@ When delegating:
 
 The orchestrator remains accountable for state correctness, transition validity, gate decisions, and final synthesis of delegated findings.
 
+### Agent-to-Agent Delegation
+
+Core agents (`developer.md`, panel agents) can themselves spawn subagents when they encounter domain-specific complexity during their work:
+
+- Maximum 1 subagent spawn per calling agent per phase
+- Subagent must come from the mapping tables in `phases/subagent-selection.md`
+- Calling agent spawns subagent in **background** (non-blocking) and continues working
+- Calling agent integrates subagent findings into its own output
+- If subagent contradicts the calling agent, both perspectives are reported
+
 ### Delegation Audit Logging
 
 Every agent spawn and return must be logged in `audit.log`:
 
 ```
-Every agent spawn: log `action=delegate target=<agent-file> note="<scope>"` in audit.log
-Every agent return: log `action=integrate target=<agent-file> result=<ok|rejected|partial>`
-Every escalation: log `action=escalate target=<state> note="<reason>"`
+Core agent spawn: action=delegate target=<agent-file> note="<scope>"
+Core agent return: action=integrate target=<agent-file> result=<ok|rejected|partial>
+Auto-selected subagent: action=auto-select target=<subagent-path> phase=<phase> signals="<evidence>" confidence=<high|medium>
+Agent-to-agent: action=agent-delegate source=<calling-agent> target=<subagent-path> note="<problem>"
+Subagent return: action=integrate-subagent target=<subagent-path> result=<integrated|conflict|skipped>
+Escalation: action=escalate target=<state> note="<reason>"
 ```
 
 Actor naming convention:
 - `orchestrator`, `developer`, `git-ops`, `pr-manager`
 - `panel-architect`, `panel-security`, `panel-adversarial`
+- `subagent-<name>` (e.g., `subagent-python-pro`, `subagent-security-auditor`)
 - `user`
 
 ## Design Panel
@@ -220,6 +236,73 @@ Agent(prompt=agents/panel/adversarial.md, run_in_background=true)
 ```
 
 Collect all 3 results, synthesize into `design-panel-review.md`. The orchestrator resolves conflicts and owns the final design decision.
+
+## Subagent Auto-Selection
+
+The pipeline automatically selects and spawns specialized subagents during phase execution. The selection policy is defined in `phases/subagent-selection.md`.
+
+### How It Works
+
+1. **Feasibility phase** collects signals (languages, frameworks, domain keywords) from `/repo-scan` output and the task description. These are written into `feasibility.md` as a `## Subagent Signals` section.
+2. **Downstream phases** read those signals and consult `phases/subagent-selection.md` mapping tables to select the right subagent(s).
+3. Selected subagents run in the **background** (non-blocking). The primary workflow is never delayed.
+
+### Selection by Phase
+
+| Phase | Subagent Role | Max Agents | Blocking? |
+|-------|---------------|------------|-----------|
+| feasibility | Signal collection only (no spawning) | 0 | N/A |
+| fast-implementation | 1 language specialist (if high confidence) | 1 | No (background) |
+| implementation | Language specialist + domain specialist | 2 | No (background, advisory) |
+| design | Domain specialist for pre-design input | 1 | Yes (focused, before panel) |
+| code-review | Specialized reviewers (security, performance, etc.) | 2 | No (background, parallel) |
+
+### Fast Path vs Full Path
+
+- **Fast path** (`subagent-mode: minimal`): At most 1 background language specialist. No domain or review specialists. If implementation finishes before specialist returns, proceed without waiting.
+- **Full path** (`subagent-mode: full`): Up to 2 subagents per phase. Language + domain specialists during implementation. Parallel reviewers during code-review. Domain input before design.
+
+### Budget Guard
+
+If `budget_remaining` < 3, all auto-selection is skipped to preserve budget for core work.
+
+### Override
+
+Set `state.json.pipeline.subagent_auto_select` to `false` to disable. Manual `/subagent invoke` always works regardless.
+
+## Specialized Subagents
+
+135+ specialized subagents are available under `agents/subagents/`, organized into 10 categories:
+
+| Category | Agents | Use When |
+|----------|--------|----------|
+| `01-core-development` | api-designer, backend-developer, frontend-developer, fullstack-developer, mobile-developer, etc. | Building features requiring architectural expertise |
+| `02-language-specialists` | python-pro, typescript-pro, rust-engineer, golang-pro, react-specialist, etc. | Language-specific idioms, patterns, or deep expertise needed |
+| `03-infrastructure` | cloud-architect, devops-engineer, kubernetes-specialist, terraform-engineer, docker-expert, etc. | Infrastructure, deployment, or cloud platform work |
+| `04-quality-security` | code-reviewer, security-auditor, debugger, performance-engineer, penetration-tester, etc. | Deep quality audits, security reviews, or performance analysis |
+| `05-data-ai` | data-engineer, ml-engineer, llm-architect, prompt-engineer, data-scientist, etc. | Data pipelines, ML models, or AI system design |
+| `06-developer-experience` | documentation-engineer, cli-developer, refactoring-specialist, mcp-developer, etc. | Tooling, documentation, or developer workflow improvements |
+| `07-specialized-domains` | blockchain-developer, fintech-engineer, game-developer, iot-engineer, etc. | Domain-specific expertise (finance, gaming, IoT, etc.) |
+| `08-business-product` | product-manager, project-manager, technical-writer, ux-researcher, etc. | Product strategy, documentation, or business analysis |
+| `09-meta-orchestration` | multi-agent-coordinator, workflow-orchestrator, context-manager, etc. | Complex multi-agent workflows or task distribution |
+| `10-research-analysis` | research-analyst, competitive-analyst, trend-analyst, etc. | Market research, competitive analysis, or trend investigation |
+
+### Manual Invocation
+
+Use `/subagent` to discover agents, then invoke via the Agent tool:
+
+```
+Agent(prompt="agents/subagents/<category>/<name>.md", model="<model>", description="<task>")
+```
+
+Each subagent file contains frontmatter with recommended `model` (opus/sonnet/haiku) and `tools` permissions.
+
+**Model routing:**
+- `opus` — deep reasoning tasks (security audits, architecture reviews)
+- `sonnet` — everyday coding (most language specialists and developers)
+- `haiku` — quick tasks (documentation lookups, dependency checks)
+
+Subagent delegation follows the same audit logging protocol as core agent delegation.
 
 ## Enforcement Skills
 
@@ -245,13 +328,16 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 
 ## Key Directories
 
-- `commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`
-- `phases/` — Unified phase prompts (one per pipeline state)
+- `commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`
+- `phases/` — Unified phase prompts (one per pipeline state), plus `phases/subagent-selection.md` (auto-selection policy)
 - `agents/` — Specialist agent prompts for bounded delegation
   - `agents/panel/` — Design panel specialists (architect, security, adversarial)
   - `agents/git-ops.md` — Branch management, remote sync, conflict resolution
   - `agents/pr-manager.md` — PR creation and management
   - `agents/developer.md` — Implementation specialist
+  - `agents/subagents/` — 135+ specialized subagents across 10 categories (see "Specialized Subagents" section)
+- `tools/` — Reusable tooling
+  - `tools/subagent-catalog/` — Browse, search, and fetch subagent definitions
 - `templates/` — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`
 - `references/` — Authoritative tool/platform facts (readonly, consulted by `agents/git-ops.md` and `phases/pr-created.md`)
 - `.work/` — Runtime work state (gitignored)
