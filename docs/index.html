@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic SWE — Autonomous Software Engineering Pipeline</title>
+  <meta name="description" content="Turn Claude Code into a full SWE pipeline with 135+ specialized subagents. Pure markdown orchestration — no runtime code.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #06080d;
+      --bg-surface: #0c0f16;
+      --bg-card: #111520;
+      --border: #1a1f2e;
+      --cyan: #00e5ff;
+      --cyan-dim: #00e5ff33;
+      --cyan-glow: #00e5ff18;
+      --violet: #7c3aed;
+      --violet-dim: #7c3aed33;
+      --text: #b0b8c8;
+      --text-bright: #e8ecf2;
+      --text-heading: #f0f4fa;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'IBM Plex Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) var(--bg-deep);
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid background ── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image:
+        linear-gradient(var(--cyan-glow) 1px, transparent 1px),
+        linear-gradient(90deg, var(--cyan-glow) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 70% 50% at 50% 30%, black 20%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 50% at 50% 30%, black 20%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .content-wrap { position: relative; z-index: 1; }
+
+    /* ── Navigation ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #06080dcc;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--text-heading);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--cyan); }
+
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+
+    .nav-links a {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--cyan); }
+
+    .nav-links .gh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--text-bright);
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .nav-links .gh-btn:hover {
+      border-color: var(--cyan);
+      background: var(--cyan-glow);
+    }
+
+    .gh-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ── Sections ── */
+    section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--text);
+      max-width: 640px;
+      margin-bottom: 3rem;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding-top: 10rem;
+      padding-bottom: 5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--cyan);
+      padding: 0.4rem 1rem;
+      border: 1px solid var(--cyan-dim);
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      background: var(--cyan-glow);
+    }
+
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--cyan), var(--violet));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text);
+      max-width: 560px;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.6rem;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--cyan);
+      color: var(--bg-deep);
+      box-shadow: 0 0 20px var(--cyan-dim);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 30px #00e5ff55;
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-bright);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--text);
+      background: #ffffff06;
+    }
+
+    /* ── Pipeline visualization ── */
+    .pipeline-section { text-align: center; }
+
+    .pipeline-viz {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 0 auto;
+      max-width: 900px;
+    }
+
+    .pipeline-path {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      text-align: left;
+    }
+
+    .pipeline-path-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 1rem;
+    }
+
+    .pipeline-path-label.fast { color: var(--cyan); }
+    .pipeline-path-label.full { color: var(--violet); }
+
+    .pipeline-nodes {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .p-node {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+      transition: all 0.3s;
+    }
+
+    .p-node:hover {
+      border-color: var(--cyan);
+      color: var(--text-bright);
+      box-shadow: 0 0 12px var(--cyan-dim);
+    }
+
+    .p-node.human {
+      border-color: #f59e0b55;
+      color: #f59e0b;
+    }
+
+    .p-arrow {
+      color: var(--border);
+      font-size: 0.85rem;
+      user-select: none;
+    }
+
+    .pipeline-note {
+      font-size: 0.85rem;
+      color: var(--text);
+      margin-top: 1.5rem;
+      opacity: 0.7;
+    }
+
+    /* ── Feature cards ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--cyan-dim);
+      box-shadow: 0 0 24px var(--cyan-glow);
+    }
+
+    .feature-icon {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+      font-size: 1.3rem;
+    }
+
+    .feature-icon.cyan { background: var(--cyan-dim); }
+    .feature-icon.violet { background: var(--violet-dim); }
+    .feature-icon.amber { background: #f59e0b33; }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 0.6rem;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      line-height: 1.65;
+    }
+
+    /* ── Subagents ── */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .agent-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .agent-row:hover { border-color: var(--cyan-dim); }
+
+    .agent-name {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-bright);
+    }
+
+    .agent-count {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--cyan);
+      background: var(--cyan-glow);
+      padding: 0.15rem 0.55rem;
+      border-radius: 100px;
+    }
+
+    /* ── Quick start ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 700px;
+    }
+
+    .step {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--cyan);
+      min-width: 2rem;
+      line-height: 1.2;
+    }
+
+    .step-content h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 0.4rem;
+    }
+
+    .step-content p { font-size: 0.9rem; margin-bottom: 0.75rem; }
+
+    .code-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-bright);
+      line-height: 1.7;
+    }
+
+    .code-block .comment { color: #546e7a; }
+    .code-block .cmd { color: var(--cyan); }
+
+    /* ── Commands table ── */
+    .commands-list {
+      display: grid;
+      gap: 0.5rem;
+      max-width: 700px;
+    }
+
+    .cmd-row {
+      display: flex;
+      gap: 1.5rem;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      align-items: baseline;
+    }
+
+    .cmd-name {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--cyan);
+      min-width: 180px;
+      flex-shrink: 0;
+    }
+
+    .cmd-desc {
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 0.82rem;
+      color: #5a6270;
+    }
+
+    footer a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--cyan); }
+
+    /* ── Scroll animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Mobile ── */
+    .mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-bright);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+
+    @media (max-width: 768px) {
+      section { padding: 4rem 1.25rem; }
+      h2 { font-size: 1.7rem; }
+      .nav-links { display: none; }
+      .mobile-toggle { display: block; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0; right: 0;
+        background: var(--bg-deep);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem 2rem;
+        gap: 1rem;
+      }
+      .pipeline-nodes { gap: 0.3rem; }
+      .p-node { font-size: 0.65rem; padding: 0.25rem 0.5rem; }
+      .features-grid { grid-template-columns: 1fr; }
+      .agents-grid { grid-template-columns: 1fr; }
+      .step { flex-direction: column; gap: 0.75rem; }
+      .cmd-row { flex-direction: column; gap: 0.3rem; }
+      .cmd-name { min-width: unset; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<div class="content-wrap">
+
+  <!-- ── Nav ── -->
+  <nav>
+    <a href="#" class="logo">agentic<span>SWE</span></a>
+    <button class="mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+    <div class="nav-links">
+      <a href="#pipeline">Pipeline</a>
+      <a href="#features">Features</a>
+      <a href="#agents">Agents</a>
+      <a href="#start">Get Started</a>
+      <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener" class="gh-btn">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-badge"><span class="dot"></span> Pure markdown orchestration</div>
+    <h1>Autonomous SWE<br><span class="gradient-text">for Claude Code</span></h1>
+    <p>A state-machine pipeline that turns Claude Code into a full software engineering workflow. 135+ specialized agents. Zero runtime code. Just markdown.</p>
+    <div class="hero-actions">
+      <a href="#start" class="btn btn-primary">Get Started</a>
+      <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener" class="btn btn-ghost">View on GitHub</a>
+    </div>
+  </section>
+
+  <!-- ── Pipeline ── -->
+  <section id="pipeline" class="pipeline-section">
+    <div class="reveal">
+      <div class="section-label">// how it works</div>
+      <h2>Two paths, one pipeline</h2>
+      <p class="section-desc" style="margin-left:auto;margin-right:auto;">Every task is analyzed and routed. Simple fixes take the fast path. Complex features get full design review, testing, and multi-agent code review.</p>
+    </div>
+
+    <div class="pipeline-viz reveal">
+      <div class="pipeline-path">
+        <div class="pipeline-path-label fast">Fast path &mdash; simple tasks</div>
+        <div class="pipeline-nodes">
+          <span class="p-node">feasibility</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">fast-path-check</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">fast-implementation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">validation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">pr-created</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node human">approval-wait</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">completed</span>
+        </div>
+      </div>
+      <div class="pipeline-path">
+        <div class="pipeline-path-label full">Full path &mdash; complex tasks</div>
+        <div class="pipeline-nodes">
+          <span class="p-node">feasibility</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">design</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node human">design-review</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">verification</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">test</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">implementation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">self-review</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">code-review</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">permissions</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">validation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">pr-created</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node human">approval-wait</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">completed</span>
+        </div>
+      </div>
+    </div>
+    <p class="pipeline-note reveal">
+      <span style="color:#f59e0b;">&#9632;</span> Human gates stop the pipeline for your review. Nothing ships without approval.
+    </p>
+  </section>
+
+  <!-- ── Features ── -->
+  <section id="features">
+    <div class="reveal">
+      <div class="section-label">// capabilities</div>
+      <h2>What makes it different</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon cyan">&#9881;</div>
+        <h3>Zero runtime code</h3>
+        <p>The entire pipeline is pure markdown. Claude Code reads the policies and executes the workflow. No servers, no dependencies, no build step.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon violet">&#9670;</div>
+        <h3>Evidence-based decisions</h3>
+        <p>Every phase output follows a four-point evidence standard: observed, inferred, evidence, uncertain. No guessing.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon amber">&#9733;</div>
+        <h3>135+ specialized agents</h3>
+        <p>Auto-selected based on your codebase. Python, TypeScript, Rust, Kubernetes, security, ML — agents that know the domain.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon cyan">&#9741;</div>
+        <h3>Human gates built in</h3>
+        <p>The pipeline stops at ambiguity, approval, and escalation points. You stay in control of what ships.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon violet">&#9881;</div>
+        <h3>Multi-agent review</h3>
+        <p>Complex designs get a three-agent panel review: architect, security, and adversarial — running in parallel.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon amber">&#9889;</div>
+        <h3>Fast path routing</h3>
+        <p>Simple tasks skip design review and go straight to implementation. The pipeline adapts to task complexity automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Subagents ── -->
+  <section id="agents">
+    <div class="reveal">
+      <div class="section-label">// subagents</div>
+      <h2>135+ agents across 10 categories</h2>
+      <p class="section-desc">Automatically selected during pipeline execution. Agents can also call other agents when they encounter domain-specific problems.</p>
+    </div>
+    <div class="agents-grid reveal">
+      <div class="agent-row"><span class="agent-name">Core Development</span><span class="agent-count">10</span></div>
+      <div class="agent-row"><span class="agent-name">Language Specialists</span><span class="agent-count">29</span></div>
+      <div class="agent-row"><span class="agent-name">Infrastructure</span><span class="agent-count">16</span></div>
+      <div class="agent-row"><span class="agent-name">Quality &amp; Security</span><span class="agent-count">14</span></div>
+      <div class="agent-row"><span class="agent-name">Data &amp; AI</span><span class="agent-count">13</span></div>
+      <div class="agent-row"><span class="agent-name">Developer Experience</span><span class="agent-count">13</span></div>
+      <div class="agent-row"><span class="agent-name">Specialized Domains</span><span class="agent-count">12</span></div>
+      <div class="agent-row"><span class="agent-name">Business &amp; Product</span><span class="agent-count">11</span></div>
+      <div class="agent-row"><span class="agent-name">Meta &amp; Orchestration</span><span class="agent-count">10</span></div>
+      <div class="agent-row"><span class="agent-name">Research &amp; Analysis</span><span class="agent-count">7</span></div>
+    </div>
+  </section>
+
+  <!-- ── Get Started ── -->
+  <section id="start">
+    <div class="reveal">
+      <div class="section-label">// quick start</div>
+      <h2>Up and running in 3 steps</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="step-number">1</span>
+        <div class="step-content">
+          <h3>Install into your project</h3>
+          <div class="code-block">
+            <code><span class="cmd">git clone</span> https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe<br>/tmp/agentic-swe/install.sh /path/to/your/project</code>
+          </div>
+        </div>
+      </div>
+      <div class="step reveal">
+        <span class="step-number">2</span>
+        <div class="step-content">
+          <h3>Open Claude Code</h3>
+          <div class="code-block">
+            <code><span class="cmd">cd</span> /path/to/your/project && <span class="cmd">claude</span></code>
+          </div>
+        </div>
+      </div>
+      <div class="step reveal">
+        <span class="step-number">3</span>
+        <div class="step-content">
+          <h3>Start working</h3>
+          <div class="code-block">
+            <code><span class="cmd">/work</span> Add retry logic to the API client</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Commands ── -->
+  <section id="commands">
+    <div class="reveal">
+      <div class="section-label">// commands</div>
+      <h2>Key commands</h2>
+    </div>
+    <div class="commands-list reveal">
+      <div class="cmd-row"><span class="cmd-name">/work &lt;task&gt;</span><span class="cmd-desc">Start a new task — auto-routes fast or full path</span></div>
+      <div class="cmd-row"><span class="cmd-name">/work &lt;id&gt;</span><span class="cmd-desc">Resume paused work by ID</span></div>
+      <div class="cmd-row"><span class="cmd-name">/plan-only &lt;task&gt;</span><span class="cmd-desc">Analyze and design without implementing</span></div>
+      <div class="cmd-row"><span class="cmd-name">/subagent</span><span class="cmd-desc">Browse 135+ specialized subagents</span></div>
+      <div class="cmd-row"><span class="cmd-name">/repo-scan</span><span class="cmd-desc">Structured codebase snapshot</span></div>
+      <div class="cmd-row"><span class="cmd-name">/check budget</span><span class="cmd-desc">Verify iteration and cost budgets</span></div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <p>
+      <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener">Agentic SWE</a>
+      &nbsp;&middot;&nbsp; MIT License
+      &nbsp;&middot;&nbsp; Built by <a href="https://github.com/surajSFDC" target="_blank" rel="noopener">Suraj Gupta</a>
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+</script>
+
+</body>
+</html>
