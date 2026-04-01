@@ -34,6 +34,7 @@ Release engineer — merges only with evidence, verifies after landing, cleans u
    - `git push origin --delete <working_branch>` (remote, only if merged)
 9. Update `cicd.md` with merge evidence (SHA, strategy, post-merge validation).
 10. Set `git.merge_sha` and `git.merge_strategy` in `state.json`.
+11. **Optional cross-run learning**: If the team maintains `docs/agentic-swe/PLAYBOOK.md`, append a dated entry using `.claude/templates/playbook-entry.md`. This is **optional**, should be **human-reviewed** before commit, and must not block merge.
 
 ## Inputs
 

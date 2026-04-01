@@ -30,6 +30,9 @@ After `/repo-scan` completes, extract signals from three sources and write them 
 - `Languages` field → language specialist candidates
 - `Frameworks` / `Dependencies` fields → framework specialist candidates
 - `Test frameworks`, `CI/CD`, `Linters` → tooling signals
+- **Deployment & Ops** (Docker, K8s, Helm, Terraform, serverless hints) → `docker-expert`, `kubernetes-specialist`, `terraform-engineer`, `cloud-architect`, `devops-engineer` as appropriate
+- **MCP & Agent Config** → `mcp-developer` when MCP integration is in scope; otherwise context only
+- **Security Boundaries** → `security-auditor` when auth/secrets/policy paths are in the change surface
 
 ### Source 2: Task description and feasibility observations
 

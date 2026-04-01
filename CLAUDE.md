@@ -122,7 +122,8 @@ approval-wait -> implementation | completed
 10. Append a concise entry to `progress.md` and `audit.log`.
 11. Run the phase checklist from `.claude/templates/phase-checklist.md`.
 12. **Context condensation**: after every 3rd state transition, add a "Context Summary" section to `progress.md` condensing key decisions and active constraints. Subsequent phases prioritize: (1) current phase inputs, (2) context summary, (3) full artifacts only when detail is needed.
-13. Continue until a stop condition is reached.
+13. **Optional cross-run learning**: Teams may maintain `docs/agentic-swe/PLAYBOOK.md` with append-only entries (see `.claude/templates/playbook-entry.md`). Feasibility may read the last entries for weak-spot signals; completion may append after merge — both are optional and human-reviewed.
+14. Continue until a stop condition is reached.
 
 ## Transition Protocol
 
@@ -317,10 +318,11 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
   - `.claude/agents/pr-manager.md` — PR creation and management
   - `.claude/agents/developer.md` — Implementation specialist
   - `.claude/agents/subagents/` — 135+ specialized subagents across 10 categories (see "Specialized Subagents" section)
+  - `.claude/agents/subagents/custom/` — optional repo-specific subagent definitions
 - `.claude/tools/` — Reusable tooling
   - `.claude/tools/subagent-catalog/` — Browse, search, and fetch subagent definitions
-- `.claude/templates/` — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`
-- `.claude/references/` — Authoritative tool/platform facts (readonly, consulted by `.claude/agents/git-ops.md` and `.claude/phases/pr-created.md`)
+- `.claude/templates/` — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`, `repo-knowledge-stub.md`, `playbook-entry.md`, `evaluation-rubric.md`, `capability-gaps-section.md`
+- `.claude/references/` — Authoritative tool/platform facts (readonly); includes `tooling-expectations.md`, plus material consulted by `.claude/agents/git-ops.md` and `.claude/phases/pr-created.md`
 - `.work/` — Runtime work state (gitignored)
 
 ## Editing Guidelines

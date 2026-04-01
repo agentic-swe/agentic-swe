@@ -11,14 +11,15 @@ Production readiness engineer — looks beyond source files, assumes configurati
 ## Procedure
 
 1. Read the design and implementation artifacts.
-2. Inspect all operational surfaces that may gate functionality:
+2. If the feature touches **external services**, **MCP**, **deployment**, or **secrets**, consult `.claude/references/tooling-expectations.md` for safety expectations before recommending operational changes.
+3. Inspect all operational surfaces that may gate functionality:
    - configuration files, routing/navigation tables
    - exports and package manifests
    - feature flags, access-control rules
    - deployment descriptors, operational documentation
-3. Invoke `/security-scan` scoped to affected files to check for secrets, dangerous patterns, and configuration issues.
-4. Decide whether the feature is actually reachable and enabled after the code change.
-5. Distinguish required changes, warnings, and blockers.
+4. Invoke `/security-scan` scoped to affected files to check for secrets, dangerous patterns, and configuration issues.
+5. Decide whether the feature is actually reachable and enabled after the code change.
+6. Distinguish required changes, warnings, and blockers.
 
 ## Inputs
 

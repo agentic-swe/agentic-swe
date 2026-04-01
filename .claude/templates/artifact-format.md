@@ -31,3 +31,7 @@ Cite this template when writing phase artifacts to ensure consistent structure.
 - every artifact must have a verdict — commentary without a decision is not sufficient
 - evidence basis must reference concrete sources, not general reasoning
 - recommended next state must be a valid transition per the state machine in CLAUDE.md
+
+## Feasibility-specific
+
+- `feasibility.md` must include **`## Repo knowledge`**, **`## Evidence vs inference`**, and **`## Confidence summary`** when using the template in `.claude/phases/feasibility.md` (see that file for the exact expectations).

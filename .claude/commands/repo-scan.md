@@ -42,6 +42,21 @@ You are scanning the repository to produce a structured overview. This is a read
    - Flag notable dependencies (ORMs, HTTP frameworks, auth libraries, cloud SDKs).
    - Note lockfile presence and type.
 
+8. **Deployment / ops (optional)** — include only if artifacts exist; otherwise "None detected":
+   - `Dockerfile`, `docker-compose*.yml`, `Containerfile`
+   - Kubernetes: `k8s/`, `kubernetes/`, `helm/`, `*.yaml` in chart layouts (high level)
+   - Terraform / OpenTofu: `*.tf`, `terraform/`, `.terraform.lock.hcl`
+   - Serverless / PaaS hints: `vercel.json`, `netlify.toml`, `fly.toml`, SAM/CloudFormation templates (name only)
+
+9. **MCP / agent tooling config (optional)**:
+   - `.mcp.json`, `mcp.json` at repo root or documented config paths
+   - Do not read secrets; list file presence and declared server **names** only
+
+10. **Security boundaries (read-only heuristics)**:
+   - Secret scanning: `.gitleaks.toml`, `detect-secrets` baseline, GitHub secret scanning config if visible
+   - Env patterns: presence of `.env.example`, `*.env.sample`, docs warning about `.env`
+   - Auth middleware or policy files (e.g. `auth/`, `security/`, `rbac`) — names only, no credential values
+
 ### Output Format
 
 Write output as structured markdown:
@@ -84,6 +99,21 @@ Write output as structured markdown:
 
 ## Notable Dependencies
 - <name>: <purpose>
+
+## Deployment & Ops
+- **Containers / compose**: <summary or "None detected">
+- **Kubernetes / Helm**: <summary or "None detected">
+- **IaC (Terraform, etc.)**: <summary or "None detected">
+- **Hosting / serverless hints**: <summary or "None detected">
+
+## MCP & Agent Config
+- **Config files found**: <paths or "None detected">
+- **Declared MCP servers (names only)**: <list or "None detected">
+
+## Security Boundaries
+- **Secret scanning / leak detection config**: <files or "None detected">
+- **Env / secrets hygiene**: <.env.example, docs, or "None detected">
+- **Auth / policy hotspots (paths only)**: <list or "None detected">
 
 ## Observations
 - <anything unusual, missing, or noteworthy>

@@ -107,6 +107,14 @@ Spawn the devops-engineer to optimize our Docker build
 
 During pipeline execution, the orchestrator can automatically delegate to subagents when domain expertise is needed. For example, if the task involves Rust code, it may spawn the `rust-engineer` subagent during implementation.
 
+### Repo-specific custom subagents
+
+For expertise not covered by the catalog, add definitions under:
+
+**`.claude/agents/subagents/custom/`**
+
+Use the same frontmatter and structure as agents under `.claude/agents/subagents/<category>/`. Reference them by filename (without `.md`) in `/subagent invoke` or natural-language delegation. Document team conventions in `docs/agentic-swe/CONVENTIONS.md` if needed. Implementation may record unresolved catalog gaps under **`## Capability gaps`** in the work artifact (see `.claude/templates/capability-gaps-section.md` in the installed package).
+
 ---
 
 ## Planning Without Implementing

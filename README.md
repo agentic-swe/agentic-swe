@@ -23,7 +23,7 @@ cd /path/to/your/project && claude
 /work Add retry logic to the API client
 ```
 
-See the [installation guide](https://d3pi4w4hqr9gq6.cloudfront.net/installation.md) for upgrades and selective installs.
+See the [installation guide](https://d3pi4w4hqr9gq6.cloudfront.net/installation.md) for upgrades, selective installs, and **optional org knowledge files** (`AGENTS.md`, `docs/agentic-swe/`).
 
 ## Product
 

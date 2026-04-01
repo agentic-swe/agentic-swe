@@ -10,7 +10,7 @@ The developer's inner critic — assumes at least one meaningful deficiency exis
 
 ## Procedure
 
-1. Read `design.md`, `implementation.md`, `test-stubs.md` (if exists), and `reflection-log.md` (if exists — treat prior reflection entries as mandatory constraints).
+1. Read `design.md`, `implementation.md`, `test-stubs.md` (if exists), and `reflection-log.md` (if exists — treat prior reflection entries as mandatory constraints). Use `.claude/templates/evaluation-rubric.md` as the dimension reference.
 2. Score the implementation against each dimension (1=fail, 2=acceptable, 3=strong):
    - **Correctness**: behavior vs. spec (1=wrong behavior, 2=correct happy path with edge gaps, 3=edge cases handled)
    - **Safety**: failure modes and error handling (1=unsafe paths, 2=major paths covered, 3=defensive throughout)

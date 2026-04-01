@@ -18,14 +18,15 @@ Release gatekeeper — trusts execution evidence over reasoning, classifies fail
    - Invoke `/test-runner` for test execution
    - Invoke `/lint` for lint and format checks
    - Run build and typecheck commands directly
-2. Capture exact commands and decisive outputs.
-3. Classify the result:
+2. If `implementation.md` includes **`## Capability gaps`**, note in `validation-results.md` whether residual risk is acceptable or whether a follow-up task (custom subagent under `.claude/agents/subagents/custom/`, or org docs) is recommended. Do not fail validation solely for documented gaps unless the change is unsafe to ship without that expertise.
+3. Capture exact commands and decisive outputs.
+4. Classify the result:
    - `approved`: all checks pass
    - `failed`: code defects found
    - `blocked`: environment or infrastructure issue
-4. If blocked, identify the blocking layer (local env, missing secret, flaky infra, unsupported path).
-5. Recommend whether to return to implementation or escalate.
-6. Retry blocked validation only within the configured budget.
+5. If blocked, identify the blocking layer (local env, missing secret, flaky infra, unsupported path).
+6. Recommend whether to return to implementation or escalate.
+7. Retry blocked validation only within the configured budget.
 
 ## Reflection on Failure
 

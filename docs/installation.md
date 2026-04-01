@@ -8,6 +8,17 @@
 - **GitHub CLI** (`gh`) installed and authenticated (for PR creation)
 - A git repository where you want to use the pipeline (recommended; use `agentic-swe -y` if you must install into a non-git tree)
 
+### Optional org knowledge files
+
+After install, you can add **repo-local** context the **feasibility** phase will read when present:
+
+| Location | Purpose |
+|----------|---------|
+| `AGENTS.md` (repo root) | Conventions, commands, boundaries for agents |
+| `docs/agentic-swe/*.md` | Optional: `CONVENTIONS.md`, `PITFALLS.md`, `DECISIONS.md`, `PLAYBOOK.md` |
+
+Copy-paste guidance lives in the installed package at `.claude/templates/repo-knowledge-stub.md`. Nothing here is required for the pipeline to run.
+
 ---
 
 ## Install (recommended): npm
