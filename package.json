@@ -31,6 +31,6 @@
   ],
   "scripts": {
     "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('.claude','phases');if(!fs.existsSync(r))process.exit(1)\"",
-    "test": "node bin/agentic-swe.js --help"
+    "test": "node --test test/"
   }
 }
