@@ -4,12 +4,18 @@
 # Claude Code local settings (user-specific, not project config)
 .claude/settings.local.json
 
+# Cursor — ignore local IDE state; keep shared rules committed
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/git-identity-personal.mdc
+!.cursor/rules/npm-registry-personal.mdc
+
 # OS metadata
 .DS_Store
 Thumbs.db
 
 # Editor/IDE
-.cursor/
 *.swp
 *.swo
 *~
@@ -18,10 +24,37 @@ Thumbs.db
 .sfdx/
 *.sublime-*
 
-# Node (if installed into JS repos)
-node_modules/
+# Local tooling (MCP / IDE; paths vary by machine)
+.mcp.json
 
-# Python (if installed into Python repos)
+# Secrets and env (never commit real values)
+.env
+.env.*
+!.env.example
+infra/.env
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node
+node_modules/
+*.tgz
+.npm/
+.pnpm-store/
+
+# Python
 __pycache__/
 *.pyc
 .venv/
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Keys (if ever added by mistake)
+*.pem
+*.key

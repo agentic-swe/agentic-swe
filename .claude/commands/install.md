@@ -4,7 +4,7 @@ Scaffold or repair the `.claude/` pipeline directory inside a target repository.
 
 All pipeline files live under `.claude/` in the source repo. This command copies them to the target repository's `.claude/` directory.
 
-> **Note**: For first-time installation, prefer `install.sh` (the shell script) since it works outside Claude Code. This `/install` command is useful for repairs and upgrades when running Claude Code from inside the agentic-swe repo.
+> **Note:** For first-time installation, run **`npx agentic-swe`** or **`agentic-swe install`** from a shell so `.claude/` exists before slash commands are available. This `/install` command is for guided repairs after the pipeline is present.
 
 ## Prompt
 

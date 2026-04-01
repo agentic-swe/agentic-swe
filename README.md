@@ -6,31 +6,35 @@ Claude Code becomes a full SWE pipeline -- from task analysis through implementa
 
 ## Quick Start
 
+Install [from npm](https://www.npmjs.com/package/agentic-swe) (Node 18+):
+
 ```bash
-# 1. Clone agentic-swe
-git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
+npx agentic-swe /path/to/your/project
+# or: npm install -g agentic-swe && agentic-swe install /path/to/your/project
+```
 
-# 2. Install into your project (one command)
-/tmp/agentic-swe/install.sh /path/to/your/project
+Then open Claude Code in that project and start a task:
 
-# 3. Open Claude Code in your project
+```bash
 cd /path/to/your/project && claude
+```
 
-# 4. Start working
+```
 /work Add retry logic to the API client
 ```
 
-Or if you prefer to run `/install` from within Claude Code:
+See the [installation guide](https://d3pi4w4hqr9gq6.cloudfront.net/installation.md) for upgrades and selective installs.
 
-```bash
-# 1. Clone agentic-swe and open Claude Code inside it
-git clone https://github.com/surajSFDC/agentic-swe.git && cd agentic-swe && claude
+## Product
 
-# 2. Run /install — it will scaffold .claude/ in the target repo
-/install
-```
+Agentic SWE is a **workflow pack for Claude Code** (markdown policies, phases, and agents)—not a hosted cloud runtime. More on the product and licensing:
 
-See [docs/installation.md](docs/installation.md) for manual install, selective install (subagents only), and more options.
+| Topic | Doc |
+|-------|-----|
+| Who it is for and hero messaging | [Product positioning](https://d3pi4w4hqr9gq6.cloudfront.net/product-positioning.md) |
+| MIT and commercial strategy | [Licensing](https://d3pi4w4hqr9gq6.cloudfront.net/licensing.md) |
+| Pro / services (first paid wedges) | [Pro & services](https://d3pi4w4hqr9gq6.cloudfront.net/PRO.md) |
+| Distribution and hosting | [Distribution](https://d3pi4w4hqr9gq6.cloudfront.net/distribution.md) |
 
 ## How It Works
 
@@ -63,7 +67,7 @@ Human gates stop the pipeline at `ambiguity-wait`, `approval-wait`, and escalati
 | `/repo-scan` | Structured codebase snapshot |
 | `/check budget` | Verify iteration budgets |
 
-See [docs/usage.md](docs/usage.md) for the full commands reference.
+See the [usage reference](https://d3pi4w4hqr9gq6.cloudfront.net/usage.md) for the full commands list.
 
 ## Specialized Subagents
 
@@ -82,7 +86,7 @@ See [docs/usage.md](docs/usage.md) for the full commands reference.
 | **Meta & Orchestration** | 10 | `multi-agent-coordinator`, `workflow-orchestrator` |
 | **Research & Analysis** | 7 | `competitive-analyst`, `trend-analyst`, `research-analyst` |
 
-See [docs/subagent-catalog.md](docs/subagent-catalog.md) for the full catalog with models and descriptions.
+See the [subagent catalog](https://d3pi4w4hqr9gq6.cloudfront.net/subagent-catalog.md) for the full catalog with models and descriptions.
 
 ## Examples
 
@@ -112,7 +116,7 @@ to audit the payment processing module in src/payments/
 /plan-only Migrate the monolithic API to microservices with gRPC
 ```
 
-See [docs/examples.md](docs/examples.md) for 8 detailed walkthroughs.
+See [examples](https://d3pi4w4hqr9gq6.cloudfront.net/examples.md) for detailed walkthroughs.
 
 ## Architecture
 
@@ -141,12 +145,17 @@ Orchestrator (Claude Code + CLAUDE.md policy)
 agentic-swe/
 ├── CLAUDE.md              # Orchestrator policy and state machine
 ├── README.md
-├── install.sh             # One-command installer for target repos
-├── docs/                  # Detailed documentation
+├── package.json           # npm package (CLI: agentic-swe)
+├── bin/agentic-swe.js     # npm install entrypoint
+├── docs/                  # Documentation (mirrored on the [project site](https://d3pi4w4hqr9gq6.cloudfront.net/))
 │   ├── installation.md
 │   ├── usage.md
 │   ├── examples.md
-│   └── subagent-catalog.md
+│   ├── subagent-catalog.md
+│   ├── product-positioning.md
+│   ├── licensing.md
+│   └── distribution.md
+├── PRO.md                 # Pro / commercial offers (stub)
 └── .claude/               # All pipeline files (same structure when installed)
     ├── commands/          # 13 slash commands (/work, /check, /subagent, etc.)
     ├── phases/            # 18 phase prompts + subagent-selection policy
@@ -158,7 +167,7 @@ agentic-swe/
     │   └── subagents/     # 10 category directories
     ├── templates/         # State schema, evidence standard, artifact format
     ├── tools/             # Subagent catalog tool
-    ├── references/        # Git/GitHub reference docs
+    ├── references/        # Git and PR workflow reference docs
     └── .work/             # Runtime state (gitignored)
 ```
 
@@ -175,4 +184,4 @@ Built on research from SWE-agent, Agentless, Ambig-SWE, Reflexion, Self-Refine, 
 
 ## License
 
-MIT
+[MIT](LICENSE). Commercial services and optional Pro offerings are described on the [Pro & services](https://d3pi4w4hqr9gq6.cloudfront.net/PRO.md) page; see [licensing](https://d3pi4w4hqr9gq6.cloudfront.net/licensing.md) for how MIT relates to product packaging (not legal advice).
