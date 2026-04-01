@@ -1,0 +1,37 @@
+---
+description: Use personal GitHub (surajSFDC) identity for all commits in this repo — never work email.
+alwaysApply: true
+---
+
+# Git identity (personal project)
+
+This repository is a **personal** project under `~/hobby-projects/agentic-swe`. All commits must attribute **Suraj Gupta / surajSFDC**, not corporate or work accounts.
+
+## Required identity
+
+Before creating commits in this repo, ensure local config matches:
+
+- **user.name:** `Suraj Gupta`
+- **user.email:** `10187486+surajSFDC@users.noreply.github.com` (or another email **verified** on the GitHub account `surajSFDC`)
+
+Set for this repository only:
+
+```bash
+git config user.name "Suraj Gupta"
+git config user.email "10187486+surajSFDC@users.noreply.github.com"
+```
+
+## Agent behavior
+
+- **Do not** use `surajg@uber.com` or any identity that maps to `suraj-uber` on GitHub for commits here.
+- Before `git commit`, if asked to commit, **verify** with `git config user.email` (repo-local overrides global).
+- Pushing via `gh` or HTTPS as `surajSFDC` does **not** fix wrong author metadata — the commit email must be correct at commit time.
+- If corporate git hooks block commits, use `--no-verify` only when the user explicitly allows it; identity rules above still apply.
+
+## Optional check
+
+```bash
+git config user.name && git config user.email
+```
+
+Both must match the personal surajSFDC identity before committing.
