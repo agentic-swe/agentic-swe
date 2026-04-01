@@ -1,150 +1,99 @@
 # Installation Guide
 
-## Prerequisites
-
-- **Claude Code** CLI, desktop app, or IDE extension ([install guide](https://docs.anthropic.com/en/docs/claude-code))
-- **Git** installed and configured
-- **GitHub CLI** (`gh`) installed and authenticated (for PR creation)
-- A git repository where you want to use the pipeline
+**End users:** use **npm only** (`npx agentic-swe` or `npm install -g agentic-swe`). Cloning a source repository is **not** a supported way to install the product.
 
 ---
 
-## Quick Install (Recommended)
+## Prerequisites
 
-The fastest way to get started. One shell command installs everything into your project.
+- **Node.js 18+** (for `npx` / `npm`; the published CLI is the supported install path)
+- **Claude Code** CLI, desktop app, or IDE extension ([install guide](https://docs.anthropic.com/en/docs/claude-code))
+- **Git** installed and configured
+- **GitHub CLI** (`gh`) installed and authenticated (for PR creation)
+- A git repository where you want to use the pipeline (recommended; use `agentic-swe -y` if you must install into a non-git tree)
 
-**Step 1: Clone agentic-swe**
+---
+
+## Install (recommended): npm
+
+Package: [agentic-swe on npm](https://www.npmjs.com/package/agentic-swe).
+
+**One-shot:**
 
 ```bash
-git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
+npx agentic-swe /path/to/your/project
 ```
 
-**Step 2: Run the install script**
+**Global CLI (run anytime):**
 
 ```bash
-/tmp/agentic-swe/install.sh /path/to/your/project
+npm install -g agentic-swe
+agentic-swe install /path/to/your/project
 ```
 
-This automatically:
-- Creates the `.claude/` directory structure
-- Copies all pipeline files (phases, commands, agents, templates, references)
-- Copies all 135+ subagents into `.claude/agents/subagents/`
-- Copies the subagent catalog tool into `.claude/tools/`
-- Sets up `CLAUDE.md` (creates or appends to existing)
-- Adds `.claude/.work/` to `.gitignore`
+**Current directory:**
 
-**Step 3: Open Claude Code in your project**
+```bash
+cd /path/to/your/project
+npx agentic-swe
+# or: agentic-swe install
+```
+
+This installs the `.claude/` tree and merged `CLAUDE.md` policy using the published CLI—no separate source checkout.
+
+- Default target is the **current directory** when you omit a path.
+- If the target is **not** a git repository, you are prompted unless you pass **`-y` / `--yes`** (useful for CI).
+
+**Then open Claude Code:**
 
 ```bash
 cd /path/to/your/project
 claude
 ```
-
-**Step 4: Start working**
 
 ```
 /work Add retry logic to the API client
 ```
 
-Done. All slash commands (`/work`, `/subagent`, `/check`, etc.) are now available.
+### Upgrades and repairs
+
+Run the same command again against the project (e.g. `npx agentic-swe /path/to/your/project`). It updates `.claude/` and refreshes the appended pipeline block in `CLAUDE.md` when the delimiter is present.
+
+### Publish a new version (package maintainers only)
+
+Maintainers publish from their checkout: `npm login`, `npm version patch|minor|major`, `npm publish`. This is **not** an end-user install path.
 
 ---
 
-## Alternative: Install from Inside Claude Code
+## Slash command `/install` (after npm install)
 
-If you prefer using the `/install` slash command from within Claude Code, you must launch Claude Code **from inside the agentic-swe repo** (not your target project):
-
-```bash
-git clone https://github.com/surajSFDC/agentic-swe.git
-cd agentic-swe
-claude
-```
-
-Then run `/install` inside Claude Code. This works because the slash commands are registered in `.claude/commands/` within the agentic-swe repo.
-
-> **Why can't I run `/install` from my own project?** Claude Code discovers slash commands from `.claude/commands/` in the current project. Before installation, your project doesn't have `.claude/commands/install.md` yet — so the command doesn't exist. The shell script (`install.sh`) avoids this chicken-and-egg problem.
+After the pipeline is installed, your project has `.claude/commands/install.md`, so **`/install`** is available **inside Claude Code in that project** for guided repairs (see the command’s prompt). First-time setup should still use **`npx agentic-swe`** so you do not depend on slash commands existing before `.claude/` exists.
 
 ---
 
-## Manual Install
+## Selective install (subagents only)
 
-If you prefer to set things up yourself:
-
-**Step 1: Clone the repository**
+If you already have your own Claude Code setup and only want the specialized subagents, install the package in a temporary directory and copy from `node_modules`:
 
 ```bash
-git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
+mkdir -p /tmp/agentic-swe-extract && cd /tmp/agentic-swe-extract
+npm install agentic-swe
+cp -r node_modules/agentic-swe/.claude/agents/subagents/ /path/to/your/project/.claude/agents/subagents/
+cp -r node_modules/agentic-swe/.claude/tools/subagent-catalog/ /path/to/your/project/.claude/tools/subagent-catalog/
+cp node_modules/agentic-swe/.claude/commands/subagent.md /path/to/your/project/.claude/commands/
 ```
 
-**Step 2: Copy `.claude/` into your project**
-
-```bash
-cd /path/to/your/project
-cp -r /tmp/agentic-swe/.claude .claude
-```
-
-This copies everything — commands, phases, agents (including 135 subagents), templates, references, and tools.
-
-**Step 3: Create runtime state directory**
-
-```bash
-mkdir -p .claude/.work
-touch .claude/.work/.gitkeep
-```
-
-**Step 4: Set up CLAUDE.md**
-
-If your repo has **no existing `CLAUDE.md`**:
-
-```bash
-cp /tmp/agentic-swe/CLAUDE.md CLAUDE.md
-```
-
-If your repo **already has a `CLAUDE.md`** (append to preserve your existing instructions):
-
-```bash
-echo -e "\n---\n\n<!-- BEGIN autonomous-swe-pipeline policy -- do not edit above this line -->" >> CLAUDE.md
-cat /tmp/agentic-swe/CLAUDE.md >> CLAUDE.md
-```
-
-**Step 5: Add `.work/` to `.gitignore`**
-
-```bash
-echo ".claude/.work/" >> .gitignore
-```
-
-**Step 6: Verify installation**
-
-```bash
-ls .claude/commands/work.md .claude/phases/feasibility.md .claude/agents/developer.md
-find .claude/agents/subagents -name "*.md" | wc -l
-# Expected: 135
-```
-
----
-
-## Selective Install (Subagents Only)
-
-If you already have your own Claude Code setup and only want the specialized subagents:
-
-```bash
-git clone https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe
-
-# Copy just the subagents
-cp -r /tmp/agentic-swe/.claude/agents/subagents/ .claude/agents/subagents/
-
-# Copy the catalog tool (optional but recommended)
-cp -r /tmp/agentic-swe/.claude/tools/subagent-catalog/ .claude/tools/subagent-catalog/
-
-# Copy the subagent command (optional)
-cp /tmp/agentic-swe/.claude/commands/subagent.md .claude/commands/
-```
-
-You can now invoke any subagent directly in Claude Code:
+You can invoke subagents directly in Claude Code, for example:
 
 ```
 Use the python-pro subagent to refactor this module with proper type hints
 ```
+
+---
+
+## Manual copy from the npm tarball (advanced)
+
+If you cannot run the CLI but can use files from the **registry**, unpack the tarball produced by the npm package (`npm pack agentic-swe` downloads the same bits as `npm install`). Do **not** mirror a git checkout—only the published package. Copying by hand is error-prone; prefer `npx agentic-swe` when possible.
 
 ---
 

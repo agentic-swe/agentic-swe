@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Agentic SWE Pipeline Installer
-# Copies .claude/ from this repo into a target repository.
+# Agentic SWE — internal installer for development checkouts only.
+# End users must install via npm: npx agentic-swe /path/to/project
+# Copies .claude/ from this tree into a target repository.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_CLAUDE="$SCRIPT_DIR/.claude"
@@ -20,7 +21,7 @@ echo ""
 # Verify source
 if [ ! -d "$SOURCE_CLAUDE/phases" ] || [ ! -d "$SOURCE_CLAUDE/commands" ]; then
   echo "ERROR: Could not find .claude/phases/ or .claude/commands/ in $SCRIPT_DIR"
-  echo "       Run this script from the agentic-swe repository root."
+  echo "       Run this script from a development checkout of agentic-swe, or use: npx agentic-swe /path/to/your/project"
   exit 1
 fi
 

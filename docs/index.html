@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agentic SWE — Autonomous Software Engineering Pipeline</title>
   <meta name="description" content="Turn Claude Code into a full SWE pipeline with 135+ specialized subagents. Pure markdown orchestration — no runtime code.">
+  <!-- Public site: GitHub links are intentionally omitted. To show them again, search this file for “npm package” hero CTA and add nav/footer links to your repo. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -98,25 +99,6 @@
 
     .nav-links a:hover { color: var(--cyan); }
 
-    .nav-links .gh-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.45rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.82rem;
-      color: var(--text-bright);
-      transition: border-color 0.2s, background 0.2s;
-    }
-
-    .nav-links .gh-btn:hover {
-      border-color: var(--cyan);
-      background: var(--cyan-glow);
-    }
-
-    .gh-btn svg { width: 16px; height: 16px; fill: currentColor; }
-
     /* ── Sections ── */
     section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
 
@@ -145,6 +127,15 @@
       color: var(--text);
       max-width: 640px;
       margin-bottom: 3rem;
+    }
+
+    #product { text-align: center; padding-bottom: 2rem; }
+    #product .section-desc { margin-left: auto; margin-right: auto; margin-bottom: 1.5rem; }
+    .product-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
     }
 
     /* ── Hero ── */
@@ -206,6 +197,14 @@
       max-width: 560px;
       margin-bottom: 2.5rem;
       line-height: 1.7;
+    }
+
+    .hero p.hero-install-hint {
+      font-size: 0.9rem;
+      color: var(--text);
+      max-width: 520px;
+      margin: 0.5rem auto 2rem;
+      opacity: 0.92;
     }
 
     .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
@@ -566,10 +565,7 @@
       <a href="#features">Features</a>
       <a href="#agents">Agents</a>
       <a href="#start">Get Started</a>
-      <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener" class="gh-btn">
-        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
-      </a>
+      <a href="#product">Product</a>
     </div>
   </nav>
 
@@ -578,9 +574,10 @@
     <div class="hero-badge"><span class="dot"></span> Pure markdown orchestration</div>
     <h1>Autonomous SWE<br><span class="gradient-text">for Claude Code</span></h1>
     <p>A state-machine pipeline that turns Claude Code into a full software engineering workflow. 135+ specialized agents. Zero runtime code. Just markdown.</p>
+    <p class="hero-install-hint">Install via <strong>npm only</strong> — do not clone a repository to install.</p>
     <div class="hero-actions">
       <a href="#start" class="btn btn-primary">Get Started</a>
-      <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener" class="btn btn-ghost">View on GitHub</a>
+      <a href="https://www.npmjs.com/package/agentic-swe" target="_blank" rel="noopener" class="btn btn-ghost">npm package</a>
     </div>
   </section>
 
@@ -720,7 +717,7 @@
         <div class="step-content">
           <h3>Install into your project</h3>
           <div class="code-block">
-            <code><span class="cmd">git clone</span> https://github.com/surajSFDC/agentic-swe.git /tmp/agentic-swe<br>/tmp/agentic-swe/install.sh /path/to/your/project</code>
+            <code><span class="cmd">npx</span> agentic-swe /path/to/your/project</code>
           </div>
         </div>
       </div>
@@ -745,6 +742,21 @@
     </div>
   </section>
 
+  <!-- ── Product ── -->
+  <section id="product">
+    <div class="reveal">
+      <div class="section-label">// product</div>
+      <h2>Who it is for</h2>
+      <p class="section-desc">Teams using Claude Code who want <strong>budgets, human gates, and evidence</strong>—not unbounded agent loops. The core pipeline is MIT-licensed markdown; optional Pro and onboarding are separate from any hosted runtime (there isn’t one here).</p>
+      <div class="product-links">
+        <a href="./PRO.md" class="btn btn-ghost">Pro &amp; services</a>
+        <a href="./distribution.md" class="btn btn-ghost">Distribution</a>
+        <a href="./licensing.md" class="btn btn-ghost">Licensing</a>
+        <a href="./product-positioning.md" class="btn btn-ghost">Positioning</a>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Commands ── -->
   <section id="commands">
     <div class="reveal">
@@ -764,9 +776,9 @@
   <!-- ── Footer ── -->
   <footer>
     <p>
-      <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener">Agentic SWE</a>
+      <a href="https://www.npmjs.com/package/agentic-swe" target="_blank" rel="noopener">Agentic SWE</a>
       &nbsp;&middot;&nbsp; MIT License
-      &nbsp;&middot;&nbsp; Built by <a href="https://github.com/surajSFDC" target="_blank" rel="noopener">Suraj Gupta</a>
+      &nbsp;&middot;&nbsp; Built by Suraj Gupta
     </p>
   </footer>
 

@@ -1,0 +1,36 @@
+{
+  "name": "agentic-swe",
+  "version": "1.1.1",
+  "description": "Autonomous SWE pipeline for Claude Code — install markdown policies, phases, and agents into your repo",
+  "license": "MIT",
+  "author": "Suraj Gupta",
+  "homepage": "https://d3pi4w4hqr9gq6.cloudfront.net",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "agent",
+    "swe",
+    "pipeline",
+    "orchestration"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "agentic-swe": "bin/agentic-swe.js"
+  },
+  "files": [
+    "bin",
+    "CLAUDE.md",
+    ".claude/commands",
+    ".claude/phases",
+    ".claude/agents",
+    ".claude/templates",
+    ".claude/references",
+    ".claude/tools"
+  ],
+  "scripts": {
+    "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('.claude','phases');if(!fs.existsSync(r))process.exit(1)\"",
+    "test": "node bin/agentic-swe.js --help"
+  }
+}
