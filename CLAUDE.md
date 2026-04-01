@@ -41,7 +41,7 @@ External tools (MCP, web search, etc.) supplement local evidence but do not repl
 
 When installing into a target repository that already has a `CLAUDE.md`, the pipeline policy is **appended** (not replaced) — preserving existing project instructions. See `.claude/commands/install.md` for the delimiter convention.
 
-If `.claude/` is missing in a target repository on first run, bootstrap it using **`npx agentic-swe`** (or `npm install -g agentic-swe` then `agentic-swe install`). End users must not rely on cloning a source repository to install; the npm package is the supported distribution.
+If `.claude/` is missing in a target repository on first run, bootstrap it using **`npx agentic-swe`** (or `npm install -g agentic-swe` then `agentic-swe install`).
 
 ## Source Of Truth
 
@@ -331,7 +331,7 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 
 ## Common Operations
 
-**Install pipeline into a target repo:** Use **`npx agentic-swe`** / **`agentic-swe install`** only (npm registry).
+**Install pipeline into a target repo:** **`npx agentic-swe`** or **`agentic-swe install`**.
 
 **Start new work:** Use `/work` with a task description.
 

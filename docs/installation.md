@@ -1,9 +1,5 @@
 # Installation Guide
 
-**End users:** use **npm only** (`npx agentic-swe` or `npm install -g agentic-swe`). Cloning a source repository is **not** a supported way to install the product.
-
----
-
 ## Prerequisites
 
 - **Node.js 18+** (for `npx` / `npm`; the published CLI is the supported install path)

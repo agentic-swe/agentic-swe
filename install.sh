@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Agentic SWE — internal installer for development checkouts only.
-# End users must install via npm: npx agentic-swe /path/to/project
-# Copies .claude/ from this tree into a target repository.
+# Agentic SWE — copies .claude/ from this checkout into a target repository.
+# For the published package, use: npx agentic-swe /path/to/project
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_CLAUDE="$SCRIPT_DIR/.claude"

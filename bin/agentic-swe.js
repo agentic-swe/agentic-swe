@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
  * Installs Agentic SWE into a target project from the published npm package.
- * End users should use this CLI (or npx); do not direct them to clone a repo to install.
  */
 'use strict';
 
@@ -123,7 +122,7 @@ function install() {
   if (!fs.existsSync(path.join(sourceClaude, 'phases')) || !fs.existsSync(path.join(sourceClaude, 'commands'))) {
     console.error(
       'ERROR: Could not find .claude/phases/ or .claude/commands/ next to this CLI.\n' +
-        '       Reinstall the agentic-swe package or run from a full clone.'
+        '       Reinstall the agentic-swe package, or run from a local checkout of the package source.'
     );
     process.exit(1);
   }

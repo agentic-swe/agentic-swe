@@ -2,10 +2,6 @@
 
 Agentic SWE is a **workflow pack for Claude Code**: installable markdown (policies, phases, agents, templates) that runs in the developer’s environment. There is **no hosted orchestrator** in this repository—the runtime is Claude Code plus your repo.
 
-## End-user install
-
-**Customers and end users install only from npm** (`npx agentic-swe`, `npm install -g agentic-swe`). Do not position “clone our repo” as an installation method for them.
-
 ## Primary ICP (ideal customer profile)
 
 **Engineering teams of roughly 2–20 developers** who already use (or are adopting) Claude Code and want:

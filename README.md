@@ -4,8 +4,6 @@ Autonomous software engineering pipeline for Claude Code with 135+ specialized s
 
 Claude Code becomes a full SWE pipeline -- from task analysis through implementation, review, and PR creation -- with no runtime code. Everything is pure markdown: policies, phase prompts, agent definitions, and templates.
 
-**End users:** install **only from npm**. Do not clone a source repository to install the pipeline—use the commands below.
-
 ## Quick Start
 
 Install [from npm](https://www.npmjs.com/package/agentic-swe) (Node 18+):
