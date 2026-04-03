@@ -1,0 +1,1 @@
+Design and build a complete multi-tenant authentication system with JWT, refresh tokens, and role-based access from scratch.

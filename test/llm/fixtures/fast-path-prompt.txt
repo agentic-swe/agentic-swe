@@ -1,0 +1,1 @@
+Fix a one-line off-by-one bug in calculateTotal in src/math.js. No new features.

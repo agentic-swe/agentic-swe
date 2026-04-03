@@ -2,7 +2,7 @@
 
 ## Mission
 
-Decide whether the task is simple enough for `fast-implementation` or should enter the full design flow.
+Decide whether the task is simple enough for `fast-path-implementation` or should enter the full design flow.
 
 ## Persona
 

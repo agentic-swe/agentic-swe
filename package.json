@@ -23,16 +23,33 @@
     "CHANGELOG.md",
     "bin",
     "CLAUDE.md",
+    "AGENTS.md",
+    "GEMINI.md",
     ".claude/commands",
     ".claude/phases",
     ".claude/agents",
     ".claude/templates",
     ".claude/references",
-    ".claude/tools"
+    ".claude/tools",
+    "tools/brainstorm-server/",
+    ".claude-plugin/",
+    ".cursor-plugin/",
+    ".codex/",
+    ".opencode/",
+    "hooks/",
+    "gemini-extension.json",
+    ".version-bump.json"
   ],
+  "devDependencies": {
+    "ws": "^8.18.0"
+  },
   "scripts": {
     "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('.claude','phases');if(!fs.existsSync(r))process.exit(1)\"",
-    "test": "node --test test/cli-install.test.js",
-    "verify": "node scripts/verify-sanity.js"
+    "test": "node --test test/*.test.js",
+    "test:smoke": "bash test/smoke/run-smoke.sh",
+    "test:llm": "node test/llm/run-llm-tests.cjs",
+    "verify": "node scripts/verify-sanity.js",
+    "version:check": "bash scripts/bump-version.sh check",
+    "version:bump": "bash scripts/bump-version.sh bump"
   }
 }

@@ -21,14 +21,21 @@ Use this checklist before every state transition.
 - open uncertainties are named explicitly
 - delegated findings are integrated, not copied blindly
 
+## Verification Gate
+
+- does the artifact contain executable evidence (commands, output, exit codes), not just narrative? See `.claude/references/verification-standard.md`
+- are all behavioral claims backed by the required evidence type from the claim-to-evidence map?
+- is the artifact free of banned hedging language in its conclusions and evidence sections?
+- for delegated work, was the diff read and the decisive check re-run independently?
+
 ## Quality Gate
 
-- self-review rubric scores recorded before code-review (full path) or within fast-implementation (fast path)
+- self-review rubric scores recorded before code-review (full path) or within fast-path-implementation (fast path)
 - reflection-log read before rework when prior rejection exists
 - test adequacy assessment completed before implementation begins (full path)
 - changed behavior has at least one decisive verification path
 - tests pass before or during `validation`, or the lack of runnable tests is precisely documented
-- reviewable output exists before `pr-created`
+- reviewable output exists before `pr-creation`
 - risky git or GitHub actions use official workflow semantics instead of assumptions
 - design feedback is resolved before moving from `design-review` to `verification`
 - code review rejection results in explicit `review-feedback.md`
@@ -59,4 +66,4 @@ Use this checklist before every state transition.
 - `escalate-code`
 - `escalate-validation`
 - `completed`
-- `failed`
+- `pipeline-failed`

@@ -56,27 +56,27 @@ All run state lives in `.claude/.work/<id>/`:
 
 Two paths through the pipeline:
 
-- **Fast path** (low-risk): `initialized → feasibility → fast-path-check → fast-implementation → validation → pr-created → approval-wait → completed`
-- **Full path** (complex): `initialized → feasibility → fast-path-check → design → design-review → verification → test → implementation → self-review → code-review → permissions → validation → pr-created → approval-wait → completed`
-- **Escalation exits**: `escalate-code`, `escalate-validation`, `failed`
+- **Fast path** (low-risk): `initialized → feasibility → fast-path-check → fast-path-implementation → validation → pr-creation → approval-wait → completed`
+- **Full path** (complex): `initialized → feasibility → fast-path-check → design → design-review → verification → test-strategy → implementation → self-review → code-review → permissions-check → validation → pr-creation → approval-wait → completed`
+- **Escalation exits**: `escalate-code`, `escalate-validation`, `pipeline-failed`
 - **Human gates**: `ambiguity-wait`, `approval-wait`, and escalation states
 
 ```
 initialized -> feasibility
-feasibility -> ambiguity-wait | fast-path-check | failed
-ambiguity-wait -> feasibility | failed
-fast-path-check -> fast-implementation | design
-fast-implementation -> validation | escalate-code
+feasibility -> ambiguity-wait | fast-path-check | pipeline-failed
+ambiguity-wait -> feasibility | pipeline-failed
+fast-path-check -> fast-path-implementation | design
+fast-path-implementation -> validation | escalate-code
 design -> design-review
 design-review -> design | verification
-verification -> test | design | failed
-test -> implementation
+verification -> test-strategy | design | pipeline-failed
+test-strategy -> implementation
 implementation -> self-review
 self-review -> implementation | code-review
-code-review -> implementation | permissions | escalate-code
-permissions -> validation | escalate-code
-validation -> implementation | pr-created | escalate-validation
-pr-created -> approval-wait
+code-review -> implementation | permissions-check | escalate-code
+permissions-check -> validation | escalate-code
+validation -> implementation | pr-creation | escalate-validation
+pr-creation -> approval-wait
 approval-wait -> implementation | completed
 ```
 
@@ -87,22 +87,22 @@ approval-wait -> implementation | completed
 | `feasibility` | `feasibility.md` |
 | `ambiguity-wait` | `feasibility.md`, `ambiguity-report.md` |
 | `fast-path-check` | `fast-path-check.md` |
-| `fast-implementation` | `implementation.md`, `review-pass.md` or `review-feedback.md` |
-| `design` | `design.md` |
+| `fast-path-implementation` | `implementation.md`, `review-pass.md` or `review-feedback.md` |
+| `design` | `design.md`, `reflection-log.md` (when returning from rejection) |
 | `design-review` | `design-review.md` or `design-feedback.md` |
 | `verification` | `verification-results.md` |
-| `test` | `test-stubs.md`, `test-results.md` (Phase 2, after implementation) |
-| `implementation` | `implementation.md` |
+| `test-strategy` | `test-stubs.md`, `test-results.md` (Phase 2, after implementation) |
+| `implementation` | `implementation.md`, `reflection-log.md` (when returning from rejection) |
 | `self-review` | `self-review.md` |
 | `code-review` | `review-pass.md` or `review-feedback.md` |
-| `permissions` | `permissions-changes.md` |
+| `permissions-check` | `permissions-changes.md` |
 | `validation` | `validation-results.md` |
-| `pr-created` | `cicd.md`, `pr-link.txt` |
+| `pr-creation` | `cicd.md`, `pr-link.txt` |
 | `approval-wait` | `cicd.md`, `pr-link.txt`, `approval-feedback.md` (when `changes_requested`) |
 | `completed` | `cicd.md`, `pr-link.txt` |
 | `escalate-code` | `review-feedback.md` or `permissions-changes.md` |
 | `escalate-validation` | `validation-results.md` |
-| `failed` | `feasibility.md` (from feasibility/ambiguity-wait) or `verification-results.md` (from verification) |
+| `pipeline-failed` | `feasibility.md` (from feasibility/ambiguity-wait) or `verification-results.md` (from verification) |
 
 ## Operating Loop
 
@@ -140,7 +140,7 @@ Do not transition on narrative confidence alone.
 ## Budgets And Loops
 
 - ambiguity loops are bounded by human clarification, not silent retries
-- fast path implementation review loop: maximum 2 iterations. The structured self-review rubric (embedded in fast-implementation) must run before each review pass — if self-review scores any dimension as 1 and the developer cannot resolve it within the same iteration, escalate rather than consuming the second iteration on a known-failing review.
+- fast path implementation review loop: maximum 2 iterations. The structured self-review rubric (embedded in fast-path-implementation) must run before each review pass — if self-review scores any dimension as 1 and the developer cannot resolve it within the same iteration, escalate rather than consuming the second iteration on a known-failing review.
 - design review loop: budget 3 by default, 4 for high-complexity work. Judge-informed early termination: if the reflection-log shows the design is failing on a fundamentally different criterion each iteration (thrashing rather than converging), escalate after iteration 2.
 - self-review loop: maximum 1 iteration (tracked in `state.json.counters.self_review_iter`). Returns to implementation at most once, then must pass forward.
 - implementation and code review loop: maximum 5 iterations. Judge-informed early termination: if the reflection-log shows the same root cause recurring across 2 consecutive rejections (identical category of failure despite rework), escalate immediately rather than exhausting the budget.
@@ -163,8 +163,8 @@ You may spawn sub-agents for bounded phase work using the Agent tool.
 
 - Keep orchestration, state transitions, and gate decisions in the main agent.
 - Use `.claude/agents/panel/*.md` only when complexity or risk justifies it. Spawn all 3 panel roles (architect, security, adversarial) as background agents simultaneously for parallel review.
-- Use `.claude/agents/git-ops.md` for branch management, remote sync, and conflict resolution. Use `.claude/agents/pr-manager.md` for PR creation and management.
-- Use `.claude/agents/developer.md` for bounded implementation work. Consider `isolation: "worktree"` for safe experimentation.
+- Use `.claude/agents/git-operations-agent.md` for branch management, remote sync, and conflict resolution. Use `.claude/agents/pr-manager-agent.md` for PR creation and management.
+- Use `.claude/agents/developer-agent.md` for bounded implementation work. Consider `isolation: "worktree"` for safe experimentation.
 - Use `.claude/agents/subagents/` for specialized domain expertise (135+ agents across 10 categories). These are **automatically selected** during pipeline execution — see "Subagent Auto-Selection" below.
 - Use `/subagent` to manually browse, search, and invoke subagents outside the pipeline.
 - Use the unified `.claude/phases/*.md` prompts as the canonical instructions for each pipeline phase.
@@ -180,7 +180,7 @@ The orchestrator remains accountable for state correctness, transition validity,
 
 ### Agent-to-Agent Delegation
 
-Core agents (`developer.md`, panel agents) can themselves spawn subagents when they encounter domain-specific complexity during their work:
+Core agents (`developer-agent.md`, panel agents) can themselves spawn subagents when they encounter domain-specific complexity during their work:
 
 - Maximum 1 subagent spawn per calling agent per phase
 - Subagent must come from the mapping tables in `.claude/phases/subagent-selection.md`
@@ -212,9 +212,9 @@ Actor naming convention:
 When complexity or risk justifies panel review, spawn 3 background agents simultaneously:
 
 ```
-Agent(prompt=.claude/agents/panel/architect.md, run_in_background=true)
-Agent(prompt=.claude/agents/panel/security.md, run_in_background=true)
-Agent(prompt=.claude/agents/panel/adversarial.md, run_in_background=true)
+Agent(prompt=.claude/agents/panel/architect-reviewer.md, run_in_background=true)
+Agent(prompt=.claude/agents/panel/security-reviewer.md, run_in_background=true)
+Agent(prompt=.claude/agents/panel/adversarial-reviewer.md, run_in_background=true)
 ```
 
 Collect all 3 results, synthesize into `design-panel-review.md`. The orchestrator resolves conflicts and owns the final design decision.
@@ -234,7 +234,7 @@ The pipeline automatically selects and spawns specialized subagents during phase
 | Phase | Subagent Role | Max Agents | Blocking? |
 |-------|---------------|------------|-----------|
 | feasibility | Signal collection only (no spawning) | 0 | N/A |
-| fast-implementation | 1 language specialist (if high confidence) | 1 | No (background) |
+| fast-path-implementation | 1 language specialist (if high confidence) | 1 | No (background) |
 | implementation | Language specialist + domain specialist | 2 | No (background, advisory) |
 | design | Domain specialist for pre-design input | 1 | Yes (focused, before panel) |
 | code-review | Specialized reviewers (security, performance, etc.) | 2 | No (background, parallel) |
@@ -258,16 +258,16 @@ Set `state.json.pipeline.subagent_auto_select` to `false` to disable. Manual `/s
 
 | Category | Agents | Use When |
 |----------|--------|----------|
-| `01-core-development` | api-designer, backend-developer, frontend-developer, fullstack-developer, mobile-developer, etc. | Building features requiring architectural expertise |
-| `02-language-specialists` | python-pro, typescript-pro, rust-engineer, golang-pro, react-specialist, etc. | Language-specific idioms, patterns, or deep expertise needed |
-| `03-infrastructure` | cloud-architect, devops-engineer, kubernetes-specialist, terraform-engineer, docker-expert, etc. | Infrastructure, deployment, or cloud platform work |
-| `04-quality-security` | code-reviewer, security-auditor, debugger, performance-engineer, penetration-tester, etc. | Deep quality audits, security reviews, or performance analysis |
-| `05-data-ai` | data-engineer, ml-engineer, llm-architect, prompt-engineer, data-scientist, etc. | Data pipelines, ML models, or AI system design |
-| `06-developer-experience` | documentation-engineer, cli-developer, refactoring-specialist, mcp-developer, etc. | Tooling, documentation, or developer workflow improvements |
-| `07-specialized-domains` | blockchain-developer, fintech-engineer, game-developer, iot-engineer, etc. | Domain-specific expertise (finance, gaming, IoT, etc.) |
-| `08-business-product` | product-manager, project-manager, technical-writer, ux-researcher, etc. | Product strategy, documentation, or business analysis |
-| `09-meta-orchestration` | multi-agent-coordinator, workflow-orchestrator, context-manager, etc. | Complex multi-agent workflows or task distribution |
-| `10-research-analysis` | research-analyst, competitive-analyst, trend-analyst, etc. | Market research, competitive analysis, or trend investigation |
+| `core-development` | api-designer, backend-developer, frontend-developer, fullstack-developer, mobile-developer, etc. | Building features requiring architectural expertise |
+| `language-specialists` | python-pro, typescript-pro, rust-engineer, golang-pro, react-specialist, etc. | Language-specific idioms, patterns, or deep expertise needed |
+| `infrastructure` | cloud-architect, devops-engineer, kubernetes-specialist, terraform-engineer, docker-expert, etc. | Infrastructure, deployment, or cloud platform work |
+| `quality-security` | code-reviewer, security-auditor, debugger, performance-engineer, penetration-tester, etc. | Deep quality audits, security reviews, or performance analysis |
+| `data-ai` | data-engineer, ml-engineer, llm-architect, prompt-engineer, data-scientist, etc. | Data pipelines, ML models, or AI system design |
+| `developer-experience` | documentation-engineer, cli-developer, refactoring-specialist, mcp-developer, etc. | Tooling, documentation, or developer workflow improvements |
+| `specialized-domains` | blockchain-developer, fintech-engineer, game-developer, iot-engineer, etc. | Domain-specific expertise (finance, gaming, IoT, etc.) |
+| `business-product` | product-manager, project-manager, technical-writer, ux-researcher, etc. | Product strategy, documentation, or business analysis |
+| `meta-orchestration` | multi-agent-coordinator, workflow-orchestrator, context-manager, etc. | Complex multi-agent workflows or task distribution |
+| `research-analysis` | research-analyst, competitive-analyst, trend-analyst, etc. | Market research, competitive analysis, or trend investigation |
 
 ### Manual Invocation
 
@@ -301,28 +301,32 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 | Skill | Purpose | Primary Consumers |
 |-------|---------|-------------------|
 | `/repo-scan` | Structured codebase snapshot (languages, frameworks, tests, CI, linters) | `.claude/phases/feasibility.md` |
-| `/test-runner [scope]` | Detect and execute tests with structured pass/fail results | `.claude/phases/test.md`, `.claude/phases/fast-implementation.md`, `.claude/phases/validation.md` |
+| `/test-runner [scope]` | Detect and execute tests with structured pass/fail results | `.claude/phases/test-strategy.md`, `.claude/phases/fast-path-implementation.md`, `.claude/phases/validation.md` |
 | `/lint [scope]` | Detect and run linters/formatters in check mode | `.claude/phases/validation.md` |
 | `/diff-review [range]` | Evidence-backed code review against structured criteria | `.claude/phases/code-review.md`, `.claude/phases/design-review.md` |
-| `/ci-status [PR|branch]` | Query CI/CD check status with mergeability assessment | `.claude/phases/pr-created.md`, `.claude/phases/completion.md` |
-| `/conflict-resolver [command]` | Detect, classify, and safely resolve git conflicts | `.claude/phases/completion.md`, `.claude/agents/git-ops.md` |
-| `/security-scan [scope]` | Dependency audit, secret scan, dangerous pattern detection | `.claude/phases/permissions.md`, `.claude/agents/panel/security.md` |
+| `/ci-status [PR|branch]` | Query CI/CD check status with mergeability assessment | `.claude/phases/pr-creation.md`, `.claude/phases/merge-completion.md` |
+| `/conflict-resolver [command]` | Detect, classify, and safely resolve git conflicts | `.claude/phases/merge-completion.md`, `.claude/agents/git-operations-agent.md` |
+| `/security-scan [scope]` | Dependency audit, secret scan, dangerous pattern detection | `.claude/phases/permissions-check.md`, `.claude/agents/panel/security-reviewer.md` |
+| `/brainstorm` | Design-first exploration; optional `tools/brainstorm-server` visual companion | `.claude/phases/design.md` |
+| `/write-plan` | Refine `implementation.md` against plan-quality bar (no coding) | `.claude/references/plan-quality-bar.md`, `.claude/commands/plan-only.md` |
+| `/execute-plan` | Run the plan via implementation or fast-path-implementation per `state.json` | `.claude/agents/developer-agent.md` |
+| `/author-pipeline` | Checklist to extend commands, phases, agents, templates | `.claude/references/authoring-pipeline-capabilities.md` |
 
 ## Key Directories
 
-- `.claude/commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`
+- `.claude/commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/brainstorm`, `/write-plan`, `/execute-plan`, `/author-pipeline`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`
 - `.claude/phases/` — Unified phase prompts (one per pipeline state), plus `.claude/phases/subagent-selection.md` (auto-selection policy)
 - `.claude/agents/` — Specialist agent prompts for bounded delegation
   - `.claude/agents/panel/` — Design panel specialists (architect, security, adversarial)
-  - `.claude/agents/git-ops.md` — Branch management, remote sync, conflict resolution
-  - `.claude/agents/pr-manager.md` — PR creation and management
-  - `.claude/agents/developer.md` — Implementation specialist
+  - `.claude/agents/git-operations-agent.md` — Branch management, remote sync, conflict resolution
+  - `.claude/agents/pr-manager-agent.md` — PR creation and management
+  - `.claude/agents/developer-agent.md` — Implementation specialist
   - `.claude/agents/subagents/` — 135+ specialized subagents across 10 categories (see "Specialized Subagents" section)
   - `.claude/agents/subagents/custom/` — optional repo-specific subagent definitions
 - `.claude/tools/` — Reusable tooling
   - `.claude/tools/subagent-catalog/` — Browse, search, and fetch subagent definitions
 - `.claude/templates/` — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`, `repo-knowledge-stub.md`, `playbook-entry.md`, `evaluation-rubric.md`, `capability-gaps-section.md`, `metrics-summary.md` (optional)
-- `.claude/references/` — Authoritative tool/platform facts (readonly); includes `tooling-expectations.md`, plus material consulted by `.claude/agents/git-ops.md` and `.claude/phases/pr-created.md`
+- `.claude/references/` — Authoritative tool/platform facts (readonly); includes `tooling-expectations.md`, plus material consulted by `.claude/agents/git-operations-agent.md` and `.claude/phases/pr-creation.md`
 - `.work/` — Runtime work state (gitignored)
 
 ## Editing Guidelines
@@ -330,6 +334,7 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 - When modifying phase prompts or agents, follow the evidence standard in `.claude/templates/evidence-standard.md`.
 - The state machine definition in this file (CLAUDE.md) is the sole authority.
 - `.claude/templates/state.json` defines the canonical schema for all work items. Changes here affect all new runs.
+- To add commands, phases, agents, or references safely, follow `.claude/references/authoring-pipeline-capabilities.md` and use `/author-pipeline` as the guided checklist.
 
 ## Common Operations
 
@@ -340,5 +345,11 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 **Resume paused work:** Use `/work <id>` with the work ID.
 
 **Plan without implementing:** Use `/plan-only` — stops after feasibility/design.
+
+**Design exploration (optional visual companion):** Use `/brainstorm` — follows `.claude/phases/design.md`; see `tools/brainstorm-server/` when a UI helps.
+
+**Refine implementation plan only:** Use `/write-plan` — updates `implementation.md` to the plan-quality bar without coding.
+
+**Execute an existing plan:** Use `/execute-plan` — moves toward implementation per `state.json` and delegates to the developer agent.
 
 **Evaluate work health:** Use `/evaluate-work` to inspect a work item's state and artifacts.

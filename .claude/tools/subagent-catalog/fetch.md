@@ -27,7 +27,7 @@ Read the agent file and display its contents with parsed frontmatter:
 ```
 ## code-reviewer
 
-**Category**: 04-quality-security
+**Category**: quality-security
 **Model**: opus
 **Tools**: Read, Write, Edit, Bash, Glob, Grep
 
@@ -40,7 +40,7 @@ After displaying the definition, show how to use it:
 
 ```
 **How to invoke:**
-- As orchestrator subagent: Agent(prompt="agents/subagents/04-quality-security/code-reviewer.md")
+- As orchestrator subagent: Agent(prompt="agents/subagents/quality-security/code-reviewer.md")
 - With model override: Agent(prompt="...", model="opus")
 - In background: Agent(prompt="...", run_in_background=true)
 - In isolation: Agent(prompt="...", isolation="worktree")

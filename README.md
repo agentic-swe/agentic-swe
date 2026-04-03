@@ -47,15 +47,35 @@ The pipeline runs a **state machine** that routes tasks through analysis, design
 ```
               fast path (simple tasks)
              ┌─────────────────────────────────────────────────────┐
-initialized -> feasibility -> fast-path-check -> fast-implementation -> validation -> pr-created -> completed
+initialized -> feasibility -> fast-path-check -> fast-path-implementation -> validation -> pr-creation -> completed
                                     |
                                     v  full path (complex tasks)
-                              design -> design-review -> verification -> test ->
+                              design -> design-review -> verification -> test-strategy ->
                               implementation -> self-review -> code-review ->
-                              permissions -> validation -> pr-created -> completed
+                              permissions-check -> validation -> pr-creation -> completed
 ```
 
 Human gates stop the pipeline at `ambiguity-wait`, `approval-wait`, and escalation states.
+
+## Quick Start Walkthrough
+
+Example tasks and the routes they follow (see the **state machine** diagram above).
+
+**Fast path** (small bug fix):
+
+```
+/work "Fix the off-by-one error in calculateTotal"
+```
+
+→ feasibility → fast-path-check (low risk) → fast-path-implementation → validation → pr-creation → approval-wait → completed
+
+**Full path** (new feature):
+
+```
+/work "Add user authentication with JWT tokens"
+```
+
+→ feasibility → fast-path-check (high risk) → design → design-review → verification → test-strategy → implementation → self-review → code-review → permissions-check → validation → pr-creation → approval-wait → completed
 
 ## Key Commands
 
@@ -64,6 +84,10 @@ Human gates stop the pipeline at `ambiguity-wait`, `approval-wait`, and escalati
 | `/work <task>` | Start a new task (auto-routes fast/full path) |
 | `/work <id>` | Resume paused work |
 | `/plan-only <task>` | Analyze and design without implementing |
+| `/brainstorm` | Design-first exploration (design phase + optional visual server) |
+| `/write-plan [id]` | Refine `implementation.md` plan to plan-quality bar (no coding) |
+| `/execute-plan [id]` | Run the plan via implementation / fast-path-implementation |
+| `/author-pipeline` | Checklist to extend phases, commands, agents safely |
 | `/subagent` | Browse 135+ specialized subagents |
 | `/subagent search <query>` | Find subagents by keyword |
 | `/subagent invoke <name> <task>` | Spawn a specialist for a task |
@@ -120,6 +144,14 @@ to audit the payment processing module in src/payments/
 /plan-only Migrate the monolithic API to microservices with gRPC
 ```
 
+**Workflow shortcuts** (same pipeline, familiar command names):
+
+```
+/brainstorm Design the event-sourcing layer for order history
+/write-plan
+/execute-plan
+```
+
 See [examples](https://d3pi4w4hqr9gq6.cloudfront.net/examples.md) for detailed walkthroughs.
 
 ## Architecture
@@ -127,20 +159,20 @@ See [examples](https://d3pi4w4hqr9gq6.cloudfront.net/examples.md) for detailed w
 ```
 Orchestrator (Claude Code + CLAUDE.md policy)
 ├── Core Pipeline Agents
-│   ├── developer.md          -- Implementation specialist
-│   ├── git-ops.md            -- Branch management, remote sync
-│   ├── pr-manager.md         -- PR creation and management
+│   ├── developer-agent.md    -- Implementation specialist
+│   ├── git-operations-agent.md -- Branch management, remote sync
+│   ├── pr-manager-agent.md   -- PR creation and management
 │   └── panel/                -- Design review panel (parallel)
-│       ├── architect.md
-│       ├── security.md
-│       └── adversarial.md
+│       ├── architect-reviewer.md
+│       ├── security-reviewer.md
+│       └── adversarial-reviewer.md
 │
 └── Specialized Subagents (135+ agents, 10 categories)
-    ├── 01-core-development/
-    ├── 02-language-specialists/
-    ├── 03-infrastructure/
+    ├── core-development/
+    ├── language-specialists/
+    ├── infrastructure/
     ├── ...
-    └── 10-research-analysis/
+    └── research-analysis/
 ```
 
 ## File Structure
@@ -161,12 +193,12 @@ agentic-swe/
 │   └── distribution.md
 ├── PRO.md                 # Pro / commercial offers (stub)
 └── .claude/               # All pipeline files (same structure when installed)
-    ├── commands/          # 13 slash commands (/work, /check, /subagent, etc.)
+    ├── commands/          # Slash commands (/work, /brainstorm, /execute-plan, …)
     ├── phases/            # 18 phase prompts + subagent-selection policy
     ├── agents/            # Core agents + 135 subagents
-    │   ├── developer.md
-    │   ├── git-ops.md
-    │   ├── pr-manager.md
+    │   ├── developer-agent.md
+    │   ├── git-operations-agent.md
+    │   ├── pr-manager-agent.md
     │   ├── panel/         # Design review panel (3 agents)
     │   └── subagents/     # 10 category directories
     ├── templates/         # State schema, evidence standard, artifact format
@@ -181,6 +213,22 @@ agentic-swe/
 - **Add a phase**: Create `.md` in `.claude/phases/`, add state to `CLAUDE.md`
 - **Add a core agent**: Create `.md` in `.claude/agents/`, reference in `CLAUDE.md`
 - **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `.claude/templates/state.json`
+
+## Multi-Platform Support
+
+agentic-swe works as a pipeline orchestrator across multiple AI coding platforms:
+
+| Platform | Install Method | Details |
+|----------|---------------|---------|
+| **Claude Code** | `npx agentic-swe /path/to/repo` | Primary platform. Full pipeline support. |
+| **Cursor** | Plugin via `.cursor-plugin/` | Commands and agents load automatically. See `hooks/hooks-cursor.json`. |
+| **Codex** | Clone + symlink | See `.codex/INSTALL.md` and `docs/README.codex.md`. |
+| **OpenCode** | Plugin via `.opencode/` | ESM plugin injects orchestration policy. See `docs/README.opencode.md`. |
+| **Gemini CLI** | Extension via `gemini-extension.json` | Context loaded from `GEMINI.md`. |
+
+All platforms share the same `.claude/` source content. Platform-specific tool mappings are in `.claude/references/` (`codex-tools.md`, `opencode-tools.md`, `gemini-tools.md`, `copilot-tools.md`).
+
+**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start`, plus `.claude/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`.
 
 ## Research Basis
 

@@ -21,9 +21,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Install dev dependencies
+        run: npm install
+
+      - name: Install brainstorm-server dependencies
+        run: npm install --prefix tools/brainstorm-server
+
       - name: Verify pipeline layout
         run: npm run verify
 
       - name: Test
         run: npm test
-        # No npm dependencies; nothing to install before test

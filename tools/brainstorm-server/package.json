@@ -1,0 +1,18 @@
+{
+  "name": "agentic-swe-brainstorm-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Optional local HTTP + WebSocket visual companion for design/brainstorm (agentic-swe)",
+  "license": "MIT",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test test/server.test.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

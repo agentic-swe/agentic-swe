@@ -32,10 +32,10 @@ Display as a scannable list:
 ```
 ## Subagent Catalog (Local)
 
-### 01-core-development
+### core-development
 api-designer, backend-developer, frontend-developer, fullstack-developer, ...
 
-### 02-language-specialists
+### language-specialists
 typescript-pro, python-pro, rust-engineer, golang-pro, ...
 
 [...continue for all 10 categories...]

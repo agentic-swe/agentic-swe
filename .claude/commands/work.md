@@ -10,7 +10,7 @@ You are running `/work`.
 
 ### Start Mode (new task)
 
-1. If you are in a target repository and `.claude/CLAUDE.md` or the required `.claude/templates/` files are missing, run `/install` first.
+1. If you are in a target repository and `CLAUDE.md` or the required `.claude/templates/` files are missing, run `/install` first.
 2. Generate a short kebab-case work ID from the task description (e.g., `add-retry-logic`).
 3. Create `.claude/.work/<id>/`.
 4. Create `.claude/.work/<id>/state.json` from `.claude/templates/state.json`, filling in:
@@ -18,7 +18,7 @@ You are running `/work`.
    - `created_at` and `updated_at` with current ISO-8601 timestamp
    - `timeout_at` with current timestamp + 24 hours
 5. Create `.claude/.work/<id>/audit.log` and `.claude/.work/<id>/progress.md` from the templates.
-6. Branch setup (delegate to `.claude/agents/git-ops.md` if complex):
+6. Branch setup (delegate to `.claude/agents/git-operations-agent.md` if complex):
    a. Detect base branch: check for `main`, then `master`, then current. Record in `state.json.git.base_branch`.
    b. `git fetch origin <base> && git checkout <base> && git pull origin <base>`
    c. `git checkout -b work/<work-id>` (check `git branch --list work/<work-id>` first for collision).
@@ -53,18 +53,18 @@ You are running `/work`.
 - After artifact creation: invoke `/check artifacts`
 - Execute phases using the matching prompt in `.claude/phases/`
 - Follow either:
-  - fast path: `fast-implementation → validation`
-  - full path: `design → design-review → verification → test → implementation → code-review → permissions → validation`
-- If validation succeeds, execute `pr-created` and stop at `approval-wait`.
+  - fast path: `fast-path-implementation → validation`
+  - full path: `design → design-review → verification → test-strategy → implementation → code-review → permissions-check → validation`
+- If validation succeeds, execute `pr-creation` and stop at `approval-wait`.
 - When resuming at `approval-wait`:
-  - If `approvals.pr_approved == true`: execute `.claude/phases/completion.md`, transition to `completed`.
+  - If `approvals.pr_approved == true`: execute `.claude/phases/merge-completion.md`, transition to `completed`.
   - If `approvals.changes_requested == true`:
     a. Fetch PR feedback: `gh pr view --json reviews,comments`
     b. Write `.claude/.work/<id>/approval-feedback.md` with structured review findings
     c. Increment `counters.approval_iter`
     d. Transition `approval-wait → implementation`
     e. Implementation phase reads `approval-feedback.md` as mandatory additional input
-- Stop only at: `ambiguity-wait`, `approval-wait`, `escalate-code`, `escalate-validation`, `completed`, `failed`
+- Stop only at: `ambiguity-wait`, `approval-wait`, `escalate-code`, `escalate-validation`, `completed`, `pipeline-failed`
 
 ## Output
 

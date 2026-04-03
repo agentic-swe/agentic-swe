@@ -27,8 +27,8 @@ Display matches as a table:
 
 | Agent | Category | Description |
 |-------|----------|-------------|
-| kubernetes-specialist | 03-infrastructure | Container orchestration master |
-| devops-engineer | 03-infrastructure | CI/CD and automation expert |
+| kubernetes-specialist | infrastructure | Container orchestration master |
+| devops-engineer | infrastructure | CI/CD and automation expert |
 
 > use `/subagent-catalog:fetch <name>` to get full definition
 > invoke with: Agent(prompt=agents/subagents/<category>/<name>.md)

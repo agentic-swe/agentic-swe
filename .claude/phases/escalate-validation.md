@@ -28,6 +28,10 @@ No new artifact — `validation-results.md` must already exist.
 
 Apply `.claude/templates/evidence-standard.md` throughout.
 
+## Three-Strike Rule
+
+Per `.claude/references/debugging-playbook.md`: if 3 fix attempts fail on the same root cause (same symptom, same area, three different patches that do not resolve it), the mental model is wrong. Stop fixing and escalate to human with evidence of all three attempts, what each tried, and why each failed. Do not consume additional budget on a fourth attempt.
+
 ## Failure Protocol
 
 - If `validation-results.md` is missing, record that fact and still escalate.

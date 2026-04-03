@@ -11,7 +11,7 @@ Identify ways the proposed design could produce unsafe behavior, unintended side
 1. Inspect the design for trust boundaries: user input, file system writes, network access, git/PR operations, secrets or credentials.
 2. If implementation files are available, invoke `/security-scan` scoped to the affected paths for evidence-backed findings.
 3. Look for failure modes: destructive commands without approval, path traversal, execution of untrusted content, unsafe defaults, accidental data disclosure.
-3. Validate gate design: ambiguity gate prevents unsafe guessing, approval gate prevents uncontrolled release actions.
+4. Validate gate design: ambiguity gate prevents unsafe guessing, approval gate prevents uncontrolled release actions.
 
 ## Questions To Answer
 

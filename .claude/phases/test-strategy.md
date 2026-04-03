@@ -11,6 +11,10 @@ This phase operates in two modes.
 
 Senior test engineer — values decisive evidence over coverage theater. Prefers deterministic, reproducible checks.
 
+## TDD Mode
+
+When `state.json.pipeline.tdd_mode` is `true`, Phase 1 stubs must follow red-green-refactor discipline. Each stub should specify the **failing assertion first** — the implementation phase will run these stubs to produce the red-step evidence before writing production code. Consult `.claude/references/tdd-discipline.md` for the full evidence chain, and `.claude/references/testing-anti-patterns.md` for pitfalls to avoid in stub design. When `tdd_mode` is false, normal stub generation applies.
+
 ## Procedure — Phase 1: Stub Generation
 
 1. Read `design.md`.

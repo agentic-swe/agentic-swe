@@ -35,7 +35,7 @@ Before git workflow actions:
 
 ## Common Workflows
 
-For step-by-step branch, sync, and conflict procedures, see `.claude/agents/git-ops.md`. This reference provides the authoritative facts those procedures rely on.
+For step-by-step branch, sync, and conflict procedures, see `.claude/agents/git-operations-agent.md`. This reference provides the authoritative facts those procedures rely on.
 
 ### Create Pull Request
 
@@ -52,11 +52,11 @@ gh pr create --base <base-branch> --title "<title>" --body "<body>"
 
 ## Conflict Resolution
 
-Inspect markers, preserve upstream fixes, abort when unsafe. See `.claude/agents/git-ops.md` Conflict Rules for procedure.
+Inspect markers, preserve upstream fixes, abort when unsafe. See `.claude/agents/git-operations-agent.md` Conflict Rules for procedure.
 
 ## Fork and Upstream Sync
 
-Verify remotes: `origin` = fork, `upstream` = original. Add `upstream` if missing. See `.claude/agents/git-ops.md` for sync procedure.
+Verify remotes: `origin` = fork, `upstream` = original. Add `upstream` if missing. See `.claude/agents/git-operations-agent.md` for sync procedure.
 
 ## Decision Heuristics
 

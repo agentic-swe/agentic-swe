@@ -9,6 +9,14 @@ Implement a low-risk change end-to-end under a tighter review budget.
 - Maximum **2 review iterations** (tracked in `state.json.counters.fast_iter`).
 - If the second review still has blocking findings, escalate to `escalate-code` rather than iterating further.
 
+## TDD Mode
+
+When `state.json.pipeline.tdd_mode` is `true`, the developer agent must follow red-green-refactor discipline per `.claude/references/tdd-discipline.md`. Even on fast path, the red step (failing test output) must be captured before writing production code. Record evidence in `implementation.md` under `## TDD Evidence`. See `.claude/references/tdd-examples.md` for patterns.
+
+## Plan Quality
+
+The implementation plan must meet `.claude/references/plan-quality-bar.md` — exact file paths, complete code, verification commands with expected output. Decompose using `.claude/references/task-decomposition-guide.md`. Fast path means fewer steps, not lower quality per step.
+
 ## Delegation
 
 Follow the same delegation model as `.claude/phases/implementation.md`, with additional subagent auto-selection for fast path:
@@ -24,8 +32,8 @@ Follow the same delegation model as `.claude/phases/implementation.md`, with add
 
 ### Spawning
 
-5. Spawn `.claude/agents/developer.md` (primary, **foreground**) with the task scope, target files, and constraints. Tell the developer agent it may spawn 1 subagent per `.claude/phases/subagent-selection.md` if it encounters domain-specific complexity.
-6. If a language specialist was selected, spawn it in **background** (non-blocking). If fast-implementation finishes before the specialist returns, **proceed without waiting**.
+5. Spawn `.claude/agents/developer-agent.md` (primary, **foreground**) with the task scope, target files, and constraints. Tell the developer agent it may spawn 1 subagent per `.claude/phases/subagent-selection.md` if it encounters domain-specific complexity.
+6. If a language specialist was selected, spawn it in **background** (non-blocking). If fast-path-implementation finishes before the specialist returns, **proceed without waiting**.
 7. Consider `isolation: "worktree"` for safe experimentation.
 
 ### Self-Review
@@ -44,6 +52,8 @@ Before completing, the developer agent must:
 2. Either write and run that test, or run existing tests covering the changed behavior. Use `/test-runner <scope>` to execute scoped tests.
 3. Record test evidence (command, output, pass/fail) in `implementation.md`.
 4. If no automated test path exists, document why and specify manual verification steps.
+
+All test evidence must meet `.claude/references/verification-standard.md` — show the command, its output, and exit code. Do not claim "tests pass" or "feature works" without captured executable proof. Hedging language ("should work", "seems fine") is treated as missing evidence.
 
 This is lighter than the full test phase but prevents shipping untested behavioral changes.
 

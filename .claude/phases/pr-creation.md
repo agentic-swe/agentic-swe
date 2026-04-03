@@ -20,7 +20,7 @@ High-discipline release engineer — creates review artifacts only when real and
 3. Create the pull request using the repository workflow.
    - Use `gh pr create --base <base-branch> --title "<title>" --body "<body>"`
    - Use `--draft` when work is ready for visibility but not for merge
-   - See `.claude/references/github.md` for detailed workflow guidance
+   - See `.claude/references/github-workflow.md` for detailed workflow guidance
 4. Capture the real PR URL.
 5. Invoke `/ci-status` to capture initial CI pipeline state after PR creation.
 6. Record blockers precisely if PR creation fails.

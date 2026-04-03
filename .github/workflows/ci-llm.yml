@@ -1,0 +1,24 @@
+# Optional LLM checks — manual only (cost + secrets).
+# workflow_dispatch: run from Actions tab after configuring Claude CLI auth for the runner.
+name: LLM tests (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  llm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: LLM tests (requires claude CLI + auth on runner)
+        env:
+          AGENTIC_SWE_LLM_TESTS: '1'
+        run: |
+          echo "Ensure claude is installed and ANTHROPIC_API_KEY (or equivalent) is set as a repo secret."
+          command -v claude || { echo "claude not found — add install step or use a self-hosted runner"; exit 1; }
+          npm run test:llm

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>agentic-swe — brainstorm companion</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; }
+    #log { white-space: pre-wrap; background: #f4f4f5; padding: 1rem; border-radius: 8px; min-height: 6rem; font-size: 0.9rem; }
+    button { margin-right: 0.5rem; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Brainstorm companion</h1>
+  <p>Local helper for the agentic-swe design phase. Messages also flow to the WebSocket for agent tooling.</p>
+  <div>
+    <button type="button" id="ping">Ping server</button>
+    <button type="button" id="send">Send companion note</button>
+  </div>
+  <p><label>Note: <input id="note" type="text" size="40" placeholder="short design note" /></label></p>
+  <h2>Log</h2>
+  <div id="log"></div>
+  <script>
+    const logEl = document.getElementById('log');
+    const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(wsProto + '//' + location.host + '/ws');
+    function log(line) { logEl.textContent += line + '\n'; }
+    ws.onmessage = (ev) => log('← ' + ev.data);
+    ws.onerror = () => log('(ws error)');
+    document.getElementById('ping').onclick = () => { log('→ ping'); ws.send(JSON.stringify({ type: 'ping' })); };
+    document.getElementById('send').onclick = () => {
+      const message = document.getElementById('note').value || '(empty)';
+      log('→ companion');
+      ws.send(JSON.stringify({ type: 'companion', message }));
+    };
+  </script>
+</body>
+</html>

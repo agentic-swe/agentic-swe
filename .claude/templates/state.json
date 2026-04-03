@@ -98,7 +98,9 @@
     "pr_status": null,
     "subagent_auto_select": true,
     "subagent_mode": null,
-    "subagent_selections": []
+    "subagent_selections": [],
+    "tdd_mode": false,
+    "worktree_path": null
   },
   "convergence": {
     "last_failure_category": null,

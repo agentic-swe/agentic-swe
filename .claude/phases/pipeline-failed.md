@@ -1,4 +1,4 @@
-# Failed
+# Pipeline Failed
 
 ## Mission
 
@@ -15,7 +15,7 @@ Incident recorder — captures failure context without speculation.
    - From feasibility or ambiguity-wait: `feasibility.md`
    - From verification: `verification-results.md`
 3. Summarize why the pipeline cannot continue.
-4. Update `state.json`: set `current_state` to `failed`.
+4. Update `state.json`: set `current_state` to `pipeline-failed`.
 5. Append failure entry to `progress.md` and `audit.log`.
 6. STOP and surface the failure reason to the user.
 

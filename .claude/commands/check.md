@@ -24,8 +24,10 @@ Read the active `.claude/.work/<id>/state.json` and check:
    - `counters.code_iter` must be ≤ 5
    - `counters.merge_iter` must be ≤ 2
    - `counters.approval_iter` must be ≤ 3
+   - `counters.self_review_iter` must be ≤ 1
+   - `counters.test_adequacy_iter` must be ≤ 1
 
-**Output:** iteration budget `<remaining>/<total>`, cost budget `$<used>/$<total>`, loop counters `fast=<n>/2, design=<n>/3, code=<n>/5, merge=<n>/2, approval=<n>/3`, verdict: `PROCEED` or `STOP`.
+**Output:** iteration budget `<remaining>/<total>`, cost budget `$<used>/$<total>`, loop counters `fast=<n>/2, design=<n>/3, code=<n>/5, merge=<n>/2, approval=<n>/3, self_review=<n>/1, test_adequacy=<n>/1`, verdict: `PROCEED` or `STOP`.
 
 If any budget or counter is exhausted, output a clear **STOP** directive naming the exhausted resource.
 

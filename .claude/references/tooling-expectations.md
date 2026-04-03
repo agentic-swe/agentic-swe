@@ -10,7 +10,7 @@ Use this when implementation or permissions touches **external systems**, **MCP*
 | Structured repo overview | `/repo-scan` (read-only) |
 | Issue tracker, docs site, APIs | MCP servers configured for the workspace |
 | Package install, build, test, lint | Terminal with repo’s documented commands |
-| Git operations | Git / `gh` per `.claude/agents/git-ops.md` |
+| Git operations | Git / `gh` per `.claude/agents/git-operations-agent.md` |
 
 ## MCP
 

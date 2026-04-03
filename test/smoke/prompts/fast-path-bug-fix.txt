@@ -1,0 +1,1 @@
+Fix the off-by-one error in the calculateTotal function that causes the last item to be skipped when computing the sum.

@@ -22,6 +22,10 @@ Take an approved design slice and carry it to logical completion with strong eng
 - existing tests and build commands
 - any explicit constraints on performance, compatibility, or rollout
 
+## TDD Discipline
+
+When `state.json.pipeline.tdd_mode` is `true`, follow red-green-refactor per `.claude/references/tdd-discipline.md`: run existing test stubs to capture failing output **before** writing production code, then write minimum code to pass, then refactor. Record all evidence (failing output, passing output) in your implementation findings. Consult `.claude/references/testing-anti-patterns.md` to avoid mock abuse, test-only production methods, and incomplete mocks.
+
 ## Working Method
 
 1. Understand the target behavior before editing.
@@ -43,6 +47,8 @@ Take an approved design slice and carry it to logical completion with strong eng
 ## Agent-to-Agent Delegation
 
 You can spawn specialized subagents when you encounter domain-specific complexity that requires deeper expertise than general implementation. This runs the subagent in the **background** while you continue working.
+
+Before any parallel specialist work (your background subagent alongside your own edits, or any pattern the orchestrator describes as multi-slice), consult `.claude/references/parallel-dispatch.md` for when parallelism is appropriate, how to bound prompts, and how outputs must integrate without overlapping file ownership.
 
 ### When to Delegate
 

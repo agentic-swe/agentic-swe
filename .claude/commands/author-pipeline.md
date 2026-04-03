@@ -1,0 +1,30 @@
+# /author-pipeline
+
+Extend or modify the **agentic-swe** workflow pack (phases, commands, agents, templates, references) while keeping the pipeline consistent.
+
+## Prompt
+
+You are running `/author-pipeline`.
+
+**Goal:** Apply a structured change to `.claude/` (and root `CLAUDE.md` when the state machine changes) with tests passing and documentation updated.
+
+### Before editing
+
+1. Read `.claude/references/authoring-pipeline-capabilities.md` for command vs phase vs reference rules.
+2. If adding a **phase** or **state**, read the current state machine in root `CLAUDE.md` end-to-end.
+
+### Checklist (execute in order)
+
+1. **Scope** — State what the user wants: new command, new phase/state, new reference, new subagent, or doc-only fix.
+2. **Design the change** — List files to create/modify; if state machine changes, list new transitions and required artifacts.
+3. **Implement** — Create or edit markdown under `.claude/`; use `.claude/templates/new-phase-stub.md` for new phases.
+4. **Update policy** — If states changed: update `CLAUDE.md` (diagram, transition block, Required Artifacts table, Utility Skills if needed).
+5. **Update discovery** — Add new slash commands to `README.md` Key Commands; link new references from relevant phases.
+6. **Verify** — Run `npm test` from the **agentic-swe** package root (or the repo hosting the pack). Fix `claude-md-consistency`, `phase-structure`, or `references-integrity` failures.
+7. **Summarize** — Tell the user which files changed and any follow-up (e.g. publish new npm version).
+
+### Constraints
+
+- Do not duplicate external workflow packs verbatim; adapt ideas into this structure (see project Cursor rules).
+- Do not skip `CLAUDE.md` updates when adding or renaming pipeline states.
+- Prefer small, reviewable diffs over sweeping rewrites.

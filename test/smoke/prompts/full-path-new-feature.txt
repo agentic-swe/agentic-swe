@@ -1,0 +1,1 @@
+Build a new user authentication system with JWT tokens, including login, registration, password reset, and session management endpoints.

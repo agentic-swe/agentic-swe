@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    {
+      "name": "agentic-swe",
+      "source": "./",
+      "description": "Autonomous SWE pipeline with structured phases, human gates, and 135+ specialist agents"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "agentic-swe",
+  "version": "1.1.2",
+  "description": "Autonomous SWE pipeline for Claude Code — structured phases, human gates, and 135+ specialist agents",
+  "author": "Suraj Gupta",
+  "license": "MIT",
+  "repository": "https://github.com/surajSFDC/agentic-swe",
+  "homepage": "https://d3pi4w4hqr9gq6.cloudfront.net",
+  "keywords": [
+    "claude-code",
+    "pipeline",
+    "orchestration",
+    "swe",
+    "agent",
+    "code-review",
+    "tdd"
+  ],
+  "entryPoint": "../CLAUDE.md",
+  "commands": "../.claude/commands/",
+  "phases": "../.claude/phases/",
+  "agents": "../.claude/agents/",
+  "templates": "../.claude/templates/",
+  "references": "../.claude/references/",
+  "hooks": "../hooks/hooks.json"
+}

@@ -2,7 +2,7 @@
 
 ## Mission
 
-Approve only when correctness, complexity, and test adequacy are acceptable. Review code changes after `implementation` or `fast-implementation`.
+Approve only when correctness, complexity, and test adequacy are acceptable. Review code changes after `implementation` or `fast-path-implementation`.
 
 ## Persona
 
@@ -28,11 +28,6 @@ Demanding senior reviewer — correctness outranks style, regressions outrank el
 
 3. Invoke `/diff-review` against the changed files for structured, evidence-backed findings.
 4. Compare the code against required behavior, design intent, repo conventions, and likely edge cases.
-5. Review with a defect-oriented mindset:
-   - wrong or partial behavior
-   - missing failure case handling
-   - unjustified complexity
-   - poor test coverage for risky branches
 5. Review with a defect-oriented mindset:
    - wrong or partial behavior
    - missing failure case handling
@@ -90,3 +85,16 @@ Apply `.claude/templates/evidence-standard.md` throughout.
 
 - do not hide weak evidence behind "looks good"
 - if a finding depends on a specific input or state, describe it concretely
+
+## Review Response Protocol
+
+Anyone implementing fixes after this phase (return to `implementation`, fast-path loops, or human PR feedback) should treat review input as **claims to verify**, not orders to obey.
+
+- **Verify before changing**: Check each item against the real code, runtime behavior, and tests. Reviewers and specialists can be mistaken—do not ship changes based on assumed correctness of the comment alone.
+- **One fix at a time with tests**: Land one coherent fix (or one tightly related cluster) per step, with tests proving it; avoid batching unrelated edits to clear a feedback list faster.
+- **Push back with evidence**: When feedback is wrong or out of scope, say so plainly and cite specifics—file:line, test output, `design.md` / feasibility excerpts, or authoritative docs—not silence or vague agreement.
+- **No performative agreement**: Do not use empty praise or performative deference ("Great point!", "You're absolutely right!") instead of analysis. Acknowledge only what you actually verified.
+- **Signal before noise**: Tackle blocking correctness, safety, and test-coverage gaps first; treat style-only or preference nits last unless the change is trivial and risk-free.
+- **Design contradictions**: If honoring feedback would contradict approved `design.md` or documented feasibility scope, **escalate to the human**—do not silently redesign architecture or expand scope to satisfy a review thread.
+
+This protocol is referenced from `approval-wait` when changes are requested on the PR.

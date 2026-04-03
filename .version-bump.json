@@ -1,0 +1,25 @@
+{
+  "description": "Files containing version strings that must stay synchronized",
+  "files": [
+    {
+      "path": "package.json",
+      "field": "version",
+      "format": "json"
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "field": "version",
+      "format": "json"
+    },
+    {
+      "path": ".cursor-plugin/plugin.json",
+      "field": "version",
+      "format": "json"
+    },
+    {
+      "path": "gemini-extension.json",
+      "field": "version",
+      "format": "json"
+    }
+  ]
+}

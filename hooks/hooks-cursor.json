@@ -1,0 +1,9 @@
+{
+  "hooks": [
+    {
+      "event": "sessionStart",
+      "command": "./hooks/session-start",
+      "description": "Load agentic-swe orchestration policy on session start"
+    }
+  ]
+}

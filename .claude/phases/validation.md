@@ -14,7 +14,7 @@ Release gatekeeper — trusts execution evidence over reasoning, classifies fail
    - Check that `implementation.md` contains test evidence (command + output + result).
    - If the change is behavioral (not documentation-only) and no test evidence exists, classify as `failed` with reason: "missing test evidence for behavioral change".
 
-1. Run the strongest available integrated checks:
+1. Run the strongest available integrated checks per `.claude/references/verification-standard.md` — every claim in the resulting artifact must map to captured executable evidence (command, output, exit code). Hedging language in conclusions is not acceptable; if a check cannot be run, state that explicitly instead.
    - Invoke `/test-runner` for test execution
    - Invoke `/lint` for lint and format checks
    - Run build and typecheck commands directly
@@ -35,6 +35,8 @@ When classification is `failed`, append a structured entry to `.claude/.work/<id
 - **What failed**: which checks failed and exact output
 - **Root cause**: hypothesis for why the failure occurred
 - **Strategy change**: what the implementation should change to address the failure
+
+Before retrying or returning to implementation, consult `.claude/references/debugging-playbook.md` for systematic root-cause analysis. Reproduce the failure, trace data flow, and form a single hypothesis before attempting a fix. Do not retry blindly.
 
 ## Inputs
 

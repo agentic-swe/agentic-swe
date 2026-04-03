@@ -1,0 +1,10 @@
+{
+  "name": "agentic-swe",
+  "version": "1.1.2",
+  "description": "Autonomous SWE pipeline — structured phases, human gates, and 135+ specialist agents",
+  "author": "Suraj Gupta",
+  "license": "MIT",
+  "commands": "../.claude/commands/",
+  "agents": "../.claude/agents/",
+  "hooks": "../hooks/hooks-cursor.json"
+}
