@@ -49,11 +49,15 @@ The pipeline runs a **state machine** that routes tasks through analysis, design
              ┌─────────────────────────────────────────────────────┐
 initialized -> feasibility -> lean-track-check -> lean-track-implementation -> validation -> pr-creation -> completed
                                     |
-                                    v  rigorous track (complex tasks)
-                              design -> design-review -> verification -> test-strategy ->
-                              implementation -> self-review -> code-review ->
-                              permissions-check -> validation -> pr-creation -> completed
+                    ┌───────────────┴────────────────┐
+                    v                                v
+         standard track (medium)          rigorous track (complex)
+    design -> verification -> test ->     design -> design-review -> verification ->
+    implementation -> self-review ->      test-strategy -> implementation -> self-review ->
+    validation -> pr-creation -> ...      code-review -> permissions-check -> validation -> ...
 ```
+
+**Standard track** skips the design panel, `design-review`, `code-review`, and `permissions-check` (see `CLAUDE.md` for exact allowed transitions and `pipeline.track`).
 
 Human gates stop the pipeline at `ambiguity-wait`, `approval-wait`, and escalation states.
 
@@ -81,7 +85,7 @@ Example tasks and the routes they follow (see the **state machine** diagram abov
 
 | Command | What it does |
 |---------|-------------|
-| `/work <task>` | Start a new task (auto-routes lean or rigorous track) |
+| `/work <task>` | Start a new task (auto-routes lean, standard, or rigorous track) |
 | `/work <id>` | Resume paused work |
 | `/plan-only <task>` | Analyze and design without implementing |
 | `/brainstorm` | Design-first exploration (design phase + optional visual server) |
@@ -194,13 +198,14 @@ agentic-swe/
 ├── PRO.md                 # Pro / commercial offers (stub)
 └── .claude/               # All pipeline files (same structure when installed)
     ├── commands/          # Slash commands (/work, /brainstorm, /execute-plan, …)
-    ├── phases/            # 18 phase prompts + subagent-selection policy
+    ├── phases/            # Phase prompts (one per pipeline state) + subagent-selection policy
     ├── agents/            # Core agents + 135 subagents
     │   ├── developer-agent.md
     │   ├── git-operations-agent.md
     │   ├── pr-manager-agent.md
     │   ├── panel/         # Design review panel (3 agents)
     │   └── subagents/     # 10 category directories
+    ├── state-machine.json # Canonical transition edges (must match CLAUDE.md diagram)
     ├── templates/         # State schema, evidence standard, artifact format
     ├── tools/             # Subagent catalog tool
     ├── references/        # Git and PR workflow reference docs
@@ -210,9 +215,11 @@ agentic-swe/
 ## Extending
 
 - **Add a subagent**: Create a `.md` file in `.claude/agents/subagents/<category>/` with frontmatter (`name`, `description`, `tools`, `model`)
-- **Add a phase**: Create `.md` in `.claude/phases/`, add state to `CLAUDE.md`
+- **Add a phase**: Create `.md` in `.claude/phases/`, add the state to `CLAUDE.md` (diagram, Required Artifacts, transitions), and update **`.claude/state-machine.json`** so it matches the fenced transition block (`npm test` includes `state-machine-json`).
 - **Add a core agent**: Create `.md` in `.claude/agents/`, reference in `CLAUDE.md`
 - **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `.claude/templates/state.json`
+- **Inspect work folders**: From the pack/repo root, `npm run summarize-work` (or `node scripts/summarize-work.js --json`)
+- **Migrate old work state**: `node scripts/migrate-work-state.js` then `node scripts/migrate-work-state.js --apply` after major upgrades (see `CHANGELOG.md`)
 
 ## Multi-Platform Support
 

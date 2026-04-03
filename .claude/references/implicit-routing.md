@@ -12,7 +12,8 @@ Hosts differ: some expose a **Skill** tool; agentic-swe uses **`CLAUDE.md`**, **
 | Signals in user message | Suggested first action | Typical path |
 |-------------------------|------------------------|--------------|
 | Bug, regression, typo, “fix”, “broken”, single file | `/work <task>` | feasibility → lean-track-check → lean-track-implementation |
-| “New feature”, “add auth”, “redesign”, multiple modules, unclear architecture | `/work <task>` | feasibility → design → … |
+| “New feature”, “add auth”, “redesign”, multiple modules, unclear architecture | `/work <task>` | feasibility → lean-track-check → rigorous or standard track (see `CLAUDE.md`) |
+| Medium scope, “skip heavy review”, internal tool with tests | `/work <task>` | lean-track-check may yield **standard** track (design + impl, lighter gates) |
 | “Design only”, “spec”, “no code yet”, exploration | `/plan-only` or `/brainstorm` | feasibility → design (plan-only stops per command) |
 | “Follow the plan”, “execute plan”, plan artifact exists | `/execute-plan` (same work id) | implementation or lean-track-implementation |
 | “Improve the plan”, “break down tasks” | `/write-plan` | refine `implementation.md` artifact |

@@ -16,6 +16,10 @@ Re-run the same install command against the project; it refreshes `.claude/` and
 
 Read `/check budget` and the work item’s `state.json` under `.claude/.work/<id>/`. See [check-commands.md](check-commands.md) for enforcement commands.
 
+## Work state looks wrong after upgrading the pack (missing `pipeline.track`, bad transitions)
+
+Major releases may change `state.json` shape or the state machine. From the **installed** `agentic-swe` package (or this repo), run **`node scripts/migrate-work-state.js`** on your project root (dry-run), then **`node scripts/migrate-work-state.js --apply`** if the diff looks correct. See **`CHANGELOG.md`**. Canonical edges live in **`.claude/state-machine.json`** and must match **`CLAUDE.md`**; use **`npm run summarize-work`** in the pack to list work folders and current states.
+
 ## Claude Code cannot find Node or tools
 
 Agentic SWE does not install Claude Code. Ensure Node 18+, git, and `gh` match [installation.md](installation.md).

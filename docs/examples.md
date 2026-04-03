@@ -11,7 +11,7 @@ A one-file bug fix that goes through the lean track:
 ```
 > /work Fix the off-by-one error in pagination logic in src/api/list.py
 
-Pipeline: initialized -> feasibility -> lean-track-check (lean track) -> lean-track-implementation -> validation -> pr-created
+Pipeline: initialized -> feasibility -> lean-track-check (lean track) -> lean-track-implementation -> validation -> pr-creation
 
 [Pipeline scans the repo, identifies src/api/list.py]
 [Determines this is a simple, single-file fix -- routes to lean track]
@@ -51,7 +51,21 @@ Status: approval-wait
 
 ---
 
-## Example 3: Using a Language Specialist Subagent
+## Example 3: Medium change (standard track)
+
+A scoped feature with tests where the team wants design + implementation but **not** the full design panel or separate code-review phase (orchestrator sets `pipeline.track` to `standard` at `lean-track-check` when the verdict is `standard`):
+
+```
+> /work Add an internal CSV export endpoint with unit tests; use standard track / lighter review
+
+Pipeline: initialized -> feasibility -> lean-track-check (standard) -> design -> verification -> test-strategy -> implementation -> self-review -> validation -> ...
+```
+
+See **`CLAUDE.md`** for which transitions are valid per track; do not use `design-review` or `code-review` on standard track unless you intentionally change `pipeline.track` and follow `/check transition`.
+
+---
+
+## Example 4: Using a Language Specialist Subagent
 
 When you need deep language expertise outside the pipeline:
 
@@ -79,7 +93,7 @@ You can also invoke directly without `/subagent`:
 
 ---
 
-## Example 4: Security Audit with Subagents
+## Example 5: Security Audit with Subagents
 
 Run a focused security audit on your authentication system:
 
@@ -108,7 +122,7 @@ For deeper coverage, run multiple auditors in parallel:
 
 ---
 
-## Example 5: Multi-Agent Code Review
+## Example 6: Multi-Agent Code Review
 
 Get a thorough review from multiple specialist perspectives:
 
@@ -125,7 +139,7 @@ Get a thorough review from multiple specialist perspectives:
 
 ---
 
-## Example 6: Infrastructure Work
+## Example 7: Infrastructure Work
 
 Use infrastructure subagents for DevOps tasks:
 
@@ -151,7 +165,7 @@ Use infrastructure subagents for DevOps tasks:
 
 ---
 
-## Example 7: Planning a Complex Migration
+## Example 8: Planning a Complex Migration
 
 Use plan-only mode to evaluate before committing:
 
@@ -173,7 +187,7 @@ You now have:
 
 ---
 
-## Example 8: Using Subagents for Research
+## Example 9: Using Subagents for Research
 
 ```
 > /subagent invoke competitive-analyst Analyze the top 5 authentication

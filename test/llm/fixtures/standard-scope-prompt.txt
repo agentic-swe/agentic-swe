@@ -1,0 +1,1 @@
+Add a small internal admin CSV export endpoint with unit tests. Skip formal code review if the team agrees — medium risk, two new files.

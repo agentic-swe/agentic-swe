@@ -17,8 +17,8 @@ How to extend **agentic-swe** safely: new phases, commands, agents, templates, a
 
 1. Copy structure from `.claude/templates/new-phase-stub.md` or an existing phase.
 2. Include sections expected by `.claude/templates/artifact-format.md` (Inputs, procedure, evidence, outputs).
-3. Map every **new state name** in `CLAUDE.md`: ASCII diagram, transition block, Required Artifacts row.
-4. Run `npm test` — especially `phase-structure`, `claude-md-consistency`, `references-integrity`.
+3. Map every **new state name** in `CLAUDE.md`: ASCII diagram, transition block, Required Artifacts row, and **`.claude/state-machine.json`** (must match the fenced transition block; `test/state-machine-json.test.js`).
+4. Run `npm test` — especially `state-machine-json`, `phase-structure`, `claude-md-consistency`, `references-integrity`.
 5. If install copies phases, confirm `lib/install.js` / install tree tests still match (no extra config usually).
 
 ## New command checklist

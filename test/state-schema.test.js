@@ -38,6 +38,7 @@ describe('state-schema: state.json template is valid and complete', () => {
     assert.ok('worktree_path' in state.pipeline, 'missing pipeline.worktree_path');
     assert.ok('lean_track_eligible' in state.pipeline, 'missing pipeline.lean_track_eligible');
     assert.ok('lean_track_decision' in state.pipeline, 'missing pipeline.lean_track_decision');
+    assert.ok(Object.prototype.hasOwnProperty.call(state.pipeline, 'track'), 'missing pipeline.track');
   });
 
   it('counters has self_review_iter, test_adequacy_iter, and lean_iter', () => {

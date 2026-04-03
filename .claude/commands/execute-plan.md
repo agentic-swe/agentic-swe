@@ -16,14 +16,14 @@ You are running `/execute-plan` for: `$ARGUMENTS`
 
 ### Instructions
 
-1. Read `CLAUDE.md` and determine whether the work item is on the **lean track** or **rigorous track** from `state.json` / `lean-track-check` outcomes.
+1. Read `CLAUDE.md` and read **`pipeline.track`** (`lean` | `standard` | `rigorous`) and `lean-track-check` outcomes. If `track` is unset on an older work item, treat as **`rigorous`** for transition rules.
 
-2. Transition to **`lean-track-implementation`** or **`implementation`** as allowed by the state machine. If the current state is earlier (e.g. `test-strategy`), complete required intermediate transitions with artifacts — do not skip states.
+2. Transition to **`lean-track-implementation`** or **`implementation`** as allowed by the state machine and active track. If the current state is earlier (e.g. `test-strategy`), complete required intermediate transitions with artifacts — do not skip states.
 
 3. Execute **`.claude/phases/lean-track-implementation.md`** or **`.claude/phases/implementation.md`** as appropriate. Delegate to **`.claude/agents/developer-agent.md`** with explicit scope from the plan (and `worktree_path` if set).
 
 4. Follow **TDD / verification** flags in `state.json.pipeline` (`tdd_mode`, etc.) and references wired in those phases.
 
-5. Continue the operating loop (self-review, code-review, validation, …) per `CLAUDE.md` — this command **starts or resumes execution**; it does not bypass gates.
+5. Continue the operating loop per `CLAUDE.md` — for **standard** track after `self-review`, go to **`validation`** (not `code-review`). For **rigorous** track, use self-review → code-review → permissions-check → validation. This command **starts or resumes execution**; it does not bypass gates.
 
 6. Update `progress.md` and `audit.log`.

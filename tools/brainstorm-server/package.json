@@ -13,6 +13,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "chokidar": "^4.0.3",
     "ws": "^8.18.0"
   }
 }

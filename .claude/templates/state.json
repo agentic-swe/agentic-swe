@@ -86,6 +86,7 @@
     "merge_strategy": null
   },
   "pipeline": {
+    "track": null,
     "complexity_score": null,
     "lean_track_eligible": false,
     "lean_track_decision": null,

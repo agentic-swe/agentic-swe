@@ -12,11 +12,12 @@ the policies, phase prompts, and templates under `.claude/`.
 ### State Machine (abbreviated)
 
 ```
-initialized → feasibility → lean-track-check → [lean-track | rigorous-track] → validation → pr-creation → approval-wait → completed
+initialized → feasibility → lean-track-check → branch by pipeline.track → … → validation → pr-creation → approval-wait → completed
 ```
 
-- **Lean track** (low-risk): skips design and code review
-- **Rigorous track** (complex): includes design, design-review, test-strategy, implementation, self-review, code-review, and permissions-check
+- **Lean track** (`pipeline.track`: `lean`): skips full design flow; uses `lean-track-implementation`
+- **Standard track** (`standard`): design + verification + test-strategy + implementation + self-review → validation; skips design panel, `design-review`, `code-review`, and `permissions-check`
+- **Rigorous track** (`rigorous`): full governance — design, design-review, verification, test-strategy, implementation, self-review, code-review, permissions-check
 - **Human gates**: ambiguity-wait, approval-wait, and escalation states
 
 ### Available Commands

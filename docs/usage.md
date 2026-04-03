@@ -60,14 +60,14 @@ The pipeline decides whether to use the **lean track** (simple, low-risk changes
 **Lean track** (typically 3-5 minutes):
 
 ```
-initialized -> feasibility -> lean-track-check -> lean-track-implementation -> validation -> pr-created -> approval-wait -> completed
+initialized -> feasibility -> lean-track-check -> lean-track-implementation -> validation -> pr-creation -> approval-wait -> completed
 ```
 
 **Rigorous track** (typically 10-30 minutes):
 
 ```
 initialized -> feasibility -> lean-track-check -> design -> design-review -> verification -> test ->
-implementation -> self-review -> code-review -> permissions -> validation -> pr-created -> approval-wait -> completed
+implementation -> self-review -> code-review -> permissions-check -> validation -> pr-creation -> approval-wait -> completed
 ```
 
 To resume paused work:

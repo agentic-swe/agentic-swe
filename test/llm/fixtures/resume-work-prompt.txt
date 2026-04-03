@@ -1,0 +1,1 @@
+Resume work item w-abc123 and tell me the next pipeline phase from state.json.

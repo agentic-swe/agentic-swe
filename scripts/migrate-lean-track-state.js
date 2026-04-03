@@ -7,6 +7,8 @@
  *   node scripts/migrate-lean-track-state.js --apply   # rewrite state.json + rename artifacts
  *
  * Scans each subdirectory of `.claude/.work/` under the current working directory (typically repo root).
+ *
+ * Prefer **`scripts/migrate-work-state.js`** as the stable entrypoint; it delegates here today.
  */
 'use strict';
 
@@ -29,6 +31,11 @@ function migrateStateJson(obj, dryRun, workDir, log) {
   }
 
   if (obj.pipeline && typeof obj.pipeline === 'object') {
+    if (!Object.prototype.hasOwnProperty.call(obj.pipeline, 'track')) {
+      log('  pipeline.track absent -> set rigorous (legacy work item)');
+      if (!dryRun) obj.pipeline.track = 'rigorous';
+      changed = true;
+    }
     if ('fast_path_eligible' in obj.pipeline) {
       log(`  pipeline.fast_path_eligible -> lean_track_eligible`);
       if (!dryRun) {

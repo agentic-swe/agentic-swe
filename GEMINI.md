@@ -14,12 +14,11 @@ The pipeline moves work through structured states with human gates:
 
 ```
 initialized → feasibility → lean-track-check
-  → [lean-track-implementation | design → design-review → verification → test-strategy → implementation → self-review → code-review → permissions-check]
+  → lean-track-implementation | standard or rigorous branch (see CLAUDE.md)
   → validation → pr-creation → approval-wait → completed
 ```
 
-- **Lean track**: low-risk changes skip design and code review
-- **Rigorous track**: complex changes get design panel, test strategy, and review
+- **Lean / standard / rigorous** tracks are selected at `lean-track-check` (`pipeline.track` in `state.json`). See root `CLAUDE.md` for allowed transitions per track.
 - **Human gates**: ambiguity-wait, approval-wait, escalation states
 
 ## Key Commands

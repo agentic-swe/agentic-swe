@@ -54,12 +54,15 @@ All run state lives in `.claude/.work/<id>/`:
 
 ## State Machine
 
-Two tracks through the pipeline:
+Three **pipeline tracks** (set `pipeline.track` in `state.json` when leaving `lean-track-check`; see verdict in `lean-track-check.md`):
 
-- **Lean track** (low-risk): `initialized → feasibility → lean-track-check → lean-track-implementation → validation → pr-creation → approval-wait → completed`
-- **Rigorous track** (complex): `initialized → feasibility → lean-track-check → design → design-review → verification → test-strategy → implementation → self-review → code-review → permissions-check → validation → pr-creation → approval-wait → completed`
+- **Lean track** (`track`: `lean`, verdict `simple`): `initialized → feasibility → lean-track-check → lean-track-implementation → validation → pr-creation → approval-wait → completed`
+- **Standard track** (`track`: `standard`, verdict `standard`): design and test strategy, but **skips** the design panel, **skips** `design-review`, **skips** `code-review` and `permissions-check`. Path: `… → lean-track-check → design → verification → test-strategy → implementation → self-review → validation → pr-creation → …`
+- **Rigorous track** (`track`: `rigorous`, verdict `complex`): full governance — `… → lean-track-check → design → design-review → verification → test-strategy → implementation → self-review → code-review → permissions-check → validation → pr-creation → …`
 - **Escalation exits**: `escalate-code`, `escalate-validation`, `pipeline-failed`
 - **Human gates**: `ambiguity-wait`, `approval-wait`, and escalation states
+
+**Transition discipline:** The graph below lists all syntactically allowed edges. The orchestrator must take only edges valid for the active `pipeline.track` (see **Track-specific transitions** after the diagram).
 
 ```
 initialized -> feasibility
@@ -67,18 +70,28 @@ feasibility -> ambiguity-wait | lean-track-check | pipeline-failed
 ambiguity-wait -> feasibility | pipeline-failed
 lean-track-check -> lean-track-implementation | design
 lean-track-implementation -> validation | escalate-code
-design -> design-review
+design -> design-review | verification
 design-review -> design | verification
 verification -> test-strategy | design | pipeline-failed
 test-strategy -> implementation
 implementation -> self-review
-self-review -> implementation | code-review
+self-review -> implementation | code-review | validation
 code-review -> implementation | permissions-check | escalate-code
 permissions-check -> validation | escalate-code
 validation -> implementation | pr-creation | escalate-validation
 pr-creation -> approval-wait
 approval-wait -> implementation | completed
 ```
+
+**Track-specific transitions**
+
+| From state | Lean track | Standard track | Rigorous track |
+|------------|------------|----------------|----------------|
+| `lean-track-check` | → `lean-track-implementation` (verdict `simple`) | → `design` (verdict `standard`) | → `design` (verdict `complex`) |
+| `design` | — | → `verification` only (no `design-review`) | → `design-review` only (no direct `verification`) |
+| `self-review` | — (lean uses `lean-track-implementation` path) | → `validation` only | → `code-review` only |
+
+If `pipeline.track` is missing on an older work item, treat it as `rigorous` when interpreting allowed transitions. Invoke `/check transition` before every state change; if the proposed edge is invalid for the active track, **STOP** and fix `track` or the destination state.
 
 ## Required Artifacts By State
 
@@ -315,6 +328,7 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 ## Key Directories
 
 - `.claude/commands/` — Slash commands: `/work`, `/check`, `/plan-only`, `/brainstorm`, `/write-plan`, `/execute-plan`, `/author-pipeline`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`
+- `.claude/state-machine.json` — Canonical transition edges; must match the fenced transition block in this file (validated by `test/state-machine-json.test.js`)
 - `.claude/phases/` — Unified phase prompts (one per pipeline state), plus `.claude/phases/subagent-selection.md` (auto-selection policy)
 - `.claude/agents/` — Specialist agent prompts for bounded delegation
   - `.claude/agents/panel/` — Design panel specialists (architect, security, adversarial)
@@ -332,7 +346,7 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 ## Editing Guidelines
 
 - When modifying phase prompts or agents, follow the evidence standard in `.claude/templates/evidence-standard.md`.
-- The state machine definition in this file (CLAUDE.md) is the sole authority.
+- The state machine definition in this file (CLAUDE.md) is the sole authority. When you change the fenced transition block, update **`.claude/state-machine.json`** to match (validated by `test/state-machine-json.test.js`).
 - `.claude/templates/state.json` defines the canonical schema for all work items. Changes here affect all new runs.
 - To add commands, phases, agents, or references safely, follow `.claude/references/authoring-pipeline-capabilities.md` and use `/author-pipeline` as the guided checklist.
 
@@ -353,3 +367,7 @@ Reusable slash commands that phases and agents invoke for structured, evidence-b
 **Execute an existing plan:** Use `/execute-plan` — moves toward implementation per `state.json` and delegates to the developer agent.
 
 **Evaluate work health:** Use `/evaluate-work` to inspect a work item's state and artifacts.
+
+**Summarize all work folders (read-only):** From the repo root, run **`npm run summarize-work`** (or `node scripts/summarize-work.js --json`) to list `.claude/.work/*/state.json` states and tracks.
+
+**Migrate legacy work state (e.g. after a major pack upgrade):** Run **`node scripts/migrate-work-state.js`** (dry-run) then **`node scripts/migrate-work-state.js --apply`** — see `CHANGELOG.md` for what each migrator covers.

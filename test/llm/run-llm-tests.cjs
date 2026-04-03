@@ -10,16 +10,34 @@ const path = require('path');
 
 const root = path.join(__dirname);
 
+/** @type {{ name: string, file: string, expectAny: string[], expectAll?: string[] }[]} */
 const CASES = [
   {
     name: 'lean-track-prompt',
     file: 'fixtures/lean-track-prompt.txt',
     expectAny: ['feasibility', 'lean-track', 'work', 'pipeline'],
+    expectAll: ['feasibility'],
   },
   {
     name: 'rigorous-track-prompt',
     file: 'fixtures/rigorous-track-prompt.txt',
     expectAny: ['feasibility', 'design', 'implementation', 'pipeline', 'work'],
+    expectAll: ['design'],
+  },
+  {
+    name: 'ambiguous-task',
+    file: 'fixtures/ambiguous-task.txt',
+    expectAny: ['ambiguity', 'clarif', 'feasibility', 'work', '/work', 'plan'],
+  },
+  {
+    name: 'resume-work-prompt',
+    file: 'fixtures/resume-work-prompt.txt',
+    expectAny: ['state', 'work', 'resume', 'feasibility', 'json', 'phase'],
+  },
+  {
+    name: 'standard-scope-prompt',
+    file: 'fixtures/standard-scope-prompt.txt',
+    expectAny: ['standard', 'design', 'lean-track', 'test', 'implementation', 'track', 'feasibility'],
   },
 ];
 
@@ -69,9 +87,18 @@ async function main() {
       continue;
     }
     const haystack = (result.out + result.err).toLowerCase();
-    const ok = c.expectAny.some((s) => haystack.includes(s.toLowerCase()));
-    if (!ok) {
-      console.error(`FAIL ${c.name}: output did not contain any of: ${c.expectAny.join(', ')}`);
+    const anyOk = c.expectAny.some((s) => haystack.includes(s.toLowerCase()));
+    const allOk =
+      !c.expectAll || c.expectAll.every((s) => haystack.includes(s.toLowerCase()));
+    if (!anyOk || !allOk) {
+      if (!anyOk) {
+        console.error(`FAIL ${c.name}: output did not contain any of: ${c.expectAny.join(', ')}`);
+      }
+      if (!allOk) {
+        console.error(
+          `FAIL ${c.name}: expected all of: ${c.expectAll.join(', ')} (substring match)`
+        );
+      }
       console.error('--- stdout/stderr excerpt ---\n', (result.out + result.err).slice(0, 2000));
       failed++;
     } else {

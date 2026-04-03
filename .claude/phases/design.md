@@ -26,9 +26,10 @@ Experienced software architect — optimizes for correctness, simplicity, and im
 
 ### Panel Review
 
-7. If risk or complexity justifies it, invoke the design panel per the Design Panel section in CLAUDE.md. Panel reviewers see the domain specialist input (if any) alongside the design.
-8. Integrate panel feedback into the design.
-9. When design review finds issues, revise within the allowed budget.
+7. If `state.json.pipeline.track` is **`standard`**, **do not** spawn the design panel (architect / security / adversarial) unless the user explicitly asks for it in this session. Still complete `design.md` with the same quality bar and refinement checklist below; transition to **`verification`** when done (standard track skips `design-review`).
+8. If `pipeline.track` is **`rigorous`** (or unset, treated as rigorous per CLAUDE.md) and risk or complexity justifies it, invoke the design panel per the Design Panel section in CLAUDE.md. Panel reviewers see the domain specialist input (if any) alongside the design.
+9. Integrate panel feedback into the design when a panel was run.
+10. When design review finds issues, revise within the allowed budget.
 
 ## Inputs
 
@@ -61,7 +62,7 @@ Before presenting the design, run the checklist in `.claude/templates/spec-self-
 
 When layout, spatial structure, or iterative UI exploration would help the human decide faster, offer a **local visual companion**:
 
-1. From the repo root, run `tools/brainstorm-server/start-server.sh` (or `cd tools/brainstorm-server && npm install && npm start`). Default URL: `http://127.0.0.1:47821` — WebSocket at `/ws`.
+1. From the repo root, run `tools/brainstorm-server/start-server.sh` (or `cd tools/brainstorm-server && npm install && npm start`). Default URL: `http://127.0.0.1:47821` — WebSocket at `/ws`. Optional: set **`BRAINSTORM_WATCH_DIR`** to a folder so the server pushes **`file-change`** events over the socket when files update (see `tools/brainstorm-server/README.md`).
 2. Tell the human the URL. They can use the page to send short **companion** notes; you can also connect tooling to `ws://127.0.0.1:<port>/ws` with JSON messages `{ "type": "companion", "message": "..." }` and `{ "type": "ping" }` for health checks.
 3. **Stop** the server when the design session ends: `tools/brainstorm-server/stop-server.sh` or Ctrl+C. Do not leave it running unattended.
 4. Security: server binds to **127.0.0.1** only. See `tools/brainstorm-server/README.md` for protocol details.

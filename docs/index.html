@@ -257,6 +257,7 @@
     }
 
     .pipeline-path-label.fast { color: var(--cyan); }
+    .pipeline-path-label.medium { color: #eab308; }
     .pipeline-path-label.full { color: var(--violet); }
 
     .pipeline-nodes {
@@ -565,8 +566,8 @@
   <section id="pipeline" class="pipeline-section">
     <div class="reveal">
       <div class="section-label">// how it works</div>
-      <h2>Two paths, one pipeline</h2>
-      <p class="section-desc" style="margin-left:auto;margin-right:auto;">Every task is analyzed and routed. Simple fixes take the lean track. Complex features get full design review, testing, and multi-agent code review.</p>
+      <h2>Three tracks, one pipeline</h2>
+      <p class="section-desc" style="margin-left:auto;margin-right:auto;">After feasibility, <code style="font-size:0.9em;">lean-track-check</code> sets <code style="font-size:0.9em;">pipeline.track</code> in work state: <strong>lean</strong> (minimal), <strong>standard</strong> (design + tests, lighter review), or <strong>rigorous</strong> (full panel, code review, permissions). See <code style="font-size:0.9em;">CLAUDE.md</code> for the canonical graph.</p>
     </div>
 
     <div class="pipeline-viz reveal">
@@ -581,7 +582,33 @@
           <span class="p-arrow">&rarr;</span>
           <span class="p-node">validation</span>
           <span class="p-arrow">&rarr;</span>
-          <span class="p-node">pr-created</span>
+          <span class="p-node">pr-creation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node human">approval-wait</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">completed</span>
+        </div>
+      </div>
+      <div class="pipeline-path">
+        <div class="pipeline-path-label medium">Standard track &mdash; medium tasks</div>
+        <div class="pipeline-nodes">
+          <span class="p-node">feasibility</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">lean-track-check</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">design</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">verification</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">test-strategy</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">implementation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">self-review</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">validation</span>
+          <span class="p-arrow">&rarr;</span>
+          <span class="p-node">pr-creation</span>
           <span class="p-arrow">&rarr;</span>
           <span class="p-node human">approval-wait</span>
           <span class="p-arrow">&rarr;</span>
@@ -593,13 +620,15 @@
         <div class="pipeline-nodes">
           <span class="p-node">feasibility</span>
           <span class="p-arrow">&rarr;</span>
+          <span class="p-node">lean-track-check</span>
+          <span class="p-arrow">&rarr;</span>
           <span class="p-node">design</span>
           <span class="p-arrow">&rarr;</span>
           <span class="p-node human">design-review</span>
           <span class="p-arrow">&rarr;</span>
           <span class="p-node">verification</span>
           <span class="p-arrow">&rarr;</span>
-          <span class="p-node">test</span>
+          <span class="p-node">test-strategy</span>
           <span class="p-arrow">&rarr;</span>
           <span class="p-node">implementation</span>
           <span class="p-arrow">&rarr;</span>
@@ -607,11 +636,11 @@
           <span class="p-arrow">&rarr;</span>
           <span class="p-node">code-review</span>
           <span class="p-arrow">&rarr;</span>
-          <span class="p-node">permissions</span>
+          <span class="p-node">permissions-check</span>
           <span class="p-arrow">&rarr;</span>
           <span class="p-node">validation</span>
           <span class="p-arrow">&rarr;</span>
-          <span class="p-node">pr-created</span>
+          <span class="p-node">pr-creation</span>
           <span class="p-arrow">&rarr;</span>
           <span class="p-node human">approval-wait</span>
           <span class="p-arrow">&rarr;</span>
@@ -621,6 +650,7 @@
     </div>
     <p class="pipeline-note reveal">
       <span style="color:#f59e0b;">&#9632;</span> Human gates stop the pipeline for your review. Nothing ships without approval.
+      <br><span style="color:var(--cyan);">&#9632;</span> Transition edges are also listed in <code style="font-size:0.85em;">.claude/state-machine.json</code> (kept in sync with <code style="font-size:0.85em;">CLAUDE.md</code>).
     </p>
   </section>
 
@@ -658,8 +688,8 @@
       </div>
       <div class="feature-card reveal">
         <div class="feature-icon amber">&#9889;</div>
-        <h3>Lean track routing</h3>
-        <p>Simple tasks skip design review and go straight to implementation. The pipeline adapts to task complexity automatically.</p>
+        <h3>Track-aware routing</h3>
+        <p>Lean, standard, and rigorous tracks share one state machine; <code style="font-size:0.85em;">lean-track-check</code> records <code style="font-size:0.85em;">pipeline.track</code> so phases and budgets match risk.</p>
       </div>
     </div>
   </section>
@@ -729,7 +759,7 @@
       <h2>Key commands</h2>
     </div>
     <div class="commands-list reveal">
-      <div class="cmd-row"><span class="cmd-name">/work &lt;task&gt;</span><span class="cmd-desc">Start a new task — auto-routes lean or rigorous track</span></div>
+      <div class="cmd-row"><span class="cmd-name">/work &lt;task&gt;</span><span class="cmd-desc">Start a new task — auto-routes lean, standard, or rigorous track</span></div>
       <div class="cmd-row"><span class="cmd-name">/work &lt;id&gt;</span><span class="cmd-desc">Resume paused work by ID</span></div>
       <div class="cmd-row"><span class="cmd-name">/plan-only &lt;task&gt;</span><span class="cmd-desc">Analyze and design without implementing</span></div>
       <div class="cmd-row"><span class="cmd-name">/subagent</span><span class="cmd-desc">Browse 135+ specialized subagents</span></div>

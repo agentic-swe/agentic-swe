@@ -252,6 +252,12 @@ Core agents (`developer-agent.md`, panel agents) can spawn subagents themselves 
 - Design: up to 1 domain specialist as pre-design input (foreground, focused scope)
 - Developer-agent.md can use agent-to-agent delegation (1 spawn max)
 
+### Standard track (`pipeline.track` is `standard`)
+
+- **Design**: optional domain pre-design input (same as rigorous) if budget allows; **no** design panel (architect / security / adversarial) unless the user explicitly requests it in-session.
+- **Implementation**: same advisory subagent rules as **rigorous** (language + domain background) — standard track still runs `implementation` and `self-review`; it **does not** run `code-review` or `permissions-check`.
+- **No** parallel review specialists at a dedicated code-review phase (that phase is skipped).
+
 ---
 
 ## Budget Constraints

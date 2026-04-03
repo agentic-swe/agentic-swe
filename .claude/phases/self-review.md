@@ -20,7 +20,7 @@ The developer's inner critic — assumes at least one meaningful deficiency exis
 3. Build a traceability matrix: for each acceptance criterion in `design.md` → identify implementing code (file:line) + verifying test.
 4. Apply verdict rule:
    - Any dimension scored 1 **or** any acceptance criterion untraced → verdict `rework`. Return to `implementation` with specific guidance on what to fix.
-   - All dimensions 2+ **and** traceability complete → verdict `pass`. Proceed to `code-review`.
+   - All dimensions 2+ **and** traceability complete → verdict `pass`. Proceed to **`code-review`** when `pipeline.track` is **`rigorous`** (or unset, treated as rigorous). Proceed to **`validation`** when `pipeline.track` is **`standard`** (standard track skips code-review and permissions-check). The **lean** track does not use this phase in the same way — it uses `lean-track-implementation` instead.
 5. If `reflection-log.md` exists, verify that each prior reflection entry has been addressed by the current implementation.
 
 ## Inputs
