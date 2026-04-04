@@ -45,7 +45,7 @@
   "scripts": {
     "build:site": "npm run build --prefix site",
     "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('phases');if(!fs.existsSync(r))process.exit(1)\"",
-    "test": "node --test ./test/",
+    "test": "node scripts/run-node-tests.js",
     "test:smoke": "bash test/smoke/run-smoke.sh",
     "test:llm": "node test/llm/run-llm-tests.cjs",
     "ci": "npm run verify && npm run version:check && npm run lint --prefix site && npm run build --prefix site && npm test",

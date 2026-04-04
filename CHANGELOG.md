@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`package.json` `test` script:** use **`node --test ./test/`** so Node **22** treats **`test`** as a directory; bare **`node --test test`** resolves **`test`** as a module path and fails in CI with `MODULE_NOT_FOUND`.
+- **`package.json` `test` script:** delegate to **`scripts/run-node-tests.js`**, which collects **`test/**/*.test.js`** and runs **`node --test <files...>`**. Node **22** can treat **`node --test test`** / **`./test/`** like a module path (`MODULE_NOT_FOUND`); explicit file paths work on **20** and **22**.
 
 ### Changed
 
