@@ -5,13 +5,8 @@
 # Claude Code may create this directory locally (e.g. project settings); keep it out of git.
 /.claude/
 
-# Cursor — ignore local IDE state; keep shared rules committed
-.cursor/*
-!.cursor/rules/
-.cursor/rules/*
-!.cursor/rules/git-identity-personal.mdc
-!.cursor/rules/npm-registry-personal.mdc
-!.cursor/rules/development-branch-workflow.mdc
+# Cursor — local IDE state and personal rules (never commit)
+.cursor/
 
 # OS metadata
 .DS_Store
