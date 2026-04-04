@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`scripts/bump-version.sh`** / **`.version-bump.json`** — marketplace plugin version is included in sync checks and bumps via **`versionSelector`**.
 
+## [3.0.4] - 2026-04-05
+
+### Changed
+
+- **Plugin commands and core agents:** added YAML frontmatter (`name`, `description`, and `model` for agents) so **`claude plugin validate`** completes without frontmatter warnings and discovery metadata matches [Claude plugin agent/command expectations](https://code.claude.com/docs/en/plugins-reference#agents).
+
 ## [3.0.3] - 2026-04-05
 
 ### Fixed

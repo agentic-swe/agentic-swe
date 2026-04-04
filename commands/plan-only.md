@@ -1,3 +1,8 @@
+---
+name: plan-only
+description: "Plan work without implementing; stops after planning stages."
+---
+
 # /plan-only
 
 Plan work without implementing. Stops after the planning stages.

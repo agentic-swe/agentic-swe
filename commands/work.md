@@ -1,3 +1,8 @@
+---
+name: work
+description: "Start a new work item or resume an existing one."
+---
+
 # /work
 
 Start a new work item or resume an existing one.

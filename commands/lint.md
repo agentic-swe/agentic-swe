@@ -1,3 +1,8 @@
+---
+name: lint
+description: "Detect and run the target repo's linters and formatters in check mode with structured reporting."
+---
+
 # /lint
 
 Detect and run the target repository's linter(s) and formatter check(s) with structured result reporting.

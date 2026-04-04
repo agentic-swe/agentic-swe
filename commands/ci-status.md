@@ -1,3 +1,8 @@
+---
+name: ci-status
+description: "Check CI/CD status for a branch or PR with structured reporting."
+---
+
 # /ci-status
 
 Check CI/CD pipeline status for a branch or pull request with structured reporting.

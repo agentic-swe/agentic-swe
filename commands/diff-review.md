@@ -1,3 +1,8 @@
+---
+name: diff-review
+description: "Review code changes against structured criteria with evidence-backed findings."
+---
+
 # /diff-review
 
 Review code changes against structured criteria with evidence-backed findings.

@@ -1,3 +1,8 @@
+---
+name: install
+description: "Plugin-first setup for a target git repository (merge CLAUDE.md, bootstrap .worklogs/)."
+---
+
 # /install
 
 **Plugin-first setup** for a **target git repository** using the agentic-swe Claude Code plugin.

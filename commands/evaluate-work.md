@@ -1,3 +1,8 @@
+---
+name: evaluate-work
+description: "Inspect an existing work item and assess its health."
+---
+
 # /evaluate-work
 
 Inspect an existing work item and assess its health.

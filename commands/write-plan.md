@@ -1,3 +1,8 @@
+---
+name: write-plan
+description: "Produce or refine implementation.md to the plan quality bar (no code)."
+---
+
 # /write-plan
 
 Produce or refine the **implementation plan** inside the `implementation.md` work artifact. The **write-plan** naming matches common assistant workflows; rules follow agentic-swe **plan quality** references.

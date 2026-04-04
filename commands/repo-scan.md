@@ -1,3 +1,8 @@
+---
+name: repo-scan
+description: "Produce a structured snapshot of the target repository for rapid task analysis."
+---
+
 # /repo-scan
 
 Produce a structured snapshot of the target repository for rapid task analysis.

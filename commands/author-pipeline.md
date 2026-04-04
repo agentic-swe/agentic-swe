@@ -1,3 +1,8 @@
+---
+name: author-pipeline
+description: "Extend phases, commands, agents, templates, or references while keeping the pipeline consistent."
+---
+
 # /author-pipeline
 
 Extend or modify the **agentic-swe** workflow pack (phases, commands, agents, templates, references) while keeping the pipeline consistent.

@@ -1,3 +1,8 @@
+---
+name: execute-plan
+description: "Execute the plan in implementation.md via implementation or lean-track-implementation semantics."
+---
+
 # /execute-plan
 
 Execute the implementation plan in **`implementation.md`**. The **execute-plan** naming matches common assistant workflows; semantics are agentic-swe **implementation** / **lean-track-implementation**.

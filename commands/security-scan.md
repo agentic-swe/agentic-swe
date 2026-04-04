@@ -1,3 +1,8 @@
+---
+name: security-scan
+description: "Run baseline security checks on the target repository with structured findings."
+---
+
 # /security-scan
 
 Run baseline security checks against the target repository with structured findings.

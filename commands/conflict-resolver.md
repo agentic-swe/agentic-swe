@@ -1,3 +1,8 @@
+---
+name: conflict-resolver
+description: "Detect, classify, and resolve git merge/rebase conflicts with structured reporting."
+---
+
 # /conflict-resolver
 
 Detect, classify, and resolve git merge/rebase conflicts with structured reporting.

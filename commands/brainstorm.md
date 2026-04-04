@@ -1,3 +1,8 @@
+---
+name: brainstorm
+description: "Design-first exploration aligned with the design phase (optional visual companion, design.md)."
+---
+
 # /brainstorm
 
 Design-first exploration: Socratic refinement, optional visual companion, written `design.md` — aligned with the **design** phase. The `/brainstorm` label is a familiar entry point; behavior follows agentic-swe design-phase semantics.

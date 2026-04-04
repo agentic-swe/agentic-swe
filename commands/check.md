@@ -1,3 +1,8 @@
+---
+name: check
+description: "Enforce budget, transition, and artifact checks (permission-gated)."
+---
+
 # /check
 
 Unified enforcement skill for budget, transition, and artifact validation. Permission-gated — the user sees exactly what is being checked.

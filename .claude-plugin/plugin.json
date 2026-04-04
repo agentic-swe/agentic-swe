@@ -1,6 +1,6 @@
 {
   "name": "agentic-swe",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Autonomous SWE pipeline for Claude Code — Hypervisor policy, structured phases, human gates, and 135+ specialist agents",
   "author": {
     "name": "Suraj Gupta",

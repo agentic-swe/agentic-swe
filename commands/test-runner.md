@@ -1,3 +1,8 @@
+---
+name: test-runner
+description: "Discover and run the target repository's tests with structured result reporting."
+---
+
 # /test-runner
 
 Discover and execute the target repository's test suite with structured result reporting.
