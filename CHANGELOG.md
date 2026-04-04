@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes yet._
 
+## [3.0.5] - 2026-04-05
+
+### Fixed
+
+- **`.claude-plugin/plugin.json`:** removed **`hooks`** pointing at **`./hooks/hooks.json`**. Claude Code **v2.1.92** loads the default **`hooks/hooks.json`** at the plugin root automatically; listing the same path in **`manifest.hooks`** causes **Duplicate hooks file detected** and **`Hook load failed`** (`/doctor`). Use **`manifest.hooks`** only for *additional* hook config files, not the standard path.
+
 ## [3.0.4] - 2026-04-05
 
 ### Changed

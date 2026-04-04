@@ -26,13 +26,13 @@ After this catalog is **pushed to a public GitHub repo** (e.g. `surajSFDC/agenti
 
 1. Ensure [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) has **`name`**, **`owner`**, and **`plugins`** with **`source`: `./`** (repository root = plugin root).
 
-2. **[`plugin.json`](../../.claude-plugin/plugin.json)** should stay **minimal**: metadata only (`name`, `version`, `description`, `author`, `license`, `repository`, `homepage`, `keywords`). **`commands/`** and **`agents/`** at the plugin root are **auto-discovered**; do not list every file unless you intentionally override defaults (listing **replaces** the default directory scan per Claude’s schema).
+2. **[`plugin.json`](../../.claude-plugin/plugin.json)** should stay **minimal**: metadata plus **`mcpServers`** when needed. **`commands/`**, **`agents/`**, and default **`hooks/hooks.json`** at the plugin root are **auto-discovered** — do **not** set **`manifest.hooks`** to **`./hooks/hooks.json`** (Claude **v2.1.92+** treats that as a duplicate and fails hook load; use **`hooks`** in the manifest only for *extra* hook config files).
 
 3. Bump **`version`** in **`plugin.json`** and the plugin entry in **`marketplace.json`** when you cut a release (align with root **`package.json`** when practical).
 
 4. Validate before release: **`claude plugin validate`** (or **`/plugin validate`**) from a checkout.
 
-5. **`hooks`** default to **`hooks/hooks.json`** at the plugin root ([`hooks/hooks.json`](../../hooks/hooks.json)).
+5. Session hooks live in **`hooks/hooks.json`** at the plugin root ([`hooks/hooks.json`](../../hooks/hooks.json)); Claude loads it automatically — no **`hooks`** key in **`plugin.json`** unless you add a second config file.
 
 6. **`phases/`**, **`templates/`**, **`references/`**, **`tools/`**, and **`state-machine.json`** are **not** manifest component keys; policy and phases reference them via **`${CLAUDE_PLUGIN_ROOT}/...`**.
 

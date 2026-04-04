@@ -57,7 +57,11 @@ describe('plugin layout: pipeline dirs at repository root', () => {
       undefined,
       'omit agents — directory paths in agents[] fail validate (agents: Invalid input); default ./agents/ is used',
     );
-    assert.strictEqual(m.hooks, './hooks/hooks.json');
+    assert.strictEqual(
+      m.hooks,
+      undefined,
+      'omit hooks — Claude 2.1.92 loads hooks/hooks.json automatically; manifest.hooks duplicates it (Hook load failed)',
+    );
     assert.strictEqual(m.mcpServers, './mcp-servers.json');
     const mcpPath = path.join(repoRoot, 'mcp-servers.json');
     assert.ok(fs.existsSync(mcpPath), 'missing mcp-servers.json');
