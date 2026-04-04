@@ -11,6 +11,7 @@
 .cursor/rules/*
 !.cursor/rules/git-identity-personal.mdc
 !.cursor/rules/npm-registry-personal.mdc
+!.cursor/rules/development-branch-workflow.mdc
 
 # OS metadata
 .DS_Store

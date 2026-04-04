@@ -1,0 +1,66 @@
+---
+description: Branch workflow — feature/bugfix branches, test before push, PR to main or uat
+alwaysApply: true
+---
+
+# Development workflow (agentic-swe)
+
+Follow this for **any code or config change** in this repository. It matches the protected-branch setup on GitHub (`main`, `uat`) and naming rules for short-lived branches.
+
+## Branches
+
+| Kind | Pattern | Purpose |
+|------|---------|---------|
+| Release | `main` | Production-ready history; **never commit directly** — merge via PR only. |
+| Pre-release / integration | `uat` | Staging / acceptance; **never commit directly** — merge via PR only (typically `main` → `uat` or `feature/*` → `uat` when validating before `main`). |
+| Feature | `feature/<short-kebab-topic>` | New capability or larger change. |
+| Bugfix | `bugfix/<short-kebab-topic>` or `bug-fix/<short-kebab-topic>` | Defect fixes. |
+| Hotfix | `hotfix/<short-kebab-topic>` | Urgent production-oriented fixes (same discipline as feature). |
+| Maintenance | `chore/<short-kebab-topic>` | Tooling, CI, docs-only batches that are not product features. |
+
+Do **not** use generic names like `dev`, `temp`, or owner-prefixed ad-hoc branches unless you are using an allowed prefix above. If GitHub rejects a push, rename the branch to match the convention.
+
+## Session start
+
+1. `git fetch origin` and base your work on **`origin/main`** unless the task explicitly targets **`uat`**.
+2. Create a **new branch** before editing:
+
+   `git checkout -b feature/my-change` (or `bugfix/…`, `chore/…`, etc.).
+
+## Before every push
+
+From the **repository root** (so `.npmrc` applies):
+
+1. **`npm test`** — required.
+2. If you changed anything under **`site/`** or site tooling, also run:
+   - `npm run lint --prefix site`
+   - `npm run build --prefix site`
+
+Fix failures **before** pushing. Do not push to rely on CI to discover broken tests.
+
+## Push and pull request
+
+1. Commit on your feature branch with a clear message (see repo `git-identity-personal` rule for author email).
+2. `git push -u origin <your-branch>`
+3. Open a PR with **`gh`** (or the GitHub UI):
+   - **Default base:** `main`
+   - **Use base `uat`** only when the task is explicitly UAT/staging integration or the user asked to land changes on `uat` first.
+
+   Example:
+
+   `gh pr create --base main --head <your-branch> --title "…" --body "…"`
+
+4. Do **not** merge from the agent unless the user asked you to handle merge/CI gates; the human (or policy) approves after review.
+
+## Quick checklist
+
+- [ ] On a **named** branch (`feature/*`, `bugfix/*`, `bug-fix/*`, `hotfix/*`, or `chore/*`).
+- [ ] **Not** committing directly to `main` or `uat`.
+- [ ] **`npm test`** passed locally (and site lint/build if applicable).
+- [ ] Pushed to `origin` and **PR opened** (or user told you they will open it).
+
+## Relation to other rules
+
+- **Git identity:** `.cursor/rules/git-identity-personal.mdc`
+- **npm registry:** `.cursor/rules/npm-registry-personal.mdc`
+- **Pipeline / work items:** `CLAUDE.md` and `.cursor/rules/session-resume.mdc` when using `.claude/.work/`.
