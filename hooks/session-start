@@ -6,14 +6,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLAUDE_MD="$REPO_ROOT/CLAUDE.md"
-HINT_FILE="$REPO_ROOT/.claude/references/session-routing-hint.md"
+HINT_FILE="$REPO_ROOT/references/session-routing-hint.md"
 
 if [ ! -f "$CLAUDE_MD" ]; then
-  echo '{"error": "CLAUDE.md not found at repo root"}' >&2
+  echo '{"error": "CLAUDE.md not found at plugin root"}' >&2
   exit 1
 fi
 
-BASE="You are running with the agentic-swe pipeline. Follow the Hypervisor policy in CLAUDE.md. Check .claude/.work/ for active work items before starting new work."
+BASE="You are running with the agentic-swe pipeline. Follow the Hypervisor policy in CLAUDE.md. Check .worklogs/ for active work items (read state.json) before starting new work unless the user asks otherwise."
 
 ROUTING=""
 if [ -f "$HINT_FILE" ]; then

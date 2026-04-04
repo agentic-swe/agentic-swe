@@ -6,7 +6,7 @@
  *   node scripts/migrate-lean-track-state.js           # dry-run, print planned changes
  *   node scripts/migrate-lean-track-state.js --apply   # rewrite state.json + rename artifacts
  *
- * Scans each subdirectory of `.claude/.work/` under the current working directory (typically repo root).
+ * Scans each subdirectory of `.worklogs/` (and, for legacy trees, `.claude/.work/`) under cwd.
  *
  * Prefer **`scripts/migrate-work-state.js`** as the stable entrypoint; it delegates here today.
  */
@@ -15,7 +15,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const WORK_ROOT = path.join(process.cwd(), '.claude', '.work');
+const WORK_ROOTS = [
+  path.join(process.cwd(), '.worklogs'),
+  path.join(process.cwd(), '.claude', '.work'),
+];
 
 const STATE_MAP = {
   'fast-path-check': 'lean-track-check',
@@ -88,17 +91,22 @@ function main() {
   const apply = process.argv.includes('--apply');
   const dryRun = !apply;
 
-  if (!fs.existsSync(WORK_ROOT)) {
-    console.log(`No ${WORK_ROOT} — nothing to migrate.`);
+  const existingRoots = WORK_ROOTS.filter((r) => fs.existsSync(r));
+  if (existingRoots.length === 0) {
+    console.log(`No .worklogs/ or .claude/.work/ under ${process.cwd()} — nothing to migrate.`);
     process.exit(0);
   }
 
-  const ids = fs.readdirSync(WORK_ROOT).filter((name) => {
-    const p = path.join(WORK_ROOT, name);
-    return fs.statSync(p).isDirectory();
-  });
+  const workItems = [];
+  for (const root of existingRoots) {
+    for (const name of fs.readdirSync(root)) {
+      const workDir = path.join(root, name);
+      if (!fs.statSync(workDir).isDirectory()) continue;
+      workItems.push({ id: name, workDir });
+    }
+  }
 
-  if (ids.length === 0) {
+  if (workItems.length === 0) {
     console.log('No work directories found.');
     process.exit(0);
   }
@@ -106,8 +114,7 @@ function main() {
   console.log(dryRun ? 'DRY RUN (use --apply to write changes):\n' : 'APPLYING migrations:\n');
 
   let any = false;
-  for (const id of ids) {
-    const workDir = path.join(WORK_ROOT, id);
+  for (const { id, workDir } of workItems) {
     const statePath = path.join(workDir, 'state.json');
     if (!fs.existsSync(statePath)) continue;
 

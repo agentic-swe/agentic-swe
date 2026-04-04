@@ -12,11 +12,11 @@
       "name": "agentic-swe",
       "source": "./",
       "description": "Autonomous SWE pipeline: structured phases, human gates, three tracks (lean / standard / rigorous), 135+ specialist agents.",
-      "version": "2.0.1",
+      "version": "3.0.0",
       "author": {
         "name": "Suraj Gupta"
       },
-      "homepage": "https://d3pi4w4hqr9gq6.cloudfront.net",
+      "homepage": "https://surajSFDC.github.io/agentic-swe/",
       "repository": "https://github.com/surajSFDC/agentic-swe",
       "license": "MIT",
       "keywords": [

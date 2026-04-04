@@ -5,7 +5,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
-const phasesDir = path.join(__dirname, '..', '.claude', 'phases');
+const phasesDir = path.join(__dirname, '..', 'phases');
 
 const EXPECTED_PHASES = [
   'feasibility.md',

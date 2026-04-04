@@ -27,26 +27,21 @@ export function PageShell() {
             &#9776;
           </button>
           <div className={`nav-links${menuOpen ? ' open' : ''}`}>
-            <NavLink to="/documentation" className={navClass} onClick={() => setMenuOpen(false)}>
-              Documentation
+            <NavLink to="/capabilities" className={navClass} onClick={() => setMenuOpen(false)}>
+              Capabilities
+            </NavLink>
+            <NavLink to="/docs/installation" className={navClass} onClick={() => setMenuOpen(false)}>
+              Installation
             </NavLink>
             <NavLink to="/guide" className={navClass} onClick={() => setMenuOpen(false)}>
               Guide
             </NavLink>
+            <NavLink to="/documentation" className={navClass} onClick={() => setMenuOpen(false)}>
+              Documentation
+            </NavLink>
             <NavLink to="/support" className={navClass} onClick={() => setMenuOpen(false)}>
               Support
             </NavLink>
-            <NavLink to="/capabilities" className={navClass} onClick={() => setMenuOpen(false)}>
-              Capabilities
-            </NavLink>
-            <a
-              href="https://www.npmjs.com/package/agentic-swe"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMenuOpen(false)}
-            >
-              npm
-            </a>
             <a
               href="https://github.com/surajSFDC/agentic-swe"
               target="_blank"
@@ -68,12 +63,11 @@ export function PageShell() {
         >
           <p>
             <Link to="/">Home</Link>
-            &nbsp;&middot;&nbsp; <Link to="/documentation">Documentation</Link>
             &nbsp;&middot;&nbsp; <Link to="/capabilities">Capabilities</Link>
-            &nbsp;&middot;&nbsp;
-            <a href="https://www.npmjs.com/package/agentic-swe" target="_blank" rel="noopener noreferrer">
-              npm
-            </a>
+            &nbsp;&middot;&nbsp; <Link to="/docs/installation">Installation</Link>
+            &nbsp;&middot;&nbsp; <Link to="/guide">Guide</Link>
+            &nbsp;&middot;&nbsp; <Link to="/documentation">Documentation</Link>
+            &nbsp;&middot;&nbsp; <Link to="/support">Support</Link>
             &nbsp;&middot;&nbsp;
             <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener noreferrer">
               GitHub
@@ -83,8 +77,8 @@ export function PageShell() {
           </p>
           <p style={{ marginTop: '0.75rem', fontSize: '0.78rem' }}>
             More detail:{' '}
-            <a href="/installation.md">Installation</a> · <a href="/usage.md">Usage</a> ·{' '}
-            <a href="/examples.md">Examples</a> · <a href="/claude-code-plugin.md">Claude Code plugin</a>
+            <Link to="/docs/installation">Installation</Link> · <Link to="/docs/usage">Usage</Link> ·{' '}
+            <Link to="/docs/examples">Examples</Link> · <Link to="/docs/claude-code-plugin">Claude Code plugin</Link>
           </p>
         </motion.footer>
       </div>

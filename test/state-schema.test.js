@@ -5,7 +5,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
-const templatePath = path.join(__dirname, '..', '.claude', 'templates', 'state.json');
+const templatePath = path.join(__dirname, '..', 'templates', 'state.json');
 
 describe('state-schema: state.json template is valid and complete', () => {
   let state;

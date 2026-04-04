@@ -782,6 +782,34 @@ footer a:hover { color: var(--cyan); }
 
 .doc-see-also strong { color: var(--text-heading); }
 
+.doc-breadcrumb {
+  font-size: 0.88rem;
+  margin: -0.35rem 0 1.35rem;
+  color: var(--text);
+  opacity: 0.88;
+}
+
+.doc-breadcrumb a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+
+.doc-breadcrumb a:hover { text-decoration: underline; }
+
+.doc-hub-group {
+  margin-bottom: 2.75rem;
+}
+
+.doc-hub-group-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-heading);
+  margin-bottom: 1rem;
+  opacity: 0.95;
+}
+
 /* ── Single-page guide TOC ── */
 .guide-toc {
   margin: 0 0 2rem;

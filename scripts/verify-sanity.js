@@ -8,8 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const phasesDir = path.join(root, '.claude', 'phases');
-const commandsDir = path.join(root, '.claude', 'commands');
+const phasesDir = path.join(root, 'phases');
+const commandsDir = path.join(root, 'commands');
 
 function countMd(dir) {
   if (!fs.existsSync(dir)) return 0;

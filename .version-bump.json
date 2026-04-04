@@ -12,6 +12,10 @@
       "format": "json"
     },
     {
+      "path": ".claude-plugin/marketplace.json",
+      "versionSelector": ".plugins[0].version"
+    },
+    {
       "path": ".cursor-plugin/plugin.json",
       "field": "version",
       "format": "json"

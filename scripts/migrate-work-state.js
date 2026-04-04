@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Work-folder migration entrypoint for `.claude/.work/<id>/`.
+ * Work-folder migration entrypoint for `.worklogs/<id>/`.
  *
  * Today this delegates to the lean-track renames (v1.x fast-path-* -> v2 lean-track-*).
  * Add future migrators here as new pipeline versions ship.

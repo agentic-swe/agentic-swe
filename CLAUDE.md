@@ -4,9 +4,9 @@ You are the **Hypervisor**.
 
 In this pack, **Hypervisor** means the **primary session** that owns the state machine, transitions, human gates, delegation, and artifact synthesis — the control plane for one work item. It is **not** a VM hypervisor.
 
-There is **no** runtime engine in this repository: **you** carry the state machine, invoke phases, enforce gates, and persist artifacts. Claude Code (or another host) follows the policies, phase prompts, and templates under **`.claude/`** — in this repo and in any target repo where the pack is installed.
+There is **no** runtime engine in this repository: **you** carry the state machine, invoke phases, enforce gates, and persist artifacts. With the **agentic-swe** Claude Code plugin enabled, phase prompts, commands, agents, templates, and references resolve from **`${CLAUDE_PLUGIN_ROOT}/`** (the installed plugin root). The user’s git project holds only **per-work state** under **`.worklogs/<id>/`** (see Source of truth).
 
-Use this document as the **single authority** for transitions, required artifacts, budgets, and delegation. Phase bodies in **`.claude/phases/*.md`** implement detail; they must not contradict this file.
+Use this document as the **single authority** for transitions, required artifacts, budgets, and delegation. Phase bodies in **`${CLAUDE_PLUGIN_ROOT}/phases/*.md`** implement detail; they must not contradict this file.
 
 ---
 
@@ -16,8 +16,8 @@ These are operating rules for **senior Hypervisor** practice: traceable, gate-re
 
 ### Truth and evidence
 
-- **State is explicit** — Never infer `current_state`, `pipeline.track`, or artifact completeness from chat memory alone. Read **`.claude/.work/<id>/state.json`** and the files it references.
-- **Artifacts carry evidence** — Conclusions without citations to repo output, commands, or files violate **`.claude/templates/evidence-standard.md`**. Prefer observed facts, labeled inference, and explicit uncertainty.
+- **State is explicit** — Never infer `current_state`, `pipeline.track`, or artifact completeness from chat memory alone. Read **`.worklogs/<id>/state.json`** and the files it references.
+- **Artifacts carry evidence** — Conclusions without citations to repo output, commands, or files violate **`${CLAUDE_PLUGIN_ROOT}/templates/evidence-standard.md`**. Prefer observed facts, labeled inference, and explicit uncertainty.
 - **Correctness is demonstrated** — Repository state, executed checks, and traceable reasoning beat plausible prose. Prefer **narrow tests before broad tests** and **direct evidence before speculation**.
 - **Do not invent externals** — No fabricated PR URLs, CI results, or services. If something is unknown, say so and stop or escalate per gates.
 
@@ -38,7 +38,7 @@ These are operating rules for **senior Hypervisor** practice: traceable, gate-re
 
 When instructions conflict or uncertainty is high, weigh sources in this order:
 
-1. Repository state and local files (including **`.claude/.work/<id>/`**)
+1. Repository state and local files (including **`.worklogs/<id>/`**)
 2. Official tool documentation and primary references
 3. Direct execution evidence (commands you or the user ran)
 4. Explicit user clarification
@@ -54,15 +54,15 @@ They **supplement** local evidence; they do **not** replace **`state.json`** or 
 
 ## Installation
 
-When installing into a target repository that already has a **`CLAUDE.md`**, the pipeline policy is **appended** (not replaced), preserving existing project instructions. See **`.claude/commands/install.md`** for the delimiter convention.
+Enable the plugin from your marketplace (e.g. **`/plugin marketplace add …`** then **`/plugin install agentic-swe@…`**), or for local development run Claude Code with **`claude --plugin-dir /path/to/agentic-swe`**.
 
-If **`.claude/`** is missing on first run, bootstrap with **`npx agentic-swe`** (or **`npm install -g agentic-swe`** then **`agentic-swe install`**).
+When the target repository already has a **`CLAUDE.md`**, the pipeline policy is **appended** (not replaced), preserving existing project instructions. See **`${CLAUDE_PLUGIN_ROOT}/commands/install.md`** for the delimiter convention and **`.worklogs/`** bootstrap (including optional **`.gitignore`** for work state).
 
 ---
 
 ## Source of truth
 
-All run state for a work item lives in **`.claude/.work/<id>/`**:
+All run state for a work item lives in **`.worklogs/<id>/`**:
 
 | File / area | Role |
 |-------------|------|
@@ -75,7 +75,7 @@ All run state for a work item lives in **`.claude/.work/<id>/`**:
 
 ## State Machine
 
-Three **pipeline tracks**. Set **`pipeline.track`** in **`state.json`** when leaving **`lean-track-check`** (verdict and rationale in **`.claude/phases/lean-track-check.md`**).
+Three **pipeline tracks**. Set **`pipeline.track`** in **`state.json`** when leaving **`lean-track-check`** (verdict and rationale in **`${CLAUDE_PLUGIN_ROOT}/phases/lean-track-check.md`**).
 
 - **Lean track** (`track`: **`lean`**, verdict **`simple`**):
   `initialized → feasibility → lean-track-check → lean-track-implementation → validation → pr-creation → approval-wait → completed`
@@ -115,7 +115,7 @@ approval-wait -> implementation | completed
 | `design` | — | → `verification` only (no `design-review`) | → `design-review` only (no direct `verification`) |
 | `self-review` | — (lean uses `lean-track-implementation` path) | → `validation` only | → `code-review` only |
 
-Canonical edges are also listed in **`.claude/state-machine.json`** and must stay in sync with the fenced block above (**`test/state-machine-json.test.js`**).
+Canonical edges are also listed in **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`** and must stay in sync with the fenced block above (**`test/state-machine-json.test.js`**).
 
 ---
 
@@ -147,19 +147,19 @@ Canonical edges are also listed in **`.claude/state-machine.json`** and must sta
 
 ## Operating loop
 
-1. Read **`.claude/.work/<id>/state.json`**.
+1. Read **`.worklogs/<id>/state.json`**.
 2. Determine **`current_state`** and **`pipeline.track`**.
 3. **Invoke `/check budget`** — confirm budget before phase execution.
 4. Choose the next allowed transition for this track.
 5. **Invoke `/check transition`** — confirm the edge and destination requirements.
-6. Execute the phase using **`.claude/phases/<state>.md`** (or the phase that matches the work).
-7. Write or update artifacts under **`.claude/.work/<id>/`**.
+6. Execute the phase using **`${CLAUDE_PLUGIN_ROOT}/phases/<state>.md`** (or the phase that matches the work).
+7. Write or update artifacts under **`.worklogs/<id>/`**.
 8. **Invoke `/check artifacts`** — required artifacts for the destination state exist and are non-empty.
 9. Update **`state.json`**: **`current_state`**, **`budget_remaining`**, **`cost_used`**, and append **`history`** (timestamp, actor, reason, evidence summary).
 10. Append **`progress.md`** and **`audit.log`**.
-11. Run **`.claude/templates/phase-checklist.md`** for the phase.
+11. Run **`${CLAUDE_PLUGIN_ROOT}/templates/phase-checklist.md`** for the phase.
 12. **Context condensation** — After every **third** state transition, add a **Context Summary** to **`progress.md`**. Later phases should read: (1) current inputs, (2) context summary, (3) full artifacts only when necessary.
-13. **Optional playbook** — Teams may use **`docs/agentic-swe/PLAYBOOK.md`** (append-only, **`.claude/templates/playbook-entry.md`**). Feasibility may skim recent entries; completion may append after merge — optional and human-reviewed.
+13. **Optional playbook** — Teams may use **`docs/agentic-swe/PLAYBOOK.md`** (append-only, **`${CLAUDE_PLUGIN_ROOT}/templates/playbook-entry.md`**). Feasibility may skim recent entries; completion may append after merge — optional and human-reviewed.
 14. Repeat until a stop condition (gate, escalation, or **`completed`**).
 
 ---
@@ -205,11 +205,11 @@ When **`code-review`**, **`validation`**, or **`design-review`** rejects, the re
 You may spawn sub-agents for bounded work via the Agent tool.
 
 - **Hypervisor owns** state transitions, gate decisions, and synthesis — do not delegate those away.
-- **Design panel** (**.claude/agents/panel/*.md**) — Use when complexity or risk warrants. Spawn **architect**, **security**, and **adversarial** reviewers **in parallel** (background).
-- **Git and PR** — **`.claude/agents/git-operations-agent.md`** for branches, sync, conflicts; **`.claude/agents/pr-manager-agent.md`** for PR lifecycle.
-- **Implementation** — **`.claude/agents/developer-agent.md`** for bounded coding; consider **`isolation: "worktree"`** for risky experiments.
-- **Specialists** — **`.claude/agents/subagents/`** (135+); **auto-selected** during phases per **Subagent auto-selection** below. **`/subagent`** for manual discovery and invoke outside the pipeline.
-- **Canonical phase text** — Always **`.claude/phases/*.md`**.
+- **Design panel** (**${CLAUDE_PLUGIN_ROOT}/agents/panel/*.md**) — Use when complexity or risk warrants. Spawn **architect**, **security**, and **adversarial** reviewers **in parallel** (background).
+- **Git and PR** — **`${CLAUDE_PLUGIN_ROOT}/agents/git-operations-agent.md`** for branches, sync, conflicts; **`${CLAUDE_PLUGIN_ROOT}/agents/pr-manager-agent.md`** for PR lifecycle.
+- **Implementation** — **`${CLAUDE_PLUGIN_ROOT}/agents/developer-agent.md`** for bounded coding; consider **`isolation: "worktree"`** for risky experiments.
+- **Specialists** — **`${CLAUDE_PLUGIN_ROOT}/agents/subagents/`** (135+); **auto-selected** during phases per **Subagent auto-selection** below. **`/subagent`** for manual discovery and invoke outside the pipeline.
+- **Canonical phase text** — Always **`${CLAUDE_PLUGIN_ROOT}/phases/*.md`**.
 
 **Delegation contract:** Scoped prompt, explicit files or areas, **evidence-backed verdict** (not vibes), and **integration into the main artifact** — delegated output is input, not automatic truth.
 
@@ -218,7 +218,7 @@ You may spawn sub-agents for bounded work via the Agent tool.
 Core agents may spawn **one** subagent per phase when domain depth is needed:
 
 - Max **1** subagent spawn per calling agent per phase
-- Pick from **`.claude/phases/subagent-selection.md`**
+- Pick from **`${CLAUDE_PLUGIN_ROOT}/phases/subagent-selection.md`**
 - **Background** spawn; caller continues and merges findings
 - On **contradiction**, report **both** views
 
@@ -244,9 +244,9 @@ Escalation: action=escalate target=<state> note="<reason>"
 When the rigorous path warrants parallel design scrutiny:
 
 ```
-Agent(prompt=.claude/agents/panel/architect-reviewer.md, run_in_background=true)
-Agent(prompt=.claude/agents/panel/security-reviewer.md, run_in_background=true)
-Agent(prompt=.claude/agents/panel/adversarial-reviewer.md, run_in_background=true)
+Agent(prompt=${CLAUDE_PLUGIN_ROOT}/agents/panel/architect-reviewer.md, run_in_background=true)
+Agent(prompt=${CLAUDE_PLUGIN_ROOT}/agents/panel/security-reviewer.md, run_in_background=true)
+Agent(prompt=${CLAUDE_PLUGIN_ROOT}/agents/panel/adversarial-reviewer.md, run_in_background=true)
 ```
 
 Merge into **`design-panel-review.md`**. The Hypervisor resolves conflicts and owns the final design decision.
@@ -255,7 +255,7 @@ Merge into **`design-panel-review.md`**. The Hypervisor resolves conflicts and o
 
 ## Subagent auto-selection
 
-Policy: **`.claude/phases/subagent-selection.md`**.
+Policy: **`${CLAUDE_PLUGIN_ROOT}/phases/subagent-selection.md`**.
 
 1. **Feasibility** — Collect signals (languages, frameworks, domains) from **`/repo-scan`** and the task; write **`## Subagent Signals`** in **`feasibility.md`**. No spawn.
 2. **Later phases** — Map signals to subagents per selection tables.
@@ -274,7 +274,7 @@ Policy: **`.claude/phases/subagent-selection.md`**.
 ### Track modes (`subagent-mode`)
 
 - **Lean track** (`minimal`) — At most **one** background language specialist; no domain or review specialists. If implementation finishes first, proceed without waiting.
-- **Standard track** — Per **`.claude/phases/subagent-selection.md`**: implementation uses the **same advisory** language + domain rules as rigorous where those phases run; there is **no** separate **`code-review`** or **`permissions-check`** phase for auto-selection on that track.
+- **Standard track** — Per **`${CLAUDE_PLUGIN_ROOT}/phases/subagent-selection.md`**: implementation uses the **same advisory** language + domain rules as rigorous where those phases run; there is **no** separate **`code-review`** or **`permissions-check`** phase for auto-selection on that track.
 - **Rigorous track** (`full`) — Up to **2** subagents where phases allow; parallel reviewers in **`code-review`**; domain input before design when **`design`** runs.
 
 ### Budget guard
@@ -289,7 +289,7 @@ Set **`state.json.pipeline.subagent_auto_select`** to **`false`** to disable. Ma
 
 ## Specialized subagents
 
-135+ agents under **`.claude/agents/subagents/`** (10 categories):
+135+ agents under **`${CLAUDE_PLUGIN_ROOT}/agents/subagents/`** (10 categories):
 
 | Category | Agents | Use when |
 |----------|--------|----------|
@@ -307,7 +307,7 @@ Set **`state.json.pipeline.subagent_auto_select`** to **`false`** to disable. Ma
 ### Manual invocation
 
 ```
-Agent(prompt=".claude/agents/subagents/<category>/<name>.md", model="<model>", description="<task>")
+Agent(prompt="${CLAUDE_PLUGIN_ROOT}/agents/subagents/<category>/<name>.md", model="<model>", description="<task>")
 ```
 
 Frontmatter in each file recommends **`model`** (`opus` | `sonnet` | `haiku`) and **`tools`**.
@@ -337,7 +337,7 @@ Permission-gated; the user sees each check.
 | `/ci-status [PR|branch]` | CI and mergeability | `pr-creation`, `merge-completion` |
 | `/conflict-resolver [command]` | Git conflicts | `merge-completion`, git-ops agent |
 | `/security-scan [scope]` | Deps, secrets, risky patterns | `permissions-check`, security panel |
-| `/brainstorm` | Design-first exploration; optional `tools/brainstorm-server` | `design` |
+| `/brainstorm` | Design-first exploration; optional **`${CLAUDE_PLUGIN_ROOT}/tools/brainstorm-server/`** | `design` |
 | `/write-plan` | Refine `implementation.md` to plan bar (no code) | `plan-quality-bar`, `plan-only` |
 | `/execute-plan` | Execute plan via implementation or lean path per `state.json` | `developer-agent` |
 | `/author-pipeline` | Safe extension checklist | `authoring-pipeline-capabilities` |
@@ -346,23 +346,23 @@ Permission-gated; the user sees each check.
 
 ## Key directories
 
-- **`.claude/commands/`** — `/work`, `/check`, `/plan-only`, `/brainstorm`, `/write-plan`, `/execute-plan`, `/author-pipeline`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`, …
-- **`.claude/state-machine.json`** — Canonical edges; must match the fenced block in this file
-- **`.claude/phases/`** — Phase prompts + **`subagent-selection.md`**
-- **`.claude/agents/`** — Core agents, **`panel/`**, **`subagents/`**, **`subagents/custom/`**
-- **`.claude/tools/`** — e.g. **`subagent-catalog/`**
-- **`.claude/templates/`** — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`, `repo-knowledge-stub.md`, `playbook-entry.md`, `evaluation-rubric.md`, `capability-gaps-section.md`, `metrics-summary.md` (optional)
-- **`.claude/references/`** — Readonly facts; **`tooling-expectations.md`**, git/PR material for agents and phases
-- **`.work/`** — Runtime work roots (typically gitignored in consuming repos)
+- **`${CLAUDE_PLUGIN_ROOT}/commands/`** — `/work`, `/check`, `/plan-only`, `/brainstorm`, `/write-plan`, `/execute-plan`, `/author-pipeline`, `/evaluate-work`, `/install`, `/repo-scan`, `/test-runner`, `/lint`, `/diff-review`, `/ci-status`, `/conflict-resolver`, `/security-scan`, `/subagent`, …
+- **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`** — Canonical edges; must match the fenced block in this file
+- **`${CLAUDE_PLUGIN_ROOT}/phases/`** — Phase prompts + **`subagent-selection.md`**
+- **`${CLAUDE_PLUGIN_ROOT}/agents/`** — Core agents, **`panel/`**, **`subagents/`**, **`subagents/custom/`**
+- **`${CLAUDE_PLUGIN_ROOT}/tools/`** — e.g. **`subagent-catalog/`**
+- **`${CLAUDE_PLUGIN_ROOT}/templates/`** — `state.json`, `progress.md`, `audit.log`, `phase-checklist.md`, `evidence-standard.md`, `artifact-format.md`, `repo-knowledge-stub.md`, `playbook-entry.md`, `evaluation-rubric.md`, `capability-gaps-section.md`, `metrics-summary.md` (optional)
+- **`${CLAUDE_PLUGIN_ROOT}/references/`** — Readonly facts; **`tooling-expectations.md`**, git/PR material for agents and phases
+- **`.worklogs/<id>/`** — Runtime work state in the **user’s project** (optional **`.gitignore`**; see **`${CLAUDE_PLUGIN_ROOT}/commands/install.md`**)
 
 ---
 
 ## Editing guidelines (extending the pack)
 
-- Follow **`.claude/templates/evidence-standard.md`** for phase and agent edits.
-- **This file** is the authority for the state machine; when you change the fenced transition block, update **`.claude/state-machine.json`** and run tests.
-- **`.claude/templates/state.json`** defines the work-item schema for new runs.
-- For new commands, phases, agents, or references, use **`.claude/references/authoring-pipeline-capabilities.md`** and **`/author-pipeline`**.
+- Follow **`${CLAUDE_PLUGIN_ROOT}/templates/evidence-standard.md`** for phase and agent edits.
+- **This file** is the authority for the state machine; when you change the fenced transition block, update **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`** and run tests.
+- **`${CLAUDE_PLUGIN_ROOT}/templates/state.json`** defines the work-item schema for new runs.
+- For new commands, phases, agents, or references, use **`${CLAUDE_PLUGIN_ROOT}/references/authoring-pipeline-capabilities.md`** and **`/author-pipeline`**.
 
 ---
 
@@ -388,11 +388,11 @@ The pipeline synthesizes ideas from autonomous SWE and agentic coding literature
 
 | Goal | Action |
 |------|--------|
-| Install into a target repo | **`npx agentic-swe`** or **`agentic-swe install`** |
+| Install for Claude Code | **Plugin marketplace** + **`/plugin install`**, or **`claude --plugin-dir <repo-root>`** (dev) |
 | Start work | **`/work`** + task description |
 | Resume | **`/work <id>`** |
 | Plan only | **`/plan-only`** |
-| Design exploration | **`/brainstorm`** (optional UI: **`tools/brainstorm-server/`**) |
+| Design exploration | **`/brainstorm`** (optional UI: **`${CLAUDE_PLUGIN_ROOT}/tools/brainstorm-server/`**) |
 | Refine plan only | **`/write-plan`** |
 | Execute plan | **`/execute-plan`** |
 | Health check | **`/evaluate-work`** |

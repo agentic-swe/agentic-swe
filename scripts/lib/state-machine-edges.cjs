@@ -2,7 +2,7 @@
 
 /**
  * Parse the first fenced transition block in CLAUDE.md (lines with ->).
- * Used by tests and optional verify scripts to prevent drift vs .claude/state-machine.json.
+ * Used by tests and optional verify scripts to prevent drift vs repo-root state-machine.json.
  */
 
 function extractTransitionLines(claudeBody) {

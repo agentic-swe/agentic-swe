@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export function ProductPage() {
   return (
     <main className="page-main reveal visible">
@@ -47,15 +49,12 @@ export function ProductPage() {
       <p>
         The open pack does not imply a multi-tenant cloud that runs your pipeline for you. Anything beyond the markdown
         pack (e.g. commercial tiers) belongs in separate product docs such as{' '}
-        <a href="https://github.com/surajSFDC/agentic-swe/blob/main/PRO.md" target="_blank" rel="noopener noreferrer">
-          PRO
-        </a>{' '}
-        if present.
+        <Link to="/docs/pro">Agentic SWE Pro</Link> if present.
       </p>
 
       <div className="doc-see-also">
-        <strong>See also</strong> — <a href="/product-positioning.md">Product positioning</a> ·{' '}
-        <a href="/licensing.md">Licensing</a> · <a href="/distribution.md">Distribution</a>
+        <strong>See also</strong> — <Link to="/docs/product-positioning">Product positioning</Link> ·{' '}
+        <Link to="/docs/licensing">Licensing</Link> · <Link to="/docs/distribution">Distribution</Link>
       </div>
     </main>
   )

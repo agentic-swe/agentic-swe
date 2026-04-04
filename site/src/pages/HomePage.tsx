@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Hero } from '../components/Hero'
 import { PipelineViz } from '../components/PipelineViz'
 
@@ -82,7 +83,7 @@ export function HomePage() {
           review. Nothing ships without approval.
           <br />
           <span style={{ color: 'var(--cyan)' }}>&#9632;</span> Transition edges live in{' '}
-          <code style={{ fontSize: '0.85em' }}>.claude/state-machine.json</code> and match the fenced graph in the
+          <code style={{ fontSize: '0.85em' }}>{'${CLAUDE_PLUGIN_ROOT}/state-machine.json'}</code> and match the fenced graph in the
           root Hypervisor policy (verified in CI).
         </motion.p>
       </section>
@@ -133,17 +134,23 @@ export function HomePage() {
           {[
             {
               n: '1',
-              title: 'Install into your project',
+              title: 'Enable the Claude Code plugin',
               body: (
                 <>
                   <div className="code-block">
                     <code>
-                      <span className="cmd">npx</span> agentic-swe /path/to/your/project
+                      <span className="cmd">/plugin</span> marketplace add surajSFDC/agentic-swe
+                    </code>
+                  </div>
+                  <div className="code-block" style={{ marginTop: '0.5rem' }}>
+                    <code>
+                      <span className="cmd">/plugin</span> install agentic-swe@agentic-swe-catalog
                     </code>
                   </div>
                   <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', opacity: 0.75 }}>
-                    Or: <code style={{ fontSize: '0.8em' }}>npm install -g agentic-swe</code> then{' '}
-                    <code style={{ fontSize: '0.8em' }}>agentic-swe install</code> · Node 18+
+                    Then <code style={{ fontSize: '0.8em' }}>/install</code> in your project for{' '}
+                    <code style={{ fontSize: '0.8em' }}>CLAUDE.md</code> + <code style={{ fontSize: '0.8em' }}>.worklogs/</code>
+                    . See the <Link to="/docs/installation">installation guide</Link>.
                   </p>
                 </>
               ),

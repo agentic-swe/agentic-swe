@@ -6,24 +6,22 @@ Claude Code becomes a full SWE pipeline -- from task analysis through implementa
 
 ## Quick Start
 
-Install [from npm](https://www.npmjs.com/package/agentic-swe) (Node 18+):
+**Claude Code (recommended):** add this repository as a **plugin marketplace**, install **`agentic-swe@agentic-swe-catalog`**, then open your target project in Claude Code. Pipeline commands, phases, and agents resolve from **`${CLAUDE_PLUGIN_ROOT}/`** (the plugin root). Per-work state lives under **`.worklogs/<id>/`** in your project; **`/install`** can walk you through merging root **`CLAUDE.md`** and optional **`.gitignore`** for worklogs.
 
-```bash
-npx agentic-swe /path/to/your/project
-# or: npm install -g agentic-swe && agentic-swe install /path/to/your/project
+```text
+/plugin marketplace add surajSFDC/agentic-swe
+/plugin install agentic-swe@agentic-swe-catalog
 ```
 
-Then open Claude Code in that project and start a task:
+**Local development** of the pack: run Claude Code with **`claude --plugin-dir /path/to/this/repo`** from your target project (or enable the plugin from that directory).
 
-```bash
-cd /path/to/your/project && claude
-```
+Then start a task:
 
-```
+```text
 /work Add retry logic to the API client
 ```
 
-See the [installation guide](https://d3pi4w4hqr9gq6.cloudfront.net/installation.md) for upgrades, selective installs, and **optional org knowledge files** (`AGENTS.md`, `docs/agentic-swe/`).
+See the [installation guide](https://surajSFDC.github.io/agentic-swe/docs/installation) · [CloudFront mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/installation) and the [Claude Code plugin](https://surajSFDC.github.io/agentic-swe/docs/claude-code-plugin) · [CloudFront](https://d3pi4w4hqr9gq6.cloudfront.net/docs/claude-code-plugin) for details, upgrades, and **optional org knowledge files** (`AGENTS.md`, `docs/agentic-swe/`).
 
 **What this is:** a **markdown workflow pack** that runs inside **Claude Code** on your repo (phases, gates, evidence). It is **not** a hosted async coding agent or cloud sandbox—that is a different class of product (e.g. remote harnesses with triggers and isolated runners).
 
@@ -31,16 +29,18 @@ See the [installation guide](https://d3pi4w4hqr9gq6.cloudfront.net/installation.
 
 Agentic SWE is a **workflow pack for Claude Code** (markdown policies, phases, and agents)—not a hosted cloud runtime. More on the product and licensing:
 
-| Topic | Doc |
-|-------|-----|
-| Who it is for and hero messaging | [Product positioning](https://d3pi4w4hqr9gq6.cloudfront.net/product-positioning.md) |
-| MIT and commercial strategy | [Licensing](https://d3pi4w4hqr9gq6.cloudfront.net/licensing.md) |
-| Pro / services (first paid wedges) | [Pro & services](https://d3pi4w4hqr9gq6.cloudfront.net/PRO.md) |
-| Distribution and hosting | [Distribution](https://d3pi4w4hqr9gq6.cloudfront.net/distribution.md) |
-| Troubleshooting | [Troubleshooting](https://d3pi4w4hqr9gq6.cloudfront.net/troubleshooting.md) |
-| `/check` quick reference | [Check commands](https://d3pi4w4hqr9gq6.cloudfront.net/check-commands.md) |
+**Public site:** **[GitHub Pages](https://surajSFDC.github.io/agentic-swe/)** (canonical) · [CloudFront mirror](https://d3pi4w4hqr9gq6.cloudfront.net/) — same build; either URL is fine.
 
-**Marketing site (source):** the brochure app and static markdown live under **`site/`** (`site/src` for React, `site/public` for `*.md` and assets). Run **`npm run build:site`** to emit the static site to **`site/dist/`**, then **`./infra/deploy-static-site.sh`** to publish that folder to S3/CloudFront (see [infra/README.md](infra/README.md)).
+| Topic | GitHub Pages | CloudFront |
+|-------|--------------|------------|
+| Who it is for and hero messaging | [Product positioning](https://surajSFDC.github.io/agentic-swe/docs/product-positioning) | [mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/product-positioning) |
+| MIT and commercial strategy | [Licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) | [mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/licensing) |
+| Pro / services (first paid wedges) | [Pro & services](https://surajSFDC.github.io/agentic-swe/docs/pro) | [mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/pro) |
+| Distribution and hosting | [Distribution](https://surajSFDC.github.io/agentic-swe/docs/distribution) | [mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/distribution) |
+| Troubleshooting | [Troubleshooting](https://surajSFDC.github.io/agentic-swe/docs/troubleshooting) | [mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/troubleshooting) |
+| `/check` quick reference | [Check commands](https://surajSFDC.github.io/agentic-swe/docs/check-commands) | [mirror](https://d3pi4w4hqr9gq6.cloudfront.net/docs/check-commands) |
+
+**Marketing site (source):** the React app lives under **`site/src/`**; long-form docs are **`site/src/content/docs/*.md`** (rendered at **`/docs/*`**). **`site/public/`** holds static assets (favicon, icons). Run **`npm run build:site`** to emit **`site/dist/`**. Publish via **`./infra/deploy-static-site.sh`** to S3/CloudFront (see [infra/README.md](infra/README.md)), or via **GitHub Actions** to Pages: **Settings → Pages → Source: GitHub Actions**; pushes to **`main`** run [`.github/workflows/pages.yml`](.github/workflows/pages.yml) → **`https://surajSFDC.github.io/agentic-swe/`** (adjust owner/repo if you fork).
 
 ## How It Works
 
@@ -101,7 +101,7 @@ Example tasks and the routes they follow (see the **state machine** diagram abov
 | `/repo-scan` | Structured codebase snapshot |
 | `/check budget` | Verify iteration budgets |
 
-See the [usage reference](https://d3pi4w4hqr9gq6.cloudfront.net/usage.md) for the full commands list.
+See the [usage reference](https://surajSFDC.github.io/agentic-swe/docs/usage) · [CloudFront](https://d3pi4w4hqr9gq6.cloudfront.net/docs/usage) for the full commands list.
 
 ## Specialized Subagents
 
@@ -120,7 +120,7 @@ See the [usage reference](https://d3pi4w4hqr9gq6.cloudfront.net/usage.md) for th
 | **Meta & Orchestration** | 10 | `multi-agent-coordinator`, `workflow-orchestrator` |
 | **Research & Analysis** | 7 | `competitive-analyst`, `trend-analyst`, `research-analyst` |
 
-See the [subagent catalog](https://d3pi4w4hqr9gq6.cloudfront.net/subagent-catalog.md) for the full catalog with models and descriptions.
+See the [subagent catalog](https://surajSFDC.github.io/agentic-swe/docs/subagent-catalog) · [CloudFront](https://d3pi4w4hqr9gq6.cloudfront.net/docs/subagent-catalog) for the full catalog with models and descriptions.
 
 ## Examples
 
@@ -158,7 +158,7 @@ to audit the payment processing module in src/payments/
 /execute-plan
 ```
 
-See [examples](https://d3pi4w4hqr9gq6.cloudfront.net/examples.md) for detailed walkthroughs.
+See [examples](https://surajSFDC.github.io/agentic-swe/docs/examples) · [CloudFront](https://d3pi4w4hqr9gq6.cloudfront.net/docs/examples) for detailed walkthroughs.
 
 ## Architecture
 
@@ -183,10 +183,10 @@ Hypervisor (Claude Code + CLAUDE.md policy)
 
 ## Extending
 
-- **Add a subagent**: Create a `.md` file in `.claude/agents/subagents/<category>/` with frontmatter (`name`, `description`, `tools`, `model`)
-- **Add a phase**: Create `.md` in `.claude/phases/`, add the state to `CLAUDE.md` (diagram, Required Artifacts, transitions), and update **`.claude/state-machine.json`** so it matches the fenced transition block (`npm test` includes `state-machine-json`).
-- **Add a core agent**: Create `.md` in `.claude/agents/`, reference in `CLAUDE.md`
-- **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `.claude/templates/state.json`
+- **Add a subagent**: Create a `.md` file in `${CLAUDE_PLUGIN_ROOT}/agents/subagents/<category>/` with frontmatter (`name`, `description`, `tools`, `model`)
+- **Add a phase**: Create `.md` in `${CLAUDE_PLUGIN_ROOT}/phases/`, add the state to `CLAUDE.md` (diagram, Required Artifacts, transitions), and update **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`** so it matches the fenced transition block (`npm test` includes `state-machine-json`).
+- **Add a core agent**: Create `.md` in `${CLAUDE_PLUGIN_ROOT}/agents/`, reference in `CLAUDE.md`
+- **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `${CLAUDE_PLUGIN_ROOT}/templates/state.json`
 - **Inspect work folders**: From the pack/repo root, `npm run summarize-work` (or `node scripts/summarize-work.js --json`)
 - **Migrate old work state**: `node scripts/migrate-work-state.js` then `node scripts/migrate-work-state.js --apply` after major upgrades (see `CHANGELOG.md`)
 
@@ -196,15 +196,21 @@ agentic-swe runs the same markdown pipeline — driven by the **Hypervisor** ses
 
 | Platform | Install Method | Details |
 |----------|---------------|---------|
-| **Claude Code** | `npx agentic-swe /path/to/repo` | Primary platform. You can also add this GitHub repo as a Claude Code **plugin marketplace** and install `agentic-swe@agentic-swe-catalog` — see [claude-code-plugin.md](site/public/claude-code-plugin.md) (full project merge still recommended via `npx`). |
+| **Claude Code** | Plugin marketplace + `/plugin install` (or `claude --plugin-dir` for dev) | Primary platform. See [claude-code-plugin.md](site/src/content/docs/claude-code-plugin.md). |
 | **Cursor** | Plugin via `.cursor-plugin/` | Commands and agents load automatically. See `hooks/hooks-cursor.json`. |
-| **Codex** | Clone + symlink | See `.codex/INSTALL.md` and `site/public/README.codex.md`. |
-| **OpenCode** | Plugin via `.opencode/` | ESM plugin injects orchestration policy. See `site/public/README.opencode.md`. |
+| **Codex** | Clone + symlink or copy | See `.codex/INSTALL.md` and `site/src/content/docs/README.codex.md`. |
+| **OpenCode** | Plugin via `.opencode/` | ESM plugin injects orchestration policy. See `site/src/content/docs/README.opencode.md`. |
 | **Gemini CLI** | Extension via `gemini-extension.json` | Context loaded from `GEMINI.md`. |
 
-All platforms share the same `.claude/` source content. Platform-specific tool mappings are in `.claude/references/` (`codex-tools.md`, `opencode-tools.md`, `gemini-tools.md`, `copilot-tools.md`).
+All platforms share the same markdown source at this repo’s **plugin root** (`commands/`, `phases/`, `agents/`, …). Platform-specific tool mappings are in `${CLAUDE_PLUGIN_ROOT}/references/` (`codex-tools.md`, `opencode-tools.md`, `gemini-tools.md`, `copilot-tools.md`).
 
-**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start`, plus `.claude/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`.
+**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start`, plus `${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`.
+
+## CI and pre-push checks
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on **push / pull request** to **`main`**, on **merge queue**, and **manually** (`workflow_dispatch`). It uses **Node 20 and 22**, **`npm ci`** for root, **`site/`**, and **`tools/brainstorm-server`**, then **site lint**, **site build**, **`npm run verify`**, **`npm run version:check`**, optional **`claude plugin validate`**, and **`npm test`** (state machine, references, **multi-platform wiring**, brainstorm-server, etc.).
+
+Locally, with dependencies installed under **`site/`**, run **`npm run ci`** for the same bar (minus the Node matrix and unless **`claude`** is on your **`PATH`**). See the [Release checklist](https://surajSFDC.github.io/agentic-swe/docs/release-checklist) for the full maintainer sequence (mirrors CI plus optional manual smoke).
 
 ## Research Basis
 
@@ -212,4 +218,4 @@ Built on research from SWE-agent, Agentless, Ambig-SWE, Reflexion, Self-Refine, 
 
 ## License
 
-[MIT](LICENSE). Commercial services and optional Pro offerings are described on the [Pro & services](https://d3pi4w4hqr9gq6.cloudfront.net/PRO.md) page; see [licensing](https://d3pi4w4hqr9gq6.cloudfront.net/licensing.md) for how MIT relates to product packaging (not legal advice).
+[MIT](LICENSE). Commercial services and optional Pro offerings are described on the [Pro & services](https://surajSFDC.github.io/agentic-swe/docs/pro) · [CloudFront](https://d3pi4w4hqr9gq6.cloudfront.net/docs/pro) page; see [licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) · [CloudFront](https://d3pi4w4hqr9gq6.cloudfront.net/docs/licensing) for how MIT relates to product packaging (not legal advice).

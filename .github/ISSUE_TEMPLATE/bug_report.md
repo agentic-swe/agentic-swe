@@ -29,7 +29,7 @@ labels: bug
 
 ## Work item state (optional)
 
-<!-- If this relates to a `/work` run, paste a relevant snippet from `.claude/.work/<id>/state.json` (redact secrets). -->
+<!-- If this relates to a `/work` run, paste a relevant snippet from `.worklogs/<id>/state.json` (redact secrets). -->
 
 ```json
 

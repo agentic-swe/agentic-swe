@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export function GuidePage() {
   return (
     <main className="page-main reveal visible">
@@ -34,42 +36,37 @@ export function GuidePage() {
 
       <h2 id="install">Install &amp; first run</h2>
       <p>
-        agentic-swe installs a <strong>markdown workflow pack</strong> into your git repository: <code>.claude/</code>{' '}
-        (commands, phases, agents, templates), merged root <strong>Hypervisor</strong> policy, and hooks. There is{' '}
+        agentic-swe is a <strong>markdown workflow pack</strong> for Claude Code: commands, phases, agents, templates, and
+        hooks resolve from <code>{'${CLAUDE_PLUGIN_ROOT}/'}</code> when the plugin is enabled. Root <strong>Hypervisor</strong>{' '}
+        policy merges into <code>CLAUDE.md</code>; per-work state lives under <code>.worklogs/&lt;id&gt;/</code>. There is{' '}
         <strong>no</strong> separate cloud runtime.
       </p>
 
       <h3>Prerequisites</h3>
       <ul>
         <li>
-          <strong>Node.js 18+</strong> — for <code>npx</code> / npm
+          <strong>Claude Code</strong> (primary host — see <a href="#platforms">Platforms</a>)
         </li>
         <li>
-          <strong>Git</strong> — recommended; installer prompts if the target is not a repo (you can pass <code>-y</code>{' '}
-          for sandboxes)
+          <strong>Git</strong> — recommended for the target project
         </li>
         <li>
-          <strong>GitHub CLI (<code>gh</code>)</strong> — authenticated, for PR flows in the pipeline
-        </li>
-        <li>
-          <strong>Claude Code</strong> (or another supported host — see <a href="#platforms">Platforms</a>)
+          <strong>GitHub CLI (<code>gh</code>)</strong> — optional; for PR flows
         </li>
       </ul>
 
-      <h3>Install into a project</h3>
+      <h3>Enable the plugin</h3>
       <p>
-        From your machine, pointing at the <strong>target repository root</strong>:
+        In Claude Code, add the marketplace and install the plugin (see{' '}
+        <Link to="/docs/claude-code-plugin">Claude Code plugin</Link>):
       </p>
-      <pre>npx agentic-swe /path/to/your/project</pre>
-      <p>Or install the CLI globally, then run install from inside the project:</p>
       <pre>
-        {`npm install -g agentic-swe
-cd /path/to/your/project
-agentic-swe install`}
+        {`/plugin marketplace add surajSFDC/agentic-swe
+/plugin install agentic-swe@agentic-swe-catalog`}
       </pre>
       <p>
-        This copies the pack and merges the policy block into the root policy file using the documented delimiter
-        (existing content above the delimiter is preserved).
+        In your <strong>target repository</strong>, run <code>/install</code> to merge the policy block into <code>CLAUDE.md</code>{' '}
+        and configure <code>.worklogs/</code> (optional <code>.gitignore</code>).
       </p>
 
       <h3>Open Claude Code and start work</h3>
@@ -86,28 +83,18 @@ claude`}
 
       <h3>Upgrades and repairs</h3>
       <p>
-        Re-run the same <code>npx agentic-swe /path/to/project</code> command to refresh <code>.claude/</code> and replace
-        the merged policy block when the delimiter is present. After install, <code>/install</code> exists as a slash
-        command for guided repairs inside Claude Code.
+        Update the plugin from the marketplace; re-run <code>/install</code> if you need to refresh the merged policy
+        block. Full detail: <Link to="/docs/installation">installation guide</Link>.
       </p>
 
-      <h3>Verify the install</h3>
-      <pre>agentic-swe doctor /path/to/your/project</pre>
-      <p>
-        Checks Node, git, and that <code>.claude/phases</code> and <code>.claude/commands</code> exist.
-      </p>
-
-      <h3>Optional: Claude Code plugin</h3>
-      <p>
-        You can add this GitHub repo as a <strong>plugin marketplace</strong> and install{' '}
-        <code>agentic-swe@agentic-swe-catalog</code> for Git-based updates. A full project layout and policy merge is
-        still easiest with <code>npx agentic-swe</code>. Details: <a href="/claude-code-plugin.md">Claude Code plugin</a>.
-      </p>
+      <h3>Local development</h3>
+      <pre>claude --plugin-dir /path/to/agentic-swe-checkout</pre>
+      <p>Run from your target project so the plugin root points at your clone of this repository.</p>
 
       <h3>Optional: repo knowledge</h3>
       <p>
         Teams may add an <code>AGENTS</code> companion file, knowledge under <code>docs/agentic-swe/</code>, etc., for
-        extra context during feasibility — see the longer <a href="/installation.md">installation guide</a>.
+        extra context during feasibility — see the longer <Link to="/docs/installation">installation guide</Link>.
       </p>
 
       <h2 id="pipeline">Pipeline &amp; Hypervisor</h2>
@@ -118,7 +105,7 @@ claude`}
       </p>
 
       <h3>Source of truth per work item</h3>
-      <p>Each run lives under <code>.claude/.work/&lt;id&gt;/</code>:</p>
+      <p>Each run lives under <code>.worklogs/&lt;id&gt;/</code>:</p>
       <ul>
         <li>
           <code>state.json</code> — <code>current_state</code>, <code>pipeline.track</code>, budgets, counters,{' '}
@@ -193,7 +180,7 @@ claude`}
       <h3>Transition graph</h3>
       <p>
         The canonical directed edges are in the fenced block in the root Hypervisor policy and mirrored in{' '}
-        <code>.claude/state-machine.json</code> (enforced by tests in the package repo). Before every state change, the
+        <code>{'${CLAUDE_PLUGIN_ROOT}/state-machine.json'}</code> (enforced by tests in the package repo). Before every state change, the
         Hypervisor runs <code>/check transition</code> and <code>/check artifacts</code>.
       </p>
 
@@ -223,7 +210,7 @@ claude`}
 
       <h2 id="commands">Commands</h2>
       <p>
-        Slash commands live under <code>.claude/commands/</code> after install. They are the{' '}
+        Slash commands live under <code>{'${CLAUDE_PLUGIN_ROOT}/commands/'}</code> after install. They are the{' '}
         <strong>structured entry points</strong> the Hypervisor and phases invoke for work lifecycle, gates, and
         utilities.
       </p>
@@ -242,7 +229,7 @@ claude`}
               <code>/work</code>
             </td>
             <td>
-              Start a new work item or resume by id; creates <code>.claude/.work/&lt;id&gt;/</code> and seeds{' '}
+              Start a new work item or resume by id; creates <code>.worklogs/&lt;id&gt;/</code> and seeds{' '}
               <code>state.json</code>
             </td>
           </tr>
@@ -263,7 +250,7 @@ claude`}
               <code>/install</code>
             </td>
             <td>
-              Guided install / repair (also used from CLI <code>npx agentic-swe</code>)
+              Guided <code>CLAUDE.md</code> merge, <code>.worklogs/</code>, optional <code>.gitignore</code>
             </td>
           </tr>
         </tbody>
@@ -275,7 +262,7 @@ claude`}
       <p>
         Mandatory before expensive moves: <code>/check budget</code>, <code>/check transition</code>,{' '}
         <code>/check artifacts</code>. Behavior and subcommands are documented in the{' '}
-        <a href="/check-commands.md">check commands reference</a>.
+        <Link to="/docs/check-commands">check commands reference</Link>.
       </p>
 
       <h3>Discovery and specialists</h3>
@@ -284,7 +271,7 @@ claude`}
           <code>/repo-scan</code> — structured snapshot of languages, tests, CI (feasibility input)
         </li>
         <li>
-          <code>/subagent</code> — browse and invoke specialist prompts from <code>.claude/agents/subagents/</code>
+          <code>/subagent</code> — browse and invoke specialist prompts from <code>{'${CLAUDE_PLUGIN_ROOT}/agents/subagents/'}</code>
         </li>
       </ul>
 
@@ -313,7 +300,7 @@ claude`}
 
       <h2 id="agents">Agents</h2>
       <p>
-        Agents are <strong>markdown prompts</strong> under <code>.claude/agents/</code>. The Hypervisor delegates bounded
+        Agents are <strong>markdown prompts</strong> under <code>{'${CLAUDE_PLUGIN_ROOT}/agents/'}</code>. The Hypervisor delegates bounded
         work; it remains accountable for state, transitions, and synthesis.
       </p>
 
@@ -339,10 +326,14 @@ claude`}
 
       <h3>Subagents (135+)</h3>
       <p>
-        Specialists live under <code>.claude/agents/subagents/&lt;category&gt;/</code> (core-development,
+        Specialists live under <code>{'${CLAUDE_PLUGIN_ROOT}/agents/subagents/<category>/'}</code> (core-development,
         language-specialists, infrastructure, quality-security, data-ai, …). Use <code>/subagent</code> to discover them,
         or rely on <strong>auto-selection</strong> during phases (see{' '}
-        <a href="https://github.com/surajSFDC/agentic-swe/tree/main/.claude/phases" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://github.com/surajSFDC/agentic-swe/blob/main/phases/subagent-selection.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           subagent selection
         </a>{' '}
         in the pack).
@@ -360,20 +351,24 @@ claude`}
 
       <h2 id="platforms">Platforms</h2>
       <p>
-        agentic-swe is <strong>host-agnostic markdown</strong>: the pack lives in <code>.claude/</code> with root
-        Hypervisor policy and optional <code>AGENTS</code> companion. The <strong>Hypervisor</strong> is whichever
-        session follows that policy.
+        Host comparison table and install pointers: <Link to="/docs/multi-platform-support">Multi-platform support</Link>{' '}
+        (dedicated doc).
+      </p>
+      <p>
+        agentic-swe is <strong>host-agnostic markdown</strong>: with the Claude Code plugin, the pack lives at the plugin
+        root (<code>commands/</code>, <code>phases/</code>, …) and resolves via <code>{'${CLAUDE_PLUGIN_ROOT}/'}</code>. The{' '}
+        <strong>Hypervisor</strong> is whichever session follows root <code>CLAUDE.md</code> policy.
       </p>
 
       <h3>Claude Code</h3>
       <p>
-        First-class: native slash commands, hooks, and Agent tool align with the layout this repo ships. Install with{' '}
-        <code>npx agentic-swe</code>, open <code>claude</code>, run <code>/work</code>.
+        First-class: native slash commands, hooks, and Agent tool align with the plugin layout this repo ships. Enable the
+        plugin, run <code>/install</code> in your project, then <code>/work</code>.
       </p>
 
       <h3>Cursor</h3>
       <p>
-        Use project rules to point agents at the root Hypervisor policy and <code>.claude/phases/</code>. Slash commands
+        Use project rules to point agents at the root Hypervisor policy and <code>{'${CLAUDE_PLUGIN_ROOT}/phases/'}</code>. Slash commands
         are not automatic — invoke phase files or wrap them in custom rules/skills as needed.
       </p>
 
@@ -385,14 +380,14 @@ claude`}
 
       <h3>CI and headless</h3>
       <p>
-        The npm package includes tests and smoke checks for installer behavior and state-machine consistency; running the
-        full pipeline still expects an interactive host for human gates.
+        This repository includes tests and smoke checks for layout and state-machine consistency; running the full pipeline
+        still expects an interactive host for human gates.
       </p>
 
       <h2 id="examples">Examples</h2>
       <p>
         These are <strong>illustrative</strong> transcripts. Full narrative versions are in the{' '}
-        <a href="/examples.md">examples collection</a>.
+        <Link to="/docs/examples">examples collection</Link>.
       </p>
 
       <h3>Simple bug fix (lean track)</h3>
@@ -435,7 +430,7 @@ claude`}
       <h3>Resume a work item</h3>
       <pre>/work abc123</pre>
       <p>
-        Reads <code>.claude/.work/abc123/state.json</code> and continues from <code>current_state</code> per{' '}
+        Reads <code>.worklogs/abc123/state.json</code> and continues from <code>current_state</code> per{' '}
         <a href="#pipeline">Pipeline</a>.
       </p>
 
@@ -445,15 +440,9 @@ claude`}
           Hypervisor policy on GitHub
         </a>
         <br />
-        <strong>More</strong> — <a href="/subagent-catalog.md">Subagent catalog</a> · <a href="/usage.md">Usage</a> ·{' '}
-        <a href="/claude-code-plugin.md">Claude Code plugin</a> ·{' '}
-        <a
-          href="https://github.com/surajSFDC/agentic-swe/blob/main/README.md#multi-platform-support"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Multi-platform support on GitHub
-        </a>
+        <strong>More</strong> — <Link to="/docs/subagent-catalog">Subagent catalog</Link> ·{' '}
+        <Link to="/docs/usage">Usage</Link> · <Link to="/docs/claude-code-plugin">Claude Code plugin</Link> ·{' '}
+        <Link to="/docs/multi-platform-support">Multi-platform support</Link>
       </div>
     </main>
   )

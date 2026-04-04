@@ -13,7 +13,7 @@ const {
 
 const root = path.join(__dirname, '..');
 const claudeMd = path.join(root, 'CLAUDE.md');
-const canonicalPath = path.join(root, '.claude', 'state-machine.json');
+const canonicalPath = path.join(root, 'state-machine.json');
 
 describe('state-machine.json matches CLAUDE.md transition block', () => {
   it('edge sets are identical', () => {

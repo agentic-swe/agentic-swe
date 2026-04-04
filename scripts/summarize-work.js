@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Read-only summary of pipeline work items under `.claude/.work/*/state.json`.
+ * Read-only summary of pipeline work items under `.worklogs/*/state.json`.
  * Does not run the Hypervisor — for dashboards and human triage.
  *
  * Usage:
@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const WORK_ROOT = path.join(process.cwd(), '.claude', '.work');
+const WORK_ROOT = path.join(process.cwd(), '.worklogs');
 const asJson = process.argv.includes('--json');
 
 function readWorkSummaries() {

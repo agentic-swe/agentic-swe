@@ -6,40 +6,12 @@ const fs = require('fs');
 const path = require('path');
 
 const claudeMdPath = path.join(__dirname, '..', 'CLAUDE.md');
-const phasesDir = path.join(__dirname, '..', '.claude', 'phases');
+const phasesDir = path.join(__dirname, '..', 'phases');
 
 const PHASE_FILE_EXCEPTIONS = {
-  'initialized': 'initialized.md',
-  'completed': 'merge-completion.md',
+  initialized: 'initialized.md',
+  completed: 'merge-completion.md',
 };
-
-function extractTransitionStates(body) {
-  const lines = body.split('\n');
-  let inBlock = false;
-  const states = new Set();
-  for (const line of lines) {
-    if (line.trim() === '```' && inBlock) break;
-    if (inBlock && line.includes('->')) {
-      const parts = line.split('->').map((s) => s.trim());
-      states.add(parts[0]);
-      for (const dest of parts[1].split('|').map((s) => s.trim())) {
-        states.add(dest);
-      }
-    }
-    if (line.trim() === '```' && !inBlock) {
-      const prevIdx = lines.indexOf(line);
-      if (prevIdx > 0 && lines[prevIdx - 1]?.includes('initialized ->')) {
-        inBlock = true;
-        states.add('initialized');
-        const firstParts = lines[prevIdx - 1].split('->').map((s) => s.trim());
-        for (const d of firstParts[1].split('|').map((s) => s.trim())) states.add(d);
-      } else {
-        inBlock = true;
-      }
-    }
-  }
-  return states;
-}
 
 function extractTransitionBlock(body) {
   const lines = body.split('\n');
@@ -67,7 +39,10 @@ function extractArtifactTableStates(body) {
   const lines = body.split('\n');
   let inTable = false;
   for (const line of lines) {
-    if (line.includes('Required Artifacts')) { inTable = true; continue; }
+    if (line.includes('Required Artifacts')) {
+      inTable = true;
+      continue;
+    }
     if (inTable && line.startsWith('|')) {
       const match = line.match(/\|\s*`([^`]+)`\s*\|/);
       if (match) states.add(match[1]);

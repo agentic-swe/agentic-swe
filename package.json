@@ -1,10 +1,10 @@
 {
   "name": "agentic-swe",
-  "version": "2.0.0",
-  "description": "Autonomous SWE pipeline for Claude Code — install markdown policies, phases, and agents into your repo",
+  "version": "3.0.0",
+  "description": "Autonomous SWE pipeline for Claude Code — install as a plugin (marketplace or --plugin-dir). Per-work state uses .worklogs/ in your project.",
   "license": "MIT",
   "author": "Suraj Gupta",
-  "homepage": "https://d3pi4w4hqr9gq6.cloudfront.net",
+  "homepage": "https://surajSFDC.github.io/agentic-swe/",
   "keywords": [
     "claude",
     "claude-code",
@@ -16,23 +16,20 @@
   "engines": {
     "node": ">=18"
   },
-  "bin": {
-    "agentic-swe": "bin/agentic-swe.js"
-  },
+  "private": true,
   "files": [
     "CHANGELOG.md",
-    "bin",
     "scripts",
     "CLAUDE.md",
     "AGENTS.md",
     "GEMINI.md",
-    ".claude/commands",
-    ".claude/phases",
-    ".claude/agents",
-    ".claude/templates",
-    ".claude/references",
-    ".claude/state-machine.json",
-    ".claude/tools",
+    "commands",
+    "phases",
+    "agents",
+    "templates",
+    "references",
+    "state-machine.json",
+    "tools",
     "tools/brainstorm-server/",
     ".claude-plugin/",
     ".cursor-plugin/",
@@ -47,12 +44,12 @@
   },
   "scripts": {
     "build:site": "npm run build --prefix site",
-    "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('.claude','phases');if(!fs.existsSync(r))process.exit(1)\"",
-    "test": "node --test test/*.test.js",
+    "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('phases');if(!fs.existsSync(r))process.exit(1)\"",
+    "test": "node scripts/run-node-tests.js",
     "test:smoke": "bash test/smoke/run-smoke.sh",
     "test:llm": "node test/llm/run-llm-tests.cjs",
+    "ci": "npm run verify && npm run version:check && npm run lint --prefix site && npm run build --prefix site && npm test",
     "verify": "node scripts/verify-sanity.js",
-    "sync:claude-plugin": "node scripts/sync-claude-plugin-manifest.cjs",
     "summarize-work": "node scripts/summarize-work.js",
     "version:check": "bash scripts/bump-version.sh check",
     "version:bump": "bash scripts/bump-version.sh bump"

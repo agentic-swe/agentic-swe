@@ -14,7 +14,7 @@ labels: enhancement
 
 ## Core pipeline vs custom subagent
 
-<!-- Is this for the core pipeline (phases, agents, commands, templates) or a repo-specific custom subagent under `.claude/agents/subagents/custom/`? -->
+<!-- Is this for the core pipeline (phases, agents, commands, templates) or a repo-specific custom subagent under `${CLAUDE_PLUGIN_ROOT}/agents/subagents/custom/`? -->
 
 - [ ] Core pipeline / packaged tooling
 - [ ] Custom subagent (or other extension point)

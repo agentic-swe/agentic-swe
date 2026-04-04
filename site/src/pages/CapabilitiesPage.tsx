@@ -8,8 +8,10 @@ const CARDS = [
     title: 'Zero runtime code',
     body: (
       <>
-        The pipeline is markdown under <code style={{ fontSize: '0.85em' }}>.claude/</code> plus the root Hypervisor
-        policy file. The host (e.g. Claude Code) executes it. Optional local tools like the brainstorm visual server are
+        The pipeline is markdown at the plugin root (<code style={{ fontSize: '0.85em' }}>{'${CLAUDE_PLUGIN_ROOT}/'}</code>{' '}
+        — e.g. <code style={{ fontSize: '0.85em' }}>phases/</code>, <code style={{ fontSize: '0.85em' }}>commands/</code>)
+        plus the root Hypervisor policy file (<code style={{ fontSize: '0.85em' }}>CLAUDE.md</code>). The host (e.g. Claude
+        Code) executes it. Optional local tools like the brainstorm visual server are
         opt-in — not required to run <code style={{ fontSize: '0.85em' }}>/work</code>.
       </>
     ),
@@ -121,17 +123,10 @@ export function CapabilitiesPage() {
             style={{ marginLeft: 'auto', marginRight: 'auto', maxWidth: '720px' }}
           >
             Install once into the repo; the <strong>Hypervisor</strong> policy and{' '}
-            <code style={{ fontSize: '0.9em' }}>.claude/</code> tree work across hosts. <strong>Claude Code</strong> is
+            <code style={{ fontSize: '0.9em' }}>{'${CLAUDE_PLUGIN_ROOT}/'}</code> pipeline tree work across hosts.{' '}
+            <strong>Claude Code</strong> is
             the primary path; Cursor, Codex, OpenCode, and Gemini CLI are supported via the bundled plugin / extension
-            hooks — see <Link to="/guide#platforms">Platforms</Link> in the guide, or{' '}
-            <a
-              href="https://github.com/surajSFDC/agentic-swe/blob/main/README.md#multi-platform-support"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              multi-platform support on GitHub
-            </a>
-            .
+            hooks — see <Link to="/docs/multi-platform-support">multi-platform support</Link>.
           </p>
           <div className="platforms-list">
             <span>Claude Code</span>

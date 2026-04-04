@@ -7,7 +7,7 @@
 
 agentic-swe is an autonomous software engineering pipeline. You are the
 **Hypervisor** — there is no runtime engine. Execute the pipeline by following
-the policies, phase prompts, and templates under `.claude/`.
+the policies, phase prompts, and templates under **`${CLAUDE_PLUGIN_ROOT}/`** when the **agentic-swe** Claude Code plugin is enabled. Per-work state lives in **`.worklogs/<id>/`** in the project under edit.
 
 ### State Machine (abbreviated)
 
@@ -41,11 +41,11 @@ initialized → feasibility → lean-track-check → branch by pipeline.track �
 
 ### Key Directories
 
-- `.claude/commands/` — slash command definitions
-- `.claude/phases/` — phase prompts (one per pipeline state)
-- `.claude/agents/` — specialist agent prompts (135+ subagents)
-- `.claude/templates/` — state, progress, and evidence templates
-- `.claude/references/` — authoritative tool and process references
+- `${CLAUDE_PLUGIN_ROOT}/commands/` — slash command definitions (per [Claude Plugins reference](https://code.claude.com/docs/en/plugins-reference#skills), plugins may use `commands/*.md` or `skills/<name>/SKILL.md`; this pack uses **`commands/`** only)
+- `${CLAUDE_PLUGIN_ROOT}/phases/` — phase prompts (one per pipeline state)
+- `${CLAUDE_PLUGIN_ROOT}/agents/` — specialist agent prompts (135+ subagents)
+- `${CLAUDE_PLUGIN_ROOT}/templates/` — state, progress, and evidence templates
+- `${CLAUDE_PLUGIN_ROOT}/references/` — authoritative tool and process references
 
 ### Governance
 

@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -21,18 +23,40 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            site/package-lock.json
+            tools/brainstorm-server/package-lock.json
 
-      - name: Install dev dependencies
-        run: npm install
+      - name: Install root dependencies (npm ci)
+        run: npm ci --registry=https://registry.npmjs.org/
 
-      - name: Install brainstorm-server dependencies
-        run: npm install --prefix tools/brainstorm-server --registry=https://registry.npmjs.org/
+      - name: Install brainstorm-server dependencies (npm ci)
+        run: npm ci --prefix tools/brainstorm-server --registry=https://registry.npmjs.org/
 
-      - name: Install and build docs site (Vite)
-        run: npm ci --prefix site --registry=https://registry.npmjs.org/ && npm run build --prefix site
+      - name: Install site dependencies (npm ci)
+        run: npm ci --prefix site --registry=https://registry.npmjs.org/
+
+      - name: Lint site (ESLint + TypeScript-aware rules)
+        run: npm run lint --prefix site
+
+      - name: Build site (tsc + Vite)
+        run: npm run build --prefix site
 
       - name: Verify pipeline layout
         run: npm run verify
 
-      - name: Test
+      - name: Check version alignment (package + plugin manifests)
+        run: npm run version:check
+
+      - name: Validate Claude plugin manifest (if CLI on PATH)
+        run: |
+          if command -v claude >/dev/null 2>&1; then
+            claude plugin validate "$GITHUB_WORKSPACE"
+          else
+            echo "::notice title=Claude CLI::claude not on PATH — skipping standalone validate (install-platform-stubs.test.js still validates manifests when claude is missing)"
+          fi
+
+      - name: Test (repo + platform wiring + plugin validate when claude available)
         run: npm test

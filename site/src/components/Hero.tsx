@@ -77,14 +77,9 @@ export function Hero() {
             </a>
           </motion.div>
           <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-            <a
-              href="https://www.npmjs.com/package/agentic-swe"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-ghost"
-            >
-              npm package
-            </a>
+            <Link to="/docs/installation" className="btn btn-ghost">
+              Install guide
+            </Link>
           </motion.div>
         </motion.div>
       </motion.div>

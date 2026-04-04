@@ -1,8 +1,9 @@
-# Runtime work state (generated per-run)
-.claude/.work/
+# Runtime work state (generated per-run; Hypervisor uses .worklogs/<id>/ in target repos)
+.worklogs/
 
-# Claude Code local settings (user-specific, not project config)
-.claude/settings.local.json
+# Do not commit a second copy of the pack under /.claude/ — canonical plugin paths are repo root.
+# Claude Code may create this directory locally (e.g. project settings); keep it out of git.
+/.claude/
 
 # Cursor — ignore local IDE state; keep shared rules committed
 .cursor/*

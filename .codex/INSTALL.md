@@ -1,56 +1,40 @@
 # Installing agentic-swe for Codex
 
+The **npm CLI (`npx agentic-swe`) was removed in v3**. Codex users should treat this repository as the **source of truth** for markdown (plugin root: `commands/`, `phases/`, `agents/`, `templates/`, `references/`, `tools/`, `state-machine.json`).
+
 ## Prerequisites
 
-- Node.js >= 18
-- A target repository where you want the pipeline
+- A checkout of **agentic-swe** (clone or submodule)
+- A **target git repository** where you want the pipeline
 
-## Quick Install
+## Quick setup
 
-```bash
-# Option A — npx (recommended)
-cd /path/to/your-repo
-npx agentic-swe
+1. Copy **`AGENTS.md`** from this repo into your **target repo root** (or merge its content with an existing `AGENTS.md`).
 
-# Option B — global install
-npm install -g agentic-swe
-cd /path/to/your-repo
-agentic-swe install
-```
+2. Merge **`CLAUDE.md`** into the target repo using the delimiter rules in **`commands/install.md`** (same as Claude Code **`/install`**).
 
-Both methods copy `.claude/` and `CLAUDE.md` into your repo.
+3. Make pipeline markdown visible to Codex — pick one:
+   - **Symlink** the pack directories you need from the checkout into the target repo (layout is up to you; keep paths consistent with what **`AGENTS.md`** describes), or
+   - **Open both** the pack checkout and the target repo in the same workspace if your tooling resolves cross-folder reads.
 
-## Codex-Specific Setup
+4. Use **`.worklogs/<id>/`** in the **target repo root** for per-work state (not **`.claude/.work/`**).
 
-### 1. Create AGENTS.md
+5. Optional: enable multi-agent mode in Codex if your environment supports it (see **`site/src/content/docs/README.codex.md`**).
 
-Copy the provided `AGENTS.md` from this repository into your target repo root.
-Codex reads `AGENTS.md` as its orchestration entry point.
+## Symlink example (local dev)
+
+Adjust paths to match your machine; this mirrors a minimal “live” link to the pack:
 
 ```bash
-cp /path/to/agentic-swe/AGENTS.md /path/to/your-repo/AGENTS.md
+PACK=/path/to/agentic-swe
+TARGET=/path/to/your-repo
+cp "$PACK/AGENTS.md" "$TARGET/"
+# Merge CLAUDE.md manually or follow commands/install.md
+mkdir -p "$TARGET/.agentic-swe"
+for d in commands phases agents templates references tools; do
+  ln -sf "$PACK/$d" "$TARGET/.agentic-swe/$d"
+done
+ln -sf "$PACK/state-machine.json" "$TARGET/.agentic-swe/state-machine.json"
 ```
 
-### 2. Enable Multi-Agent Mode (optional)
-
-If your Codex workspace supports it, enable multi-agent dispatch so the
-pipeline can delegate to specialist subagents:
-
-```json
-{ "multi_agent": true }
-```
-
-### 3. Verify
-
-Open the target repo in Codex. The pipeline policy from `AGENTS.md` should
-be active. Run `/work <task description>` to start a work item.
-
-## Symlink Alternative
-
-For local development you can symlink instead of copying:
-
-```bash
-ln -s /path/to/agentic-swe/.claude /path/to/your-repo/.claude
-ln -s /path/to/agentic-swe/CLAUDE.md /path/to/your-repo/CLAUDE.md
-ln -s /path/to/agentic-swe/AGENTS.md /path/to/your-repo/AGENTS.md
-```
+Point **`AGENTS.md`** (or your Codex config) at those paths so phase and command files resolve.

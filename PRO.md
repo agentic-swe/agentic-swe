@@ -6,9 +6,9 @@ The core pipeline is **MIT-licensed** open source. Paid offers are **people, pri
 
 | Included in core (MIT) | Pro / services (commercial) |
 |------------------------|----------------------------|
-| `.claude/` pipeline, phases, agents, npm install | Time-boxed help: install, tune phases, train teams |
+| Plugin-root pipeline (`commands/`, `phases/`, `agents/`, …), Claude Code plugin | Time-boxed help: install, tune phases, train teams |
 | Runs in **your** Claude Code + **your** repo | Email/office hours / early add-on **content** (when offered) |
-| You operate upgrades via `npx agentic-swe` | No obligation to buy Pro to use the OSS pipeline |
+| You operate upgrades via **plugin marketplace** / **`claude --plugin-dir`** | No obligation to buy Pro to use the OSS pipeline |
 
 **Still not sold:** execution of your code on our servers, a proprietary “Pro runtime,” or an API that runs tasks without your environment.
 

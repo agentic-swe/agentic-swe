@@ -2,7 +2,7 @@
 
 This project’s marketing/docs site can be deployed to AWS as a **private S3 bucket** in front of **CloudFront** (Origin Access Control). Objects are not publicly readable from S3; only the CloudFront distribution can read them.
 
-For how this fits **product distribution** (public vs private repo, GitHub Pages, custom domains), see [distribution.md](../site/public/distribution.md).
+For how this fits **product distribution** (public vs private repo, GitHub Pages, custom domains), see [distribution.md](../site/src/content/docs/distribution.md).
 
 ## Configure deploy (local only)
 

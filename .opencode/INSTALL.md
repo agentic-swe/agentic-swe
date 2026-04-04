@@ -3,20 +3,23 @@
 ## Prerequisites
 
 - OpenCode with plugin support enabled
-- Node.js >= 18
+- Node.js >= 18 (for the ESM plugin)
+- A checkout of **agentic-swe** (this repository)
 
 ## Setup
 
-### 1. Install agentic-swe into your target repo
+### 1. Target repo layout
 
-```bash
-cd /path/to/your-repo
-npx agentic-swe
-```
+The plugin file resolves pipeline paths from the **agentic-swe repository root** (parent of `.opencode/`). Either:
+
+- Open the **agentic-swe** checkout as your workspace, or
+- Point the plugin at a clone (see plugin source paths in **`.opencode/plugins/agentic-swe.js`**).
+
+There is **no** `npx agentic-swe` step in v3 — use the **Claude Code plugin** or a Git checkout.
 
 ### 2. Add the plugin to opencode.json
 
-Create or edit `opencode.json` in your repo root:
+Create or edit **`opencode.json`** in the repo you open in OpenCode:
 
 ```json
 {
@@ -29,22 +32,20 @@ Create or edit `opencode.json` in your repo root:
 }
 ```
 
-### 3. Copy the plugin file
+### 3. Copy or symlink the plugin file
 
 ```bash
-cp /path/to/agentic-swe/.opencode/plugins/agentic-swe.js \
-   /path/to/your-repo/.opencode/plugins/agentic-swe.js
-```
-
-Or symlink for local development:
-
-```bash
-mkdir -p .opencode/plugins
+mkdir -p /path/to/your-repo/.opencode/plugins
 ln -s /path/to/agentic-swe/.opencode/plugins/agentic-swe.js \
-      .opencode/plugins/agentic-swe.js
+      /path/to/your-repo/.opencode/plugins/agentic-swe.js
 ```
 
-### 4. Verify
+If the plugin’s **`repoRoot`** must differ, adjust **`.opencode/plugins/agentic-swe.js`** or run OpenCode from the pack checkout.
 
-Open the repo in OpenCode. The plugin injects the orchestration policy
-into chat context. Run `/work <task>` to start a work item.
+### 4. Merge policy and worklogs
+
+Merge root **`CLAUDE.md`** into your project per **`commands/install.md`** and use **`.worklogs/<id>/`** for work state.
+
+### 5. Verify
+
+Open the repo in OpenCode. The plugin prepends **`CLAUDE.md`** policy. Run **`/work <task>`** to start a work item.

@@ -6,7 +6,7 @@
 ## You Are the Hypervisor
 
 There is no runtime engine. You execute the pipeline by following the
-policies, phase prompts, and templates under `.claude/`.
+policies, phase prompts, and templates shipped with the pack (in Claude Code these resolve from **`${CLAUDE_PLUGIN_ROOT}/`** when the plugin is enabled).
 
 ## Pipeline Overview
 
@@ -37,7 +37,7 @@ initialized → feasibility → lean-track-check
 
 ## State and Artifacts
 
-All run state lives under `.claude/.work/<id>/`:
+All run state lives under `.worklogs/<id>/`:
 
 - `state.json` — current state, budget, counters, history
 - `progress.md` — human-readable progress log
@@ -45,7 +45,7 @@ All run state lives under `.claude/.work/<id>/`:
 
 ## Tool Mapping
 
-See [`.claude/references/gemini-tools.md`](.claude/references/gemini-tools.md)
+See [`${CLAUDE_PLUGIN_ROOT}/references/gemini-tools.md`](${CLAUDE_PLUGIN_ROOT}/references/gemini-tools.md)
 for a mapping of agentic-swe tool concepts to Gemini CLI equivalents.
 
 ## Governance

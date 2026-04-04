@@ -1,8 +1,8 @@
 /**
  * agentic-swe plugin for OpenCode
  *
- * Registers the .claude/ pipeline paths and injects orchestration policy
- * into chat context so OpenCode sessions follow the agentic-swe state machine.
+ * Registers plugin-root pipeline paths (commands, phases, agents, templates, references)
+ * and injects orchestration policy into chat context.
  *
  * Tool mapping (agentic-swe → OpenCode):
  *   Agent tool        → opencode.agent.spawn
@@ -25,17 +25,15 @@ function loadPolicy() {
 }
 
 export function config(cfg) {
-  const claudeDir = join(repoRoot, ".claude");
-
   return {
     ...cfg,
     paths: {
       ...(cfg.paths || {}),
-      commands: join(claudeDir, "commands"),
-      phases: join(claudeDir, "phases"),
-      agents: join(claudeDir, "agents"),
-      templates: join(claudeDir, "templates"),
-      references: join(claudeDir, "references"),
+      commands: join(repoRoot, "commands"),
+      phases: join(repoRoot, "phases"),
+      agents: join(repoRoot, "agents"),
+      templates: join(repoRoot, "templates"),
+      references: join(repoRoot, "references"),
     },
   };
 }
@@ -50,6 +48,7 @@ export const experimental = {
           content: [
             "You are the Hypervisor for the agentic-swe pipeline.",
             "Follow the policy below for state management, transitions, and artifact requirements.",
+            "Pipeline files resolve from the plugin root (${CLAUDE_PLUGIN_ROOT}); per-work state lives in .worklogs/<id>/ in the user project.",
             "",
             policy,
           ].join("\n"),
