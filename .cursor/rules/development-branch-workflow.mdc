@@ -1,76 +1,64 @@
 ---
-description: Branch workflow — feature/bugfix branches, test before push, PR to main or uat
+description: UAT gate to main — feature/bugfix → uat → main; hotfix/* → main; test before push
 alwaysApply: true
 ---
 
 # Development workflow (agentic-swe)
 
-Follow this for **any code or config change** in this repository. It matches the protected-branch setup on GitHub (`main`, `uat`) and naming rules for short-lived branches.
+Follow this for **any code or config change**. It matches GitHub rulesets on **`main`** and **`uat`**, including the **main-merge-source** check: only **`uat`**, **`hotfix/*`**, or **`dependabot/*`** may target **`main`** via PR.
 
-## Branches
+## Branch roles
 
 | Kind | Pattern | Purpose |
 |------|---------|---------|
-| Release | `main` | Production-ready history; **never commit directly** — merge via PR only. |
-| Pre-release / integration | `uat` | Staging / acceptance; **never commit directly** — merge via PR only (typically `main` → `uat` or `feature/*` → `uat` when validating before `main`). |
-| Feature | `feature/<short-kebab-topic>` | New capability or larger change. |
+| Release | `main` | Production-ready; **no direct pushes** — merge via PR only. **PRs into `main`** must come from **`uat`** (after UAT) or **`hotfix/*`** (emergency). Enforced by **`.github/workflows/main-merge-source.yml`**. |
+| UAT / staging | `uat` | Pre-release integration; **no direct pushes** — merge via PR. Normal work lands here **before** `main`. |
+| Feature | `feature/<short-kebab-topic>` | New capability. |
 | Bugfix | `bugfix/<short-kebab-topic>` or `bug-fix/<short-kebab-topic>` | Defect fixes. |
-| Hotfix | `hotfix/<short-kebab-topic>` | Urgent production-oriented fixes (same discipline as feature). |
-| Maintenance | `chore/<short-kebab-topic>` | Tooling, CI, docs-only batches that are not product features. |
+| Hotfix | `hotfix/<short-kebab-topic>` | Urgent fix **may PR directly to `main`** (bypasses UAT line). Still run tests before push. |
+| Maintenance | `chore/<short-kebab-topic>` | Tooling, CI, docs batches. |
 
-Do **not** use generic names like `dev`, `temp`, or owner-prefixed ad-hoc branches unless you are using an allowed prefix above. If GitHub rejects a push, rename the branch to match the convention.
+Avoid ad-hoc branch names (`dev`, `temp`, …) unless they use an allowed prefix above.
 
-## Session start
+## Standard flow (anything that is not a hotfix)
 
-1. `git fetch origin` and base your work on **`origin/main`** unless the task explicitly targets **`uat`**.
-2. Create a **new branch** before editing:
+1. `git fetch origin` and branch from **`origin/main`** or **`origin/uat`** as appropriate (usually **`main`**).
+2. `git checkout -b feature/my-change` (or `bugfix/…`, `chore/…`).
+3. Before **every** push (repo root): **`npm test`**. If you touched **`site/`** (or site tooling): also **`npm run lint --prefix site`** and **`npm run build --prefix site`**.
+4. Push and open a PR into **`uat`** (not `main`):
 
-   `git checkout -b feature/my-change` (or `bugfix/…`, `chore/…`, etc.).
+   `gh pr create --base uat --head <your-branch> --title "…" --body "…"`
 
-## Before every push
+5. After **UAT is passed** (your sign-off / acceptance), open a **promotion** PR **`uat` → `main`**:
 
-From the **repository root** (so `.npmrc` applies):
+   `gh pr create --base main --head uat --title "Promote uat to main" --body "UAT passed: …"`
 
-1. **`npm test`** — required.
-2. If you changed anything under **`site/`** or site tooling, also run:
-   - `npm run lint --prefix site`
-   - `npm run build --prefix site`
+## Hotfix flow
 
-Fix failures **before** pushing. Do not push to rely on CI to discover broken tests.
+1. Branch from **`main`**: `git checkout -b hotfix/critical-fix origin/main`
+2. Fix, test (`npm test`, plus site checks if applicable), push.
+3. PR **directly to `main`**: `gh pr create --base main --head hotfix/critical-fix …`
 
-## Push and pull request
+## Refresh `uat` from `main`
 
-1. Commit on your feature branch with a clear message (see repo `git-identity-personal` rule for author email).
-2. `git push -u origin <your-branch>`
-3. Open a PR with **`gh`** (or the GitHub UI):
-   - **Default base:** `main`
-   - **Use base `uat`** only when the task is explicitly UAT/staging integration or the user asked to land changes on `uat` first.
-
-   Example:
-
-   `gh pr create --base main --head <your-branch> --title "…" --body "…"`
-
-4. Do **not** merge from the agent unless the user asked you to handle merge/CI gates; the human (or policy) approves after review.
+When `main` has moved ahead (e.g. after hotfixes) and you want **`uat`** to catch up, open a PR with **base `uat`** and **head `main`** (not `git push origin main:uat`). Same rules as any other change to `uat`: PR + checks + review.
 
 ## Quick checklist
 
-- [ ] On a **named** branch (`feature/*`, `bugfix/*`, `bug-fix/*`, `hotfix/*`, or `chore/*`).
-- [ ] **Not** committing directly to `main` or `uat`.
+- [ ] Work is on **`feature/*`**, **`bugfix/*`**, **`bug-fix/*`**, **`hotfix/*`**, or **`chore/*`**.
+- [ ] **No** commits on **`main`** or **`uat`** directly.
+- [ ] **Normal work:** PR targets **`uat`** first; promotion **`uat` → `main`** only after UAT pass.
+- [ ] **Hotfix:** PR targets **`main`** from **`hotfix/*`** only.
 - [ ] **`npm test`** passed locally (and site lint/build if applicable).
-- [ ] Pushed to `origin` and **PR opened** (or user told you they will open it).
 
 ## GitHub rulesets (this repo)
 
-Long-lived branches are protected on GitHub (no direct pushes; PR + CI + code owners, with admin bypass on pull requests as configured in the UI):
-
 | Branch | Role |
 |--------|------|
-| `main` | Release / default — [ruleset in repo settings](https://github.com/surajSFDC/agentic-swe/rules) |
-| `uat` | Pre-release / acceptance — same policy pattern as `main`; merge via PR after CI green |
+| `main` | Release — [rules](https://github.com/surajSFDC/agentic-swe/rules): PR required, code owners, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`** (merge policy), no force-push. |
+| `uat` | UAT — same style of protection as `main` for merges (PR + CI + code owners). |
 
-**Promote `main` → `uat`:** open a PR with base `uat` and compare `main` (or merge `main` into a branch and PR). Do **not** use `git push origin main:uat` — rulesets block direct updates to `uat`.
-
-Short-lived work uses the prefixes in the table above. **Branch-name enforcement** beyond that is handled here in Cursor; if you want server-side name patterns as well, add a **metadata / branch name** rule in **Settings → Rules → Rulesets** (the REST API may reject some pattern payloads on free-tier repos).
+**Dependabot** PRs use heads like `dependabot/…`; **`main-merge-source`** allows those so security/version PRs can still target `main`.
 
 ## Relation to other rules
 

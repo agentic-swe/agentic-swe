@@ -1,0 +1,49 @@
+# Required by the "Protect main" ruleset. Blocks PRs into main unless the head
+# branch is uat (post-UAT promotion), hotfix/*, or dependabot/*.
+name: main-merge-source
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  main-merge-source:
+    name: main-merge-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve head ref
+        id: head
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            echo "ref=${{ github.event.merge_group.head_ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Enforce allowed sources for PRs targeting main
+        env:
+          HEAD_REF: ${{ steps.head.outputs.ref }}
+        run: |
+          set -euo pipefail
+          echo "Head ref: $HEAD_REF"
+          if [[ "$HEAD_REF" == "uat" ]]; then
+            echo "OK: uat → main (UAT promotion)"
+            exit 0
+          fi
+          if [[ "$HEAD_REF" == hotfix/* ]]; then
+            echo "OK: hotfix → main"
+            exit 0
+          fi
+          if [[ "$HEAD_REF" == dependabot/* ]]; then
+            echo "OK: dependabot → main"
+            exit 0
+          fi
+          echo "::error::PRs to \`main\` must come from \`uat\` (after UAT passes) or \`hotfix/*\`. Head was \`$HEAD_REF\`. Typical flow: \`feature/*\` | \`bugfix/*\` | \`chore/*\` → PR to \`uat\` → then PR \`uat\` → \`main\`."
+          exit 1

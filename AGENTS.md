@@ -51,3 +51,7 @@ initialized → feasibility → lean-track-check → branch by pipeline.track �
 
 For the full governance policy, state machine, budgets, delegation rules,
 and artifact requirements, see [`CLAUDE.md`](CLAUDE.md).
+
+### Git branching (this repository)
+
+PR flow uses a **UAT gate**: work merges to **`uat`** first, then **`uat` → `main`** after UAT passes; **`hotfix/*`** may open PRs directly to **`main`**. Details: [`.cursor/rules/development-branch-workflow.mdc`](.cursor/rules/development-branch-workflow.mdc).
