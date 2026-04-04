@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: validate
+  main-merge-source:
+    name: main-merge-source
     runs-on: ubuntu-latest
     steps:
       - name: Resolve head ref

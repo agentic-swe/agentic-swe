@@ -55,7 +55,7 @@ When `main` has moved ahead (e.g. after hotfixes) and you want **`uat`** to catc
 
 | Branch | Role |
 |--------|------|
-| `main` | Release — [rules](https://github.com/surajSFDC/agentic-swe/rules): PR required, code owners, CI **`test (20)`** / **`test (22)`**, **`main-merge-source / validate`**, no force-push. |
+| `main` | Release — [rules](https://github.com/surajSFDC/agentic-swe/rules): PR required, code owners, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`** (merge policy), no force-push. |
 | `uat` | UAT — same style of protection as `main` for merges (PR + CI + code owners). |
 
 **Dependabot** PRs use heads like `dependabot/…`; **`main-merge-source`** allows those so security/version PRs can still target `main`.
