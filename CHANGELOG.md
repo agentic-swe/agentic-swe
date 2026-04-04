@@ -7,27 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **`package.json` `test` script:** delegate to **`scripts/run-node-tests.js`**, which collects **`test/**/*.test.js`** and runs **`node --test <files...>`**. Node **22** can treat **`node --test test`** / **`./test/`** like a module path (`MODULE_NOT_FOUND`); explicit file paths work on **20** and **22**.
-
-### Changed
-
-- **CI (`.github/workflows/ci.yml`):** **`npm ci`** for root, **`site/`**, and **`tools/brainstorm-server`**; **npm cache** on three lockfiles; **site ESLint** before Vite build; **`merge_group`** + **`workflow_dispatch`** triggers; clearer step names. Root **`npm run ci`** mirrors the same checks (verify, version, lint site, build site, test) for local pre-push.
-- **`test/install-platform-stubs.test.js`** — Expanded automated **per-platform wiring**: Claude marketplace version sync + **`hooks.json`** SessionStart + optional in-test **`claude plugin validate`**; Cursor version + markdown counts + all **`hooks-cursor.json`** hooks; Gemini version + **`GEMINI.md`** heuristics; Codex **INSTALL** content; OpenCode **`import()`** of **`config`** / **`experimental.chat`**. Docs **[`release-checklist.md`](site/src/content/docs/release-checklist.md)** and **[`multi-platform-support.md`](site/src/content/docs/multi-platform-support.md)** describe coverage vs UI smoke.
-- **README:** Removed the **Migrating from npm** section and the Quick Start link to it; use the [installation](https://surajSFDC.github.io/agentic-swe/docs/installation) doc for vendored **`.claude/`** cleanup.
-- **Marketing site docs:** Removed end-user references to the deprecated **`npx agentic-swe`** / npm package install path; migration and troubleshooting now describe a **vendored `.claude/`** tree only. Maintainer commands (**`npm test`**, **`npm run build:site`**) remain in release/deploy docs.
-- **Docs URLs:** README **Product** table and inline doc links list **GitHub Pages** first and **CloudFront** as mirror; paths use **`/docs/*`** (not legacy **`*.md`**). **`package.json` `homepage`**, **`.claude-plugin/plugin.json`**, and **`marketplace.json`** **`homepage`** set to **`https://surajSFDC.github.io/agentic-swe/`**. **[`distribution.md`](site/src/content/docs/distribution.md)** describes Pages as canonical and CloudFront as mirror.
-- **GitHub Pages:** [`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds the marketing site with **`VITE_BASE=/<repo>/`** and deploys **`site/dist/`**; **`404.html`** duplicates **`index.html`** for SPA routing. **`site/vite.config.ts`** reads optional **`VITE_BASE`** (default **`/`** for root deploys).
-- **Release checklist / stub:** **[Release checklist](site/src/content/docs/release-checklist.md)** (`/docs/release-checklist`) documents automated vs manual verification; **`docs/RELEASE-CHECKLIST.md`** points at the site source. **[`distribution.md`](site/src/content/docs/distribution.md)** links in-site.
-- **Marketing site:** long-form docs live in **`site/src/content/docs/*.md`** and render as styled pages at **`/docs/*`** (with **`react-markdown`** / **`remark-gfm`**). Raw **`site/public/*.md`** copies were removed; legacy **`/*.md`** URLs redirect to **`/docs/*`**. README CloudFront links and **`infra/README.md`** point at the new paths.
-- Documentation and marketing site updated for **plugin-only** install (removed npm/doctor references from primary flows).
-- Removed the committed duplicate **`.claude/**` tree**; the plugin’s canonical assets live only at **repo root** (`commands/`, `phases/`, `agents/`, …). **`/.claude/`** is gitignored so a local Claude Code folder is not re-added by mistake.
-- **README:** New **CI and pre-push checks** section links the workflow, **`npm run ci`**, and the release checklist.
-
-### Fixed
-
-- **`scripts/bump-version.sh`** / **`.version-bump.json`** — marketplace plugin version is included in sync checks and bumps via **`versionSelector`**.
+_No unreleased changes yet._
 
 ## [3.0.4] - 2026-04-05
 
@@ -69,6 +49,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **`/author-pipeline`** — explicit **CHANGELOG + version** checklist step; state-machine sync called out when editing transitions.
+- **CI (`.github/workflows/ci.yml`):** **`npm ci`** for root, **`site/`**, and **`tools/brainstorm-server`**; **npm cache** on three lockfiles; **site ESLint** before Vite build; **`merge_group`** + **`workflow_dispatch`** triggers; clearer step names. Root **`npm run ci`** mirrors the same checks (verify, version, lint site, build site, test) for local pre-push.
+- **`test/install-platform-stubs.test.js`** — automated **per-platform wiring**: Claude marketplace version sync + **`hooks.json`** SessionStart + optional in-test **`claude plugin validate`** (marketplace); Cursor version + markdown counts + all **`hooks-cursor.json`** hooks; Gemini version + **`GEMINI.md`** heuristics; Codex **INSTALL** content; OpenCode **`import()`** of **`config`** / **`experimental.chat`**. Docs **[`release-checklist.md`](site/src/content/docs/release-checklist.md)** and **[`multi-platform-support.md`](site/src/content/docs/multi-platform-support.md)** describe coverage vs UI smoke.
+- **README:** Removed the **Migrating from npm** section and the Quick Start link to it; use the [installation](https://surajSFDC.github.io/agentic-swe/docs/installation) doc for vendored **`.claude/`** cleanup.
+- **Marketing site docs:** Removed end-user references to the deprecated **`npx agentic-swe`** / npm package install path; migration and troubleshooting now describe a **vendored `.claude/`** tree only. Maintainer commands (**`npm test`**, **`npm run build:site`**) remain in release/deploy docs.
+- **Docs URLs:** README **Product** table and inline doc links list **GitHub Pages** first and **CloudFront** as mirror; paths use **`/docs/*`** (not legacy **`*.md`**). **`package.json` `homepage`**, **`.claude-plugin/plugin.json`**, and **`marketplace.json`** **`homepage`** set to **`https://surajSFDC.github.io/agentic-swe/`**. **[`distribution.md`](site/src/content/docs/distribution.md)** describes Pages as canonical and CloudFront as mirror.
+- **GitHub Pages:** [`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds the marketing site with **`VITE_BASE=/<repo>/`** and deploys **`site/dist/`**; **`404.html`** duplicates **`index.html`** for SPA routing. **`site/vite.config.ts`** reads optional **`VITE_BASE`** (default **`/`** for root deploys).
+- **Release checklist / stub:** **[Release checklist](site/src/content/docs/release-checklist.md)** (`/docs/release-checklist`) documents automated vs manual verification; **`docs/RELEASE-CHECKLIST.md`** points at the site source. **[`distribution.md`](site/src/content/docs/distribution.md)** links in-site.
+- **Marketing site:** long-form docs live in **`site/src/content/docs/*.md`** and render as styled pages at **`/docs/*`** (with **`react-markdown`** / **`remark-gfm`**). Raw **`site/public/*.md`** copies were removed; legacy **`/*.md`** URLs redirect to **`/docs/*`**. README CloudFront links and **`infra/README.md`** point at the new paths.
+- Documentation and marketing site updated for **plugin-only** install (removed npm/doctor references from primary flows).
+- **Repo hygiene:** alongside plugin-root layout, root **`.claude/`** is **gitignored** so local Claude Code metadata is not committed with the pack.
+- **README:** New **CI and pre-push checks** section links the workflow, **`npm run ci`**, and the release checklist.
+
+### Fixed
+
+- **`package.json` `test` script:** delegate to **`scripts/run-node-tests.js`**, which collects **`test/**/*.test.js`** and runs **`node --test <files...>`**. Node **22** can treat **`node --test test`** / **`./test/`** like a module path (`MODULE_NOT_FOUND`); explicit file paths work on **20** and **22**.
+- **`scripts/bump-version.sh`** / **`.version-bump.json`** — marketplace plugin version is included in sync checks and bumps via **`versionSelector`**.
 
 ### Breaking
 
