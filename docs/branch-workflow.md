@@ -13,6 +13,13 @@
 
 Use the workflow below for **any code or config change** in **this** **agentic-swe** repo on GitHub. It matches rulesets on **`main`** and **`uat`**, and the **`main-merge-source`** workflow: only **`uat`**, **`hotfix/*`**, or **`dependabot/*`** may target **`main`** via PR.
 
+## Branch from `uat` (normal work)
+
+For **feature**, **bugfix**, **bug-fix**, and **chore** work, **always** create the topic branch from **`origin/uat`**, not from **`main`**. Work merges to **`uat`** first, then promotes to **`main`**.
+
+- If **`uat`** is behind **`main`** (e.g. after a **hotfix** on **`main`** only), refresh **`uat`** with a PR **`main` → `uat`** (see [Refresh `uat` from `main`](#refresh-uat-from-main)), merge it, then `git fetch origin` and branch from **`origin/uat`**.
+- **Hotfix** branches are the exception: they branch from **`main`** and PR to **`main`**.
+
 ## Branch roles
 
 | Kind | Pattern | Purpose |
@@ -28,9 +35,14 @@ Avoid ad-hoc branch names (`dev`, `temp`, …) unless they use an allowed prefix
 
 ## Standard flow (not a hotfix)
 
-1. `git fetch origin` and branch from **`origin/main`** (or **`origin/uat`** when appropriate).
-2. `git checkout -b feature/my-change` (or `bugfix/…`, `chore/…`).
+1. `git fetch origin`. Ensure **`uat`** contains **`main`** (if not, open **`main` → `uat`** first). Branch from **`origin/uat`**:
+
+   `git checkout -b feature/my-change origin/uat` (or `bugfix/…`, `chore/…`).
+
+2. Implement and commit on the topic branch.
+
 3. Before **every** push (repo root): **`npm test`**. If you touched **`site/`** (or site tooling): also **`npm run lint --prefix site`** and **`npm run build --prefix site`**.
+
 4. Push and open a PR into **`uat`** (not `main`):
 
    `gh pr create --base uat --head <your-branch> --title "…" --body "…"`
@@ -44,10 +56,15 @@ Avoid ad-hoc branch names (`dev`, `temp`, …) unless they use an allowed prefix
 1. Branch from **`main`**: `git checkout -b hotfix/critical-fix origin/main`
 2. Fix, test (`npm test`, plus site checks if applicable), push.
 3. PR **directly to `main`**: `gh pr create --base main --head hotfix/critical-fix …`
+4. **After the hotfix is merged to `main`**, backport the line to **`uat`**: open a PR with **base `uat`** and **head `main`** (same as refresh below). Do **not** leave **`uat`** missing commits that are already on **`main`**.
 
 ## Refresh `uat` from `main`
 
-When `main` has moved ahead and you want **`uat`** to catch up, open a PR with **base `uat`** and **head `main`** (not `git push origin main:uat`).
+Whenever **`main`** is **ahead** of **`uat`** (including **after every hotfix merge to `main`**), open a PR with **base `uat`** and **head `main`**:
+
+`gh pr create --base uat --head main --title "chore: refresh uat from main" --body "…"`
+
+Do **not** use `git push origin main:uat`. Use PR + CI + review, then merge, like any other change to **`uat`**.
 
 ## Maintainer hygiene (this repo)
 
