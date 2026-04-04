@@ -12,7 +12,7 @@
       "name": "agentic-swe",
       "source": "./",
       "description": "Autonomous SWE pipeline: structured phases, human gates, three tracks (lean / standard / rigorous), 135+ specialist agents.",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "author": {
         "name": "Suraj Gupta"
       },

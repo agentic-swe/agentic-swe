@@ -52,6 +52,7 @@
     "test:smoke": "bash test/smoke/run-smoke.sh",
     "test:llm": "node test/llm/run-llm-tests.cjs",
     "verify": "node scripts/verify-sanity.js",
+    "sync:claude-plugin": "node scripts/sync-claude-plugin-manifest.cjs",
     "summarize-work": "node scripts/summarize-work.js",
     "version:check": "bash scripts/bump-version.sh check",
     "version:bump": "bash scripts/bump-version.sh bump"
