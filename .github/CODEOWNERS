@@ -1,0 +1,3 @@
+# Default owner for all paths — GitHub will request review from this user on PRs.
+# Used with ruleset "require code owner review" so you control merges after verification.
+* @surajSFDC
