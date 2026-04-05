@@ -47,6 +47,12 @@ export function SupportPage() {
         <code>LICENSE</code> for the full text).
       </p>
 
+      <h2>Privacy</h2>
+      <p>
+        How the plugin relates to data and third-party services:{' '}
+        <Link to="/docs/privacy">Plugin privacy</Link>.
+      </p>
+
       <h2>Issues &amp; contributions</h2>
       <p>
         <a href="https://github.com/surajSFDC/agentic-swe/issues" target="_blank" rel="noopener noreferrer">

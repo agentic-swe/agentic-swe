@@ -26,3 +26,7 @@ If you later publish **proprietary** templates or binaries, you can:
 - Adopt a **Business Source License** or similar after legal review.
 
 Until then, the single source of truth for open content is **MIT + LICENSE file**.
+
+## Privacy
+
+For a short note on data, Claude Code, and GitHub hosting (useful for plugin directory listings), see [Plugin privacy](privacy.md).

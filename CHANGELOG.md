@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes yet._
+### Added
+
+- **Site:** [Plugin privacy](https://surajSFDC.github.io/agentic-swe/docs/privacy) at **`/docs/privacy`** (`site/src/content/docs/privacy.md`) for directory listings and transparency; linked from **Licensing** and **Support**.
 
 ## [3.0.5] - 2026-04-05
 
