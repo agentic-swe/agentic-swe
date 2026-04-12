@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
 import { Hero } from '../components/Hero'
 import { PipelineViz } from '../components/PipelineViz'
 
@@ -115,82 +114,6 @@ export function HomePage() {
             >
               <span className="agent-name">{name}</span>
               <span className="agent-count">{count}</span>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section id="start">
-        <motion.div
-          variants={sectionFade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.25 }}
-        >
-          <div className="section-label">// quick start</div>
-          <h2>Up and running in 3 steps</h2>
-        </motion.div>
-        <div className="steps">
-          {[
-            {
-              n: '1',
-              title: 'Enable the Claude Code plugin',
-              body: (
-                <>
-                  <div className="code-block">
-                    <code>
-                      <span className="cmd">/plugin</span> marketplace add surajSFDC/agentic-swe
-                    </code>
-                  </div>
-                  <div className="code-block" style={{ marginTop: '0.5rem' }}>
-                    <code>
-                      <span className="cmd">/plugin</span> install agentic-swe@agentic-swe-catalog
-                    </code>
-                  </div>
-                  <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', opacity: 0.75 }}>
-                    Then <code style={{ fontSize: '0.8em' }}>/install</code> in your project for{' '}
-                    <code style={{ fontSize: '0.8em' }}>CLAUDE.md</code> + <code style={{ fontSize: '0.8em' }}>.worklogs/</code>
-                    . See the <Link to="/docs/installation">installation guide</Link>.
-                  </p>
-                </>
-              ),
-            },
-            {
-              n: '2',
-              title: 'Open Claude Code',
-              body: (
-                <div className="code-block">
-                  <code>
-                    <span className="cmd">cd</span> /path/to/your/project && <span className="cmd">claude</span>
-                  </code>
-                </div>
-              ),
-            },
-            {
-              n: '3',
-              title: 'Start working',
-              body: (
-                <div className="code-block">
-                  <code>
-                    <span className="cmd">/work</span> Add retry logic to the API client
-                  </code>
-                </div>
-              ),
-            },
-          ].map((step, i) => (
-            <motion.div
-              key={step.n}
-              className="step"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
-              transition={{ duration: 0.45, delay: i * 0.08 }}
-            >
-              <span className="step-number">{step.n}</span>
-              <div className="step-content">
-                <h3>{step.title}</h3>
-                {step.body}
-              </div>
             </motion.div>
           ))}
         </div>

@@ -62,8 +62,7 @@ export function DocPage() {
       </nav>
       {body}
       <div className="doc-see-also">
-        <strong>More</strong> — <Link to="/documentation">All docs</Link> · <Link to="/guide">Guide</Link> ·{' '}
-        <Link to="/support">Support</Link>
+        <strong>More</strong> — <Link to="/documentation">All docs</Link> · <Link to="/support">Support</Link>
       </div>
     </main>
   )

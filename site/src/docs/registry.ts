@@ -20,6 +20,7 @@ export const DOC_SLUGS = [
   'privacy',
   'opencode',
   'codex',
+  'antigravity',
 ] as const
 
 export type DocSlug = (typeof DOC_SLUGS)[number]
@@ -49,12 +50,13 @@ export const MARKDOWN_FILE_TO_SLUG: Record<string, DocSlug> = {
   'privacy.md': 'privacy',
   'README.opencode.md': 'opencode',
   'README.codex.md': 'codex',
+  'antigravity.md': 'antigravity',
 }
 
 export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
   installation: {
-    title: 'Installation',
-    description: 'Plugin-first setup, prerequisites, and migration from vendored copies.',
+    title: 'Installation Guide',
+    description: 'Tabbed install: Overview, Claude Code, Cursor, Codex, OpenCode, Antigravity.',
     globKey: '../content/docs/installation.md',
   },
   'multi-platform-support': {
@@ -132,6 +134,11 @@ export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
     description: 'Using the pack with Codex.',
     globKey: '../content/docs/README.codex.md',
   },
+  antigravity: {
+    title: 'Google Antigravity',
+    description: 'Using the pack with Google Antigravity: CLAUDE.md merge and pack paths.',
+    globKey: '../content/docs/antigravity.md',
+  },
 }
 
 export function isDocSlug(s: string): s is DocSlug {
@@ -155,4 +162,5 @@ export const LEGACY_MD_TO_SLUG: Record<string, DocSlug> = {
   '/privacy.md': 'privacy',
   '/README.opencode.md': 'opencode',
   '/README.codex.md': 'codex',
+  '/antigravity.md': 'antigravity',
 }

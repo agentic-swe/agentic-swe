@@ -26,6 +26,9 @@ export function GuidePage() {
             <a href="#agents">Agents</a>
           </li>
           <li>
+            <a href="#subagent-selection">Subagent selection</a>
+          </li>
+          <li>
             <a href="#platforms">Platforms</a>
           </li>
           <li>
@@ -324,19 +327,12 @@ claude`}
         resolves conflicts.
       </p>
 
-      <h3>Subagents (135+)</h3>
+      <h3 id="subagent-selection">Subagents (135+)</h3>
       <p>
         Specialists live under <code>{'${CLAUDE_PLUGIN_ROOT}/agents/subagents/<category>/'}</code> (core-development,
         language-specialists, infrastructure, quality-security, data-ai, …). Use <code>/subagent</code> to discover them,
         or rely on <strong>auto-selection</strong> during phases (see{' '}
-        <a
-          href="https://github.com/surajSFDC/agentic-swe/blob/main/phases/subagent-selection.md"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          subagent selection
-        </a>{' '}
-        in the pack).
+        <Link to="/guide#subagent-selection">subagent selection</Link> in the pack).
       </p>
       <p>
         Feasibility writes a <strong>Subagent Signals</strong> section into the feasibility artifact; downstream phases
@@ -371,6 +367,12 @@ claude`}
         Install the bundled <strong>.cursor-plugin</strong> from a checkout of this repository, merge <code>CLAUDE.md</code> in your target
         repo, and use project rules so paths resolve to the pack (submodule paths work well). Slash-style shortcuts are host-dependent — open{' '}
         <code>commands/*.md</code> or follow <Link to="/docs/cursor-plugin">Cursor plugin</Link>.
+      </p>
+
+      <h3>Google Antigravity</h3>
+      <p>
+        Use the same markdown pack and root <code>CLAUDE.md</code> merge pattern; host install steps live with Google — see{' '}
+        <Link to="/docs/antigravity">Antigravity</Link>.
       </p>
 
       <h3>Codex / other assistants</h3>
@@ -437,9 +439,10 @@ claude`}
 
       <div className="doc-see-also">
         <strong>Canonical policy</strong> —{' '}
-        <a href="https://github.com/surajSFDC/agentic-swe/blob/main/CLAUDE.md" target="_blank" rel="noopener noreferrer">
-          Hypervisor policy on GitHub
-        </a>
+        <a href="https://github.com/surajSFDC/agentic-swe" target="_blank" rel="noopener noreferrer">
+          Source repository on GitHub
+        </a>{' '}
+        (clone or browse files; root <code>CLAUDE.md</code> is the Hypervisor policy)
         <br />
         <strong>More</strong> — <Link to="/docs/subagent-catalog">Subagent catalog</Link> ·{' '}
         <Link to="/docs/usage">Usage</Link> · <Link to="/docs/claude-code-plugin">Claude Code plugin</Link> ·{' '}

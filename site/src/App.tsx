@@ -5,6 +5,7 @@ import { PageShell } from './components/PageShell'
 import { ScrollToTop } from './components/ScrollToTop'
 import { CapabilitiesPage } from './pages/CapabilitiesPage'
 import { DocPage } from './pages/DocPage'
+import { InstallationGuidePage } from './pages/InstallationGuidePage'
 import { DocumentationPage } from './pages/DocumentationPage'
 import { GuidePage } from './pages/GuidePage'
 import { HomePage } from './pages/HomePage'
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/documentation" element={<DocumentationPage />} />
+            <Route path="/docs/installation" element={<InstallationGuidePage />} />
             <Route path="/docs/:slug" element={<DocPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/capabilities" element={<CapabilitiesPage />} />

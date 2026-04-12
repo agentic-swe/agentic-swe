@@ -10,6 +10,7 @@ agentic-swe runs the same markdown pipeline — driven by the **Hypervisor** ses
 | **Cursor** | **`scripts/install-cursor-plugin.sh`** (or Marketplace after publish); **`.cursor-plugin/`** + default **`commands/`** / **`agents/`**; **`hooks/hooks-cursor.json`** on session start | [Cursor plugin](cursor-plugin.md) — one-line **`curl \| bash`** install, **`CLAUDE.md`** merge in the target repo, optional **`.cursor/rules`** stub |
 | **Codex** | Clone / submodule this repo; symlink or copy pack dirs into the target project | [.codex/INSTALL.md](../../.codex/INSTALL.md), [Codex](README.codex.md) |
 | **OpenCode** | **`.opencode/`** plugin entry | [OpenCode](README.opencode.md) |
+| **Google Antigravity** | Same markdown pack + **`CLAUDE.md`** merge in the target repo | [Antigravity](antigravity.md) |
 | **Gemini CLI** | **`gemini-extension.json`** | Context from **`GEMINI.md`** at repo root |
 
 Platform-specific **tool name** hints (when a host renames tools) live under **`${CLAUDE_PLUGIN_ROOT}/references/`** — e.g. **`codex-tools.md`**, **`opencode-tools.md`**, **`gemini-tools.md`**, **`copilot-tools.md`**.

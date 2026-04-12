@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import logoMarkSrc from '../assets/logo-mark.svg?url'
 import { AmbientBackground } from './AmbientBackground'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -15,7 +16,17 @@ export function PageShell() {
       <div className="content-wrap">
         <nav>
           <Link to="/" className="logo" onClick={() => setMenuOpen(false)}>
-            agentic<span>SWE</span>
+            <img
+              className="logo-mark"
+              src={logoMarkSrc}
+              alt=""
+              width={32}
+              height={32}
+              decoding="async"
+            />
+            <span className="logo-wordmark">
+              agentic<span>SWE</span>
+            </span>
           </Link>
           <button
             type="button"
@@ -27,14 +38,14 @@ export function PageShell() {
             &#9776;
           </button>
           <div className={`nav-links${menuOpen ? ' open' : ''}`}>
+            <NavLink to="/" end className={navClass} onClick={() => setMenuOpen(false)}>
+              Home
+            </NavLink>
             <NavLink to="/capabilities" className={navClass} onClick={() => setMenuOpen(false)}>
               Capabilities
             </NavLink>
             <NavLink to="/docs/installation" className={navClass} onClick={() => setMenuOpen(false)}>
               Installation
-            </NavLink>
-            <NavLink to="/guide" className={navClass} onClick={() => setMenuOpen(false)}>
-              Guide
             </NavLink>
             <NavLink to="/documentation" className={navClass} onClick={() => setMenuOpen(false)}>
               Documentation
@@ -65,7 +76,6 @@ export function PageShell() {
             <Link to="/">Home</Link>
             &nbsp;&middot;&nbsp; <Link to="/capabilities">Capabilities</Link>
             &nbsp;&middot;&nbsp; <Link to="/docs/installation">Installation</Link>
-            &nbsp;&middot;&nbsp; <Link to="/guide">Guide</Link>
             &nbsp;&middot;&nbsp; <Link to="/documentation">Documentation</Link>
             &nbsp;&middot;&nbsp; <Link to="/support">Support</Link>
             &nbsp;&middot;&nbsp;
@@ -74,11 +84,6 @@ export function PageShell() {
             </a>
             &nbsp;&middot;&nbsp; MIT
             &nbsp;&middot;&nbsp; Suraj Gupta
-          </p>
-          <p style={{ marginTop: '0.75rem', fontSize: '0.78rem' }}>
-            More detail:{' '}
-            <Link to="/docs/installation">Installation</Link> · <Link to="/docs/usage">Usage</Link> ·{' '}
-            <Link to="/docs/examples">Examples</Link> · <Link to="/docs/claude-code-plugin">Claude Code plugin</Link> · <Link to="/docs/cursor-plugin">Cursor</Link>
           </p>
         </motion.footer>
       </div>

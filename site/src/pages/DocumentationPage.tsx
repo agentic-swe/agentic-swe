@@ -2,7 +2,9 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { DOC_REGISTRY, type DocSlug } from '../docs/registry'
 
-const GROUPS: { label: string; slugs: DocSlug[] }[] = [
+type HubExtraCard = { to: string; title: string; description: string }
+
+const GROUPS: { label: string; slugs: DocSlug[]; extraCards?: HubExtraCard[] }[] = [
   {
     label: 'Get started',
     slugs: ['installation', 'multi-platform-support', 'usage', 'claude-code-plugin', 'troubleshooting'],
@@ -13,11 +15,18 @@ const GROUPS: { label: string; slugs: DocSlug[] }[] = [
   },
   {
     label: 'Product and legal',
-    slugs: ['product-positioning', 'licensing', 'privacy'],
+    slugs: ['licensing', 'privacy'],
+    extraCards: [
+      {
+        to: '/support',
+        title: 'Support',
+        description: 'Quick fixes, plugin validation, migrations, and where to get help.',
+      },
+    ],
   },
   {
     label: 'Other hosts',
-    slugs: ['cursor-plugin', 'opencode', 'codex'],
+    slugs: ['cursor-plugin', 'opencode', 'codex', 'antigravity'],
   },
 ]
 
@@ -29,24 +38,10 @@ export function DocumentationPage() {
       </div>
       <h2>Documentation</h2>
       <p className="hub-intro">
-        Browse structured pages below (same content as the repo markdown, rendered in-site). The{' '}
-        <Link to="/guide">Guide</Link> is a single walkthrough; <Link to="/support">Support</Link> covers common
-        failures.
+        Browse structured pages below (same content as the repo markdown, rendered in-site). For install, tracks, and
+        commands, start with <Link to="/docs/installation">Installation</Link>, <Link to="/docs/usage">Usage</Link>, and{' '}
+        <Link to="/docs/multi-platform-support">Multi-platform support</Link>.
       </p>
-      <div className="hub-grid hub-grid--two" style={{ marginBottom: '2.5rem' }}>
-        <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
-          <Link className="hub-card" to="/guide">
-            <h3>Guide</h3>
-            <p>One long page: install, tracks, slash commands, delegation, hosts, and sample flows.</p>
-          </Link>
-        </motion.div>
-        <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
-          <Link className="hub-card" to="/support">
-            <h3>Support</h3>
-            <p>Quick fixes, plugin validation, migrations, and where to get help.</p>
-          </Link>
-        </motion.div>
-      </div>
 
       {GROUPS.map((group) => (
         <div key={group.label} className="doc-hub-group">
@@ -63,6 +58,14 @@ export function DocumentationPage() {
                 </motion.div>
               )
             })}
+            {group.extraCards?.map((card) => (
+              <motion.div key={card.to} whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+                <Link className="hub-card" to={card.to}>
+                  <h3>{card.title}</h3>
+                  <p>{card.description}</p>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
       ))}
