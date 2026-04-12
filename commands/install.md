@@ -7,7 +7,7 @@ description: "Plugin-first setup for a target git repository (merge CLAUDE.md, b
 
 **Plugin-first setup** for a **target git repository** using the agentic-swe Claude Code plugin.
 
-The pipeline markdown (commands, phases, agents, templates, references, tools) ships **inside the installed plugin** and is resolved via **`${CLAUDE_PLUGIN_ROOT}/...`**. You do **not** copy that tree into `project/.claude/` as the primary path.
+The pipeline markdown (commands, phases, agents including bundled helpers under **`agents/plugin-runtime/`**, templates, references, hooks, **`state-machine.json`**, …) ships **inside the installed plugin** and is resolved via **`${CLAUDE_PLUGIN_ROOT}/...`**. You do **not** copy that tree into `project/.claude/` as the primary path.
 
 ## Prompt
 
