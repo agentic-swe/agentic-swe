@@ -13,7 +13,7 @@ const GROUPS: { label: string; slugs: DocSlug[] }[] = [
   },
   {
     label: 'Product and legal',
-    slugs: ['product-positioning', 'licensing', 'pro'],
+    slugs: ['product-positioning', 'licensing', 'privacy'],
   },
   {
     label: 'Other hosts',

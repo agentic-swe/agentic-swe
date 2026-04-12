@@ -8,12 +8,12 @@ MIT allows use, modification, distribution, and sublicensing, including commerci
 
 ## Product and commercial use
 
-- **Default:** Anyone may use Agentic SWE under MIT in their own projects and internal tooling.  
-- **“Agentic SWE Pro” and services** (see [PRO.md](../../PRO.md)) are **offers around support, onboarding, and optional add-ons**—not a different license for the core MIT files unless you explicitly ship a separate proprietary bundle under another agreement.
+- **Default:** Anyone may use Agentic SWE under MIT in their own projects and internal tooling.
+- **What you ship:** If you redistribute modified pipeline markdown, bundle it in a product, or offer services around it, you still need to comply with MIT (notice preservation, etc.). This repository does not ship a separate proprietary license for the core files.
 
 ## Enterprise and custom terms
 
-Some organizations need **written agreements** for support levels, liability, or customized phase packs. Those are **outside** the generic MIT text. If you need that, use the contact path in [PRO.md](../../PRO.md).
+Some organizations need **written agreements** for support levels, liability, or customized phase packs. Those are **outside** the generic MIT text. Arrange that with your own counsel or counterparties; the open project does not provide bespoke contracts through this repo.
 
 **Disclaimer:** This document is not legal advice. For dual licensing, copyleft alternatives, or custom enterprise terms, consult a qualified attorney.
 

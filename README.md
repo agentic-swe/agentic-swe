@@ -35,7 +35,6 @@ Agentic SWE is a **workflow pack for Claude Code** (markdown policies, phases, a
 |-------|------|
 | Who it is for and hero messaging | [Product positioning](https://surajSFDC.github.io/agentic-swe/docs/product-positioning) |
 | MIT and commercial strategy | [Licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) |
-| Pro / services (first paid wedges) | [Pro & services](https://surajSFDC.github.io/agentic-swe/docs/pro) |
 | Distribution and hosting | [Distribution](https://surajSFDC.github.io/agentic-swe/docs/distribution) |
 | Troubleshooting | [Troubleshooting](https://surajSFDC.github.io/agentic-swe/docs/troubleshooting) |
 | `/check` quick reference | [Check commands](https://surajSFDC.github.io/agentic-swe/docs/check-commands) |
@@ -218,4 +217,4 @@ Built on research from SWE-agent, Agentless, Ambig-SWE, Reflexion, Self-Refine, 
 
 ## License
 
-[MIT](LICENSE). Commercial services and optional Pro offerings are described on the [Pro & services](https://surajSFDC.github.io/agentic-swe/docs/pro) page; see [licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) for how MIT relates to product packaging (not legal advice).
+[MIT](LICENSE). See [licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) for how the license applies to the pack and typical use (not legal advice).

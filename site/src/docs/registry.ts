@@ -19,7 +19,6 @@ export const DOC_SLUGS = [
   'privacy',
   'opencode',
   'codex',
-  'pro',
 ] as const
 
 export type DocSlug = (typeof DOC_SLUGS)[number]
@@ -48,7 +47,6 @@ export const MARKDOWN_FILE_TO_SLUG: Record<string, DocSlug> = {
   'privacy.md': 'privacy',
   'README.opencode.md': 'opencode',
   'README.codex.md': 'codex',
-  'PRO.md': 'pro',
 }
 
 export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
@@ -109,7 +107,7 @@ export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
   },
   licensing: {
     title: 'Licensing',
-    description: 'MIT core and Pro / services framing.',
+    description: 'MIT license and how it applies to the pack.',
     globKey: '../content/docs/licensing.md',
   },
   privacy: {
@@ -126,11 +124,6 @@ export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
     title: 'Codex',
     description: 'Using the pack with Codex.',
     globKey: '../content/docs/README.codex.md',
-  },
-  pro: {
-    title: 'Agentic SWE Pro',
-    description: 'Support, onboarding, and optional services.',
-    globKey: '../content/docs/PRO.md',
   },
 }
 
@@ -154,5 +147,4 @@ export const LEGACY_MD_TO_SLUG: Record<string, DocSlug> = {
   '/privacy.md': 'privacy',
   '/README.opencode.md': 'opencode',
   '/README.codex.md': 'codex',
-  '/PRO.md': 'pro',
 }

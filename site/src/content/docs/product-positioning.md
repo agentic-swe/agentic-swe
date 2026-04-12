@@ -22,8 +22,8 @@ Lead with: governance, safety rails, and review-friendly outputs—not “more a
 
 1. **Failed refactors and runaway agents** — Position budgets, `ambiguity-wait` / `approval-wait`, and escalation paths as the answer to fear of uncontrolled automation.  
 2. **Dev workflow product** — Same mental bucket as editor rules and team conventions: buyers already pay for tools; you sell **workflow + safety** for Claude Code specifically.  
-3. **Future vertical packs** — Optional paid add-ons (e.g. domain-specific subagent bundles) without changing the core architecture.
+3. **Future vertical packs** — Optional domain-specific subagent bundles or forks without changing the core architecture.
 
 ## What not to claim
 
-Do not promise a **multi-tenant SaaS** or “our cloud runs your pipeline” unless you ship that separately. The product is the **markdown pack** and any **services or Pro offerings** described in [PRO.md](../../PRO.md).
+Do not promise a **multi-tenant SaaS** or “our cloud runs your pipeline” unless you ship that separately. In this repository, the product is the **markdown pack** (policies, phases, agents, templates) you install and run in your own environment.

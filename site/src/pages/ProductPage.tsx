@@ -47,9 +47,9 @@ export function ProductPage() {
 
       <h2>What we don’t claim here</h2>
       <p>
-        The open pack does not imply a multi-tenant cloud that runs your pipeline for you. Anything beyond the markdown
-        pack (e.g. commercial tiers) belongs in separate product docs such as{' '}
-        <Link to="/docs/pro">Agentic SWE Pro</Link> if present.
+        The open pack does not imply a multi-tenant cloud that runs your pipeline for you. Extensions, training, or
+        custom packs you build on top remain your own product and licensing story; this repository documents the MIT
+        markdown pack only (see <Link to="/docs/licensing">Licensing</Link>).
       </p>
 
       <div className="doc-see-also">
