@@ -2,8 +2,8 @@
 
 ## Scope (read first)
 
-- This document is **only for people and agents working on the agentic-swe pack repository itself** (this GitHub project: CI, `main` / `uat`, rulesets).
-- It is **not** a requirement for **downstream projects** that install or use the **agentic-swe Claude Code plugin**. Those repos follow their own Git process; the Hypervisor pipeline in **`CLAUDE.md`** is about **how to run work items**, not about mandating `uat` branches in every consumer repo.
+- This document is **only for people and agents working on the agentic-swe pack repository itself** (this GitHub project: CI, `main`, rulesets).
+- It is **not** a requirement for **downstream projects** that install or use the **agentic-swe Claude Code plugin**. Those repos follow their own Git process; the Hypervisor pipeline in **`CLAUDE.md`** is about **how to run work items**, not about mandating branch names in every consumer repo.
 
 ## Agents: staging and commits
 
@@ -11,60 +11,55 @@
 
 ---
 
-Use the workflow below for **any code or config change** in **this** **agentic-swe** repo on GitHub. It matches rulesets on **`main`** and **`uat`**, and the **`main-merge-source`** workflow: only **`uat`**, **`hotfix/*`**, or **`dependabot/*`** may target **`main`** via PR.
+Use the workflow below for **any code or config change** in **this** **agentic-swe** repo on GitHub. **Topic branches** (for example **`feature/*`**, **`bugfix/*`**, **`chore/*`**, **`hotfix/*`**, **`dependabot/*`**) may open **pull requests directly into `main`**. There is **no** separate **`uat`** staging branch in this flow.
 
-## Branch from `uat` (normal work)
+## Branch from `main` (normal work)
 
-For **feature**, **bugfix**, **bug-fix**, and **chore** work, **always** create the topic branch from **`origin/uat`**, not from **`main`**. Work merges to **`uat`** first, then promotes to **`main`**.
+For **feature**, **bugfix**, **bug-fix**, and **chore** work, create the topic branch from **`origin/main`** (or rebase onto it before opening a PR) so the PR is easy to review and merge.
 
-- If **`uat`** is behind **`main`** (e.g. after a **hotfix** on **`main`** only), refresh **`uat`** with a PR **`main` → `uat`** (see [Refresh `uat` from `main`](#refresh-uat-from-main)), merge it, then `git fetch origin` and branch from **`origin/uat`**.
-- **Hotfix** branches are the exception: they branch from **`main`** and PR to **`main`**.
+- **`hotfix/*`** also branches from **`main`** and targets **`main`** when the fix is urgent.
 
 ## Branch roles
 
 | Kind | Pattern | Purpose |
 |------|---------|---------|
-| Release | `main` | Production-ready; **no direct pushes** — merge via PR only. **PRs into `main`** must come from **`uat`** (after UAT) or **`hotfix/*`** (emergency). Enforced by **`.github/workflows/main-merge-source.yml`**. |
-| UAT / staging | `uat` | Pre-release integration; **no direct pushes** — merge via PR. Normal work lands here **before** `main`. |
+| Release | `main` | Production-ready; **no direct pushes** — merge via PR only. |
 | Feature | `feature/<short-kebab-topic>` | New capability. |
 | Bugfix | `bugfix/<short-kebab-topic>` or `bug-fix/<short-kebab-topic>` | Defect fixes. |
-| Hotfix | `hotfix/<short-kebab-topic>` | Urgent fix **may PR directly to `main`** (bypasses UAT line). Still run tests before push. |
+| Hotfix | `hotfix/<short-kebab-topic>` | Urgent fix; PR to **`main`**. Still run tests before push. |
 | Maintenance | `chore/<short-kebab-topic>` | Tooling, CI, docs batches. |
 
 Avoid ad-hoc branch names (`dev`, `temp`, …) unless they use an allowed prefix above.
 
-## Standard flow (not a hotfix)
+## Standard flow
 
-1. `git fetch origin`. Ensure **`uat`** contains **`main`** (if not, open **`main` → `uat`** first). Branch from **`origin/uat`**:
+1. `git fetch origin`. Branch from **`origin/main`**:
 
-   `git checkout -b feature/my-change origin/uat` (or `bugfix/…`, `chore/…`).
+   `git checkout -b feature/my-change origin/main` (or `bugfix/…`, `chore/…`).
 
 2. Implement and commit on the topic branch.
 
 3. Before **every** push (repo root): **`npm test`**. If you touched **`site/`** (or site tooling): also **`npm run lint --prefix site`** and **`npm run build --prefix site`**.
 
-4. Push and open a PR into **`uat`** (not `main`):
+4. Push and open a PR into **`main`**:
 
-   `gh pr create --base uat --head <your-branch> --title "…" --body "…"`
-
-5. After **UAT passes**, open a **promotion** PR **`uat` → `main`**:
-
-   `gh pr create --base main --head uat --title "Promote uat to main" --body "UAT passed: …"`
+   `gh pr create --base main --head <your-branch> --title "…" --body "…"`
 
 ## Hotfix flow
 
 1. Branch from **`main`**: `git checkout -b hotfix/critical-fix origin/main`
 2. Fix, test (`npm test`, plus site checks if applicable), push.
-3. PR **directly to `main`**: `gh pr create --base main --head hotfix/critical-fix …`
-4. **After the hotfix is merged to `main`**, backport the line to **`uat`**: open a PR with **base `uat`** and **head `main`** (same as refresh below). Do **not** leave **`uat`** missing commits that are already on **`main`**.
+3. PR to **`main`**: `gh pr create --base main --head hotfix/critical-fix …`
 
-## Refresh `uat` from `main`
+## Who may merge into `main`
 
-Whenever **`main`** is **ahead** of **`uat`** (including **after every hotfix merge to `main`**), open a PR with **base `uat`** and **head `main`**:
+**GitHub does not read this markdown file.** To ensure **only `@surajSFDC`** can merge PRs into **`main`**, configure the **repository on GitHub**:
 
-`gh pr create --base uat --head main --title "chore: refresh uat from main" --body "…"`
+1. **Collaborators and permissions** — Grant **Write** (or **Maintain** / **Admin** only as needed) **only** to **`surajSFDC`**. Users without **Write** cannot merge pull requests.
+2. **Branch protection / rulesets on `main`** — Keep **Require a pull request before merging**, required status checks (**`test (20)`**, **`test (22)`**, **`main-merge-source`**, …), and **Require review from Code Owners** if you use **[`.github/CODEOWNERS`](../.github/CODEOWNERS)** (this repo uses `* @surajSFDC` so reviews route to the owner).
+3. **Optional** — Restrict who can dismiss reviews or push to **`main`** in the same ruleset.
 
-Do **not** use `git push origin main:uat`. Use PR + CI + review, then merge, like any other change to **`uat`**.
+The workflow **[`.github/workflows/main-merge-source.yml`](../.github/workflows/main-merge-source.yml)** is a **required check** that records the PR head; it **does not** block any head branch. Merge control is **access control + branch rules** in GitHub.
 
 ## Maintainer hygiene (this repo)
 
@@ -75,12 +70,9 @@ Do **not** use `git push origin main:uat`. Use PR + CI + review, then merge, lik
 
 | Branch | Notes |
 |--------|--------|
-| `main` | [Rules](https://github.com/surajSFDC/agentic-swe/rules): PR required, code owners, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`**, no force-push. |
-| `uat` | Same style: PR + CI + code owners. |
-
-**Dependabot** heads `dependabot/…` are allowed to target **`main`** by **`main-merge-source`**.
+| `main` | [Rules](https://github.com/surajSFDC/agentic-swe/rules): PR required, code owners as configured, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`**, no force-push. Adjust **who has merge rights** in repo settings as above. |
 
 ## Hypervisor pipeline (plugin) vs this Git workflow
 
-- **`CLAUDE.md`** describes the **Hypervisor** state machine, phases, and artifacts when the pack runs **inside some project** (plugin installed). That is **orthogonal** to the **branch / UAT / PR rules above**, which exist **only** to govern **this repository’s** GitHub lifecycle.
-- Per-work state in a **target** project may live under **`.worklogs/<id>/`** or **`.claude/.work/<id>/`** depending on install; that is **not** the same as “open every PR to `uat`” — the latter applies **here**, not automatically in every plugin consumer repo.
+- **`CLAUDE.md`** describes the **Hypervisor** state machine, phases, and artifacts when the pack runs **inside some project** (plugin installed). That is **orthogonal** to the **branch / PR rules above**, which exist **only** to govern **this repository’s** GitHub lifecycle.
+- Per-work state in a **target** project may live under **`.worklogs/<id>/`** or **`.claude/.work/<id>/`** depending on install; that is **not** the same as “use a `uat` branch” — the latter is **not** used for this repo anymore.

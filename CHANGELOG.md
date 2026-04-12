@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Git workflow:** removed the **`uat`** line for this repo — topic branches open PRs **directly to `main`**; **`.github/workflows/main-merge-source.yml`** no longer restricts PR heads. **`docs/branch-workflow.md`** and **`.cursor/rules/development-branch-workflow.mdc`** describe **`main`**-only flow and that **only `@surajSFDC`** should merge (**GitHub** collaborator + branch rules, not YAML). CI **`push` / `pull_request`** triggers run on **`main`** only.
 - **Plugin layout:** moved **`tools/brainstorm-server/`** and **`tools/subagent-catalog/`** to **`agents/plugin-runtime/`** so tooling ships next to **`agents/`** without mixing into **`agents/subagents/`**. **`package.json` `files[]`** no longer lists a top-level **`tools/`** tree. CI installs brainstorm deps via **`npm ci --prefix agents/plugin-runtime/brainstorm-server`**.
 - **Claude Code hooks:** **`hooks/hooks.json`** adds async **`UserPromptSubmit`** → **`hooks/brainstorm-on-prompt.sh`** to start the brainstorm HTTP/WebSocket server when the user submits **`/brainstorm`** (if the listen port is free).
 

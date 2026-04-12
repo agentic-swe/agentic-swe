@@ -1,5 +1,6 @@
-# Required by the "Protect main" ruleset. Blocks PRs into main unless the head
-# branch is uat (post-UAT promotion), hotfix/*, or dependabot/*.
+# Required by the "Protect main" ruleset. Documents that any head branch may target
+# `main`; who may merge is enforced in GitHub (collaborator access + branch rules),
+# not in this workflow. See docs/branch-workflow.md.
 name: main-merge-source
 
 on:
@@ -27,23 +28,11 @@ jobs:
             echo "ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Enforce allowed sources for PRs targeting main
+      - name: Record merge source (any branch allowed)
         env:
           HEAD_REF: ${{ steps.head.outputs.ref }}
         run: |
           set -euo pipefail
-          echo "Head ref: $HEAD_REF"
-          if [[ "$HEAD_REF" == "uat" ]]; then
-            echo "OK: uat → main (UAT promotion)"
-            exit 0
-          fi
-          if [[ "$HEAD_REF" == hotfix/* ]]; then
-            echo "OK: hotfix → main"
-            exit 0
-          fi
-          if [[ "$HEAD_REF" == dependabot/* ]]; then
-            echo "OK: dependabot → main"
-            exit 0
-          fi
-          echo "::error::PRs to \`main\` must come from \`uat\` (after UAT passes) or \`hotfix/*\`. Head was \`$HEAD_REF\`. Typical flow: \`feature/*\` | \`bugfix/*\` | \`chore/*\` → PR to \`uat\` → then PR \`uat\` → \`main\`."
-          exit 1
+          echo "Head ref: ${HEAD_REF:-<merge-group>}"
+          echo "OK: PR source check passed (no dedicated staging branch gate)."
+          echo "Merge access: restrict in GitHub so only @surajSFDC can merge to main (see docs/branch-workflow.md)."
