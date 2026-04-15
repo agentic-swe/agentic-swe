@@ -1,5 +1,7 @@
 # Multi-platform support
 
+For a concise definition of **Tier A–D** support (portable policy vs documented happy path vs packaged plugin vs future harness), read **[Host support tiers](host-support-tiers.md)** first.
+
 agentic-swe runs the same markdown pipeline — driven by the **Hypervisor** session per root **`CLAUDE.md`** — across several AI coding hosts. The canonical pack layout is the **plugin root**: **`commands/`**, **`phases/`**, **`agents/`** (including **`agents/plugin-runtime/`** for bundled helpers such as the brainstorm server and subagent-catalog shell), **`templates/`**, **`references/`**, and **`state-machine.json`**, resolved via **`${CLAUDE_PLUGIN_ROOT}/`** when the Claude Code plugin is enabled.
 
 **CI vs full verification:** **`npm test`** runs **`test/install-platform-stubs.test.js`**, which checks **each platform’s manifests, versions, hook targets, and (for OpenCode) loading the plugin module in Node** — plus **`claude plugin validate`** when the Claude CLI is on **`PATH`**. That replaces **manual** checks for **wiring only**. **Cursor, Codex, OpenCode, and Gemini** UIs are still not driven in GitHub-hosted CI; proving each **app** loads the pack needs **manual smoke** or **self-hosted runners** — see the [Release checklist](release-checklist.md).

@@ -2,6 +2,16 @@
 
 Use before tagging a release or after changing **`hooks/`**, **`.cursor-plugin/`**, **`.opencode/`**, **`GEMINI.md`**, **`.codex/`**, or **`package.json` `files`**.
 
+## First-run story (releases users can socialize)
+
+A **tagged release** should stay aligned with the public **[Golden path](golden-path.md)**: a new user can install the plugin and reach **`.worklogs/<id>/`** with a trivial task in about **15 minutes**. Before you publish:
+
+1. Re-read **Golden path** for drift (commands, marketplace owner, paths).
+2. Run the **automated** bar below (`npm run ci` or equivalent) so wiring and the docs site still build.
+3. Optionally run **`npm run test:smoke`** from repo root when **`ANTHROPIC_API_KEY`** is available — LLM smoke is **not** in default `npm test`; it costs tokens but validates phase routing (see **`test/smoke/README.md`**). Record the outcome in the verification table when you use it.
+
+If Golden path or install tabs are broken, treat that as a **release blocker** even when CI is green.
+
 ## Automated (CI / local)
 
 Run from repo root (after **`npm ci`** at root, **`npm ci --prefix site`**, and **`npm ci --prefix agents/plugin-runtime/brainstorm-server`** — same as **GitHub Actions**):

@@ -23,6 +23,8 @@ Then start a task:
 
 See the [installation guide](https://surajSFDC.github.io/agentic-swe/docs/installation) and the [Claude Code plugin](https://surajSFDC.github.io/agentic-swe/docs/claude-code-plugin) for details, upgrades, and **optional org knowledge files** (`AGENTS.md`, `docs/agentic-swe/`).
 
+**First success in ~15 minutes:** follow the [Golden path](https://surajSFDC.github.io/agentic-swe/docs/golden-path) (install → `/work` → `.worklogs/` → approval gate). **Socialize / pitch:** [Who this is for](https://surajSFDC.github.io/agentic-swe/docs/adoption-one-pager) and [Host support tiers](https://surajSFDC.github.io/agentic-swe/docs/host-support-tiers) (OpenCode + Antigravity Tier B vs Claude Code reference). **Tiny demo repo:** [`examples/golden-path-demo/`](examples/golden-path-demo/) (scratch target + `DEMO_SCRIPT.md`).
+
 **What this is:** a **markdown workflow pack** that runs inside **Claude Code** on your repo (phases, gates, evidence). It is **not** a hosted async coding agent or cloud sandbox—that is a different class of product (e.g. remote harnesses with triggers and isolated runners).
 
 ## Product
@@ -33,6 +35,9 @@ Agentic SWE is a **workflow pack for Claude Code** (markdown policies, phases, a
 
 | Topic | Docs |
 |-------|------|
+| First run (~15 min) | [Golden path](https://surajSFDC.github.io/agentic-swe/docs/golden-path) |
+| Who it is for (short matrix) | [Adoption one-pager](https://surajSFDC.github.io/agentic-swe/docs/adoption-one-pager) |
+| Multi-IDE scope (Tier A–D) | [Host support tiers](https://surajSFDC.github.io/agentic-swe/docs/host-support-tiers) |
 | Who it is for and hero messaging | [Product positioning](https://surajSFDC.github.io/agentic-swe/docs/product-positioning) |
 | MIT and commercial strategy | [Licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) |
 | Distribution and hosting | [Distribution](https://surajSFDC.github.io/agentic-swe/docs/distribution) |

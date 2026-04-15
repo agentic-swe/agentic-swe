@@ -1,6 +1,6 @@
 # Examples
 
-Practical examples showing how to use the pipeline and subagents in real scenarios.
+Practical examples showing how to use the pipeline and subagents in real scenarios. For a timed **first install → `/work` → `.worklogs/`** walkthrough, start with **[Golden path](golden-path.md)** and the tiny **[golden-path-demo](https://github.com/surajSFDC/agentic-swe/tree/main/examples/golden-path-demo)** tree in the repo.
 
 ---
 

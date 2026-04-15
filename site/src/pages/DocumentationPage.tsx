@@ -7,7 +7,15 @@ type HubExtraCard = { to: string; title: string; description: string }
 const GROUPS: { label: string; slugs: DocSlug[]; extraCards?: HubExtraCard[] }[] = [
   {
     label: 'Get started',
-    slugs: ['installation', 'multi-platform-support', 'usage', 'claude-code-plugin', 'troubleshooting'],
+    slugs: [
+      'installation',
+      'golden-path',
+      'host-support-tiers',
+      'multi-platform-support',
+      'usage',
+      'claude-code-plugin',
+      'troubleshooting',
+    ],
   },
   {
     label: 'Reference',
@@ -15,7 +23,7 @@ const GROUPS: { label: string; slugs: DocSlug[]; extraCards?: HubExtraCard[] }[]
   },
   {
     label: 'Product and legal',
-    slugs: ['licensing', 'privacy'],
+    slugs: ['product-positioning', 'adoption-one-pager', 'licensing', 'privacy'],
     extraCards: [
       {
         to: '/support',
@@ -38,9 +46,9 @@ export function DocumentationPage() {
       </div>
       <h2>Documentation</h2>
       <p className="hub-intro">
-        Browse structured pages below (same content as the repo markdown, rendered in-site). For install, tracks, and
-        commands, start with <Link to="/docs/installation">Installation</Link>, <Link to="/docs/usage">Usage</Link>, and{' '}
-        <Link to="/docs/multi-platform-support">Multi-platform support</Link>.
+        Browse structured pages below (same content as the repo markdown, rendered in-site). New users:{' '}
+        <Link to="/docs/golden-path">Golden path</Link> (~15 minutes), then <Link to="/docs/installation">Installation</Link>,{' '}
+        <Link to="/docs/usage">Usage</Link>, and <Link to="/docs/multi-platform-support">Multi-platform support</Link>.
       </p>
 
       {GROUPS.map((group) => (

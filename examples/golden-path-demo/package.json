@@ -1,0 +1,9 @@
+{
+  "name": "golden-path-demo",
+  "private": true,
+  "type": "module",
+  "description": "Scratch repo for agentic-swe golden path; not published to npm.",
+  "scripts": {
+    "test": "node test/counter.test.js"
+  }
+}

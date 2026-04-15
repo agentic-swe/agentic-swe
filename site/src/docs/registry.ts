@@ -5,6 +5,8 @@ export const GITHUB_REPO_MAIN = 'https://github.com/surajSFDC/agentic-swe/blob/m
 
 export const DOC_SLUGS = [
   'installation',
+  'golden-path',
+  'host-support-tiers',
   'multi-platform-support',
   'usage',
   'troubleshooting',
@@ -16,6 +18,7 @@ export const DOC_SLUGS = [
   'release-checklist',
   'subagent-catalog',
   'product-positioning',
+  'adoption-one-pager',
   'licensing',
   'privacy',
   'opencode',
@@ -35,6 +38,8 @@ export type DocMeta = {
 /** Basename in content/docs → slug (for markdown link rewriting). */
 export const MARKDOWN_FILE_TO_SLUG: Record<string, DocSlug> = {
   'installation.md': 'installation',
+  'golden-path.md': 'golden-path',
+  'host-support-tiers.md': 'host-support-tiers',
   'multi-platform-support.md': 'multi-platform-support',
   'usage.md': 'usage',
   'troubleshooting.md': 'troubleshooting',
@@ -46,6 +51,7 @@ export const MARKDOWN_FILE_TO_SLUG: Record<string, DocSlug> = {
   'release-checklist.md': 'release-checklist',
   'subagent-catalog.md': 'subagent-catalog',
   'product-positioning.md': 'product-positioning',
+  'adoption-one-pager.md': 'adoption-one-pager',
   'licensing.md': 'licensing',
   'privacy.md': 'privacy',
   'README.opencode.md': 'opencode',
@@ -58,6 +64,16 @@ export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
     title: 'Installation Guide',
     description: 'Tabbed install: Overview, Claude Code, Cursor, Codex, OpenCode, Antigravity.',
     globKey: '../content/docs/installation.md',
+  },
+  'golden-path': {
+    title: 'Golden path (15 minutes)',
+    description: 'Claude Code: install → /work → .worklogs → gate; lean and standard examples.',
+    globKey: '../content/docs/golden-path.md',
+  },
+  'host-support-tiers': {
+    title: 'Host support tiers',
+    description: 'What “support” means per IDE; Tier B paths for OpenCode and Antigravity.',
+    globKey: '../content/docs/host-support-tiers.md',
   },
   'multi-platform-support': {
     title: 'Multi-platform support',
@@ -114,6 +130,11 @@ export const DOC_REGISTRY: Record<DocSlug, DocMeta> = {
     description: 'What the pack is (and is not).',
     globKey: '../content/docs/product-positioning.md',
   },
+  'adoption-one-pager': {
+    title: 'Who this is for',
+    description: 'Short fit matrix for socializing; aligns with North Star without overclaiming.',
+    globKey: '../content/docs/adoption-one-pager.md',
+  },
   licensing: {
     title: 'Licensing',
     description: 'MIT license and how it applies to the pack.',
@@ -148,6 +169,8 @@ export function isDocSlug(s: string): s is DocSlug {
 /** Old public URLs → slug (for redirects). */
 export const LEGACY_MD_TO_SLUG: Record<string, DocSlug> = {
   '/installation.md': 'installation',
+  '/golden-path.md': 'golden-path',
+  '/host-support-tiers.md': 'host-support-tiers',
   '/usage.md': 'usage',
   '/troubleshooting.md': 'troubleshooting',
   '/claude-code-plugin.md': 'claude-code-plugin',
@@ -158,6 +181,7 @@ export const LEGACY_MD_TO_SLUG: Record<string, DocSlug> = {
   '/release-checklist.md': 'release-checklist',
   '/subagent-catalog.md': 'subagent-catalog',
   '/product-positioning.md': 'product-positioning',
+  '/adoption-one-pager.md': 'adoption-one-pager',
   '/licensing.md': 'licensing',
   '/privacy.md': 'privacy',
   '/README.opencode.md': 'opencode',
