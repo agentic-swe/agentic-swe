@@ -1,5 +1,7 @@
 # Product positioning
 
+**Shareable short matrix:** [Who this is for (adoption one-pager)](adoption-one-pager.md) · **Try it:** [Golden path (15 minutes)](golden-path.md).
+
 Agentic SWE is a **workflow pack for Claude Code**: installable markdown (policies, phases, agents, templates) that runs in the developer’s environment. There is **no hosted SaaS runtime** for this pipeline in this repository — the runtime is Claude Code (or your host) plus your repo; the **Hypervisor** is the primary session following `CLAUDE.md`.
 
 ## Primary ICP (ideal customer profile)

@@ -26,4 +26,4 @@ If you still have a **vendored** **`.claude/commands`**, **`.claude/phases`**, e
 
 ## Still stuck
 
-Confirm **`claude plugin validate`** passes on a checkout of this repository. Re-read [claude-code-plugin.md](claude-code-plugin.md) and [installation.md](installation.md).
+Follow **[Golden path](golden-path.md)** once end-to-end on a scratch repo to separate “install” issues from “project” issues. Confirm **`claude plugin validate`** passes on a checkout of this repository. Re-read [claude-code-plugin.md](claude-code-plugin.md) and [installation.md](installation.md).

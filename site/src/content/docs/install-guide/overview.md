@@ -21,6 +21,8 @@ Copy-paste stubs ship in the pack under **`templates/repo-knowledge-stub.md`**. 
 
 If something fails, see **[Troubleshooting](../troubleshooting.md)**.
 
+For a **first successful run** on Claude Code (install → **`/work`** → **`.worklogs/`** → gate), use **[Golden path](../golden-path.md)** (~15 minutes).
+
 ---
 
 ## Slash command `/install` (Claude Code)

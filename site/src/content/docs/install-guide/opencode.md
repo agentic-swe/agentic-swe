@@ -53,6 +53,17 @@ Merge root **`CLAUDE.md`** into your project per **`commands/install.md`**. Use 
 
 Open the repo in OpenCode, start a chat, and run **`/work <task>`**. If commands are missing, confirm **`commands/*.md`** exists on the pack root and paths are wired correctly.
 
+## Tier B happy path (~15 minutes)
+
+This tab is an **official Tier B** path: same policy spine as Claude Code, **not** identical packaging. See **[Host support tiers](../host-support-tiers.md)** for definitions.
+
+1. **Checkout** this repository and wire **`opencode.json`** + symlink **`agentic-swe.js`** (sections above).
+2. **Merge `CLAUDE.md`** into your app repo; use **`.worklogs/<id>/`** in the **target** repo.
+3. Open the **target** repo in OpenCode; start a session and run **`/work Fix a trivial typo in README`** (or use files from **`examples/golden-path-demo`** in the pack).
+4. Confirm **`.worklogs/<id>/state.json`** updates and the session respects **approval-wait** before you merge.
+
+**Command mapping (vs Claude Code reference):** there is no Anthropic **`/plugin install`** here — discovery is **`opencode.json`** + the ESM plugin. Policy injection uses **`experimental.chat.messages.transform`** instead of Claude Code’s plugin root resolution in all setups.
+
 ## Tool mapping (conceptual)
 
 | Pack concept | OpenCode surface |
