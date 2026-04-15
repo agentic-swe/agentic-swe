@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`templates/audit.log`:** ship the template file referenced by **`work-engine init`** and **`phases/initialized.md`** so CI and fresh clones do not fail with **ENOENT** on **`copyFileSync`**.
+
 ### Added
 
 - **`work-engine doctor`** and **`work-engine migrate`** (delegates to **`scripts/migrate-work-state.js`**); **`AGENTIC_SWE_PROJECT_ROOT`** / **`--project-root`** for **`record-cost`**, **`doctor`**, and **`summarize-work.js`**; active work discovery **tie-break** + stderr warning when multiple actives share max **`state.json`** mtime (**`discover-workdir.cjs`**).

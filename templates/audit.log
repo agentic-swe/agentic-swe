@@ -1,0 +1,7 @@
+# Work item audit log (append-only)
+#
+# Suggested line shape:
+# <ISO-8601> actor=<who> action=<what> | evidence: <path or id>
+#
+# Example:
+# 2026-01-01T00:00:00.000Z actor=hypervisor action=work_item_created | evidence: state.json from template
