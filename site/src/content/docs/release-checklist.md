@@ -6,7 +6,7 @@ Use before tagging a release or after changing **`hooks/`**, **`.cursor-plugin/`
 
 A **tagged release** should stay aligned with the public **[Golden path](golden-path.md)**: a new user can install the plugin and reach **`.worklogs/<id>/`** with a trivial task in about **15 minutes**. Before you publish:
 
-1. Re-read **Golden path** for drift (commands, marketplace owner, paths).
+1. Re-read **Golden path** for drift (commands, marketplace owner, paths). If you changed **memory** scripts, hooks, or config, re-read **[Durable memory](durable-memory.md)** and the repo **`docs/specs/memory-graph.md`** for drift.
 2. Run the **automated** bar below (`npm run ci` or equivalent) so wiring and the docs site still build.
 3. Optionally run **`npm run test:smoke`** from repo root when **`ANTHROPIC_API_KEY`** is available — LLM smoke is **not** in default `npm test`; it costs tokens but validates phase routing (see **`test/smoke/README.md`**). Record the outcome in the verification table when you use it.
 

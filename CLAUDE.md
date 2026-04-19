@@ -12,6 +12,8 @@ There is also a **programmatic work engine** for the same *structural* rules: **
 
 **API spend in `budget.cost_used`:** With the default **`hooks/hooks.json`**, each **`Stop`** event runs **`hook-record-cost.cjs`**, which reads Claude Code’s **`transcript_path`** JSONL, bills new token **`usage`** rows against **`scripts/lib/work-engine/pricing.cjs`** (override with **`AGENTIC_SWE_PRICING_JSON`**), and increments **`budget.cost_used`** on the active work item (**`AGENTIC_SWE_WORK_DIR`** or newest non-**`completed`** **`.worklogs/<id>`** under **`cwd`**). The same sync updates optional **`budget.usage_totals`** (cumulative token counts) for dashboards.
 
+**Durable memory (optional, advisory):** The Hypervisor may use a local graph + chunk index under **`.agentic-swe/memory.sqlite`** (build with **`npm run memory-index`** from a checkout, or **`node`** the scripts with **`CLAUDE_PLUGIN_ROOT`** set). Run **`npm run memory-prime`** for a bounded digest; **`hooks/session-start`** appends the same markdown **by default** (opt out: **`AGENTIC_SWE_MEMORY_PRIME=0`**) (optional **`AGENTIC_SWE_MEMORY_PRIME_QUERY`**, **`AGENTIC_SWE_WORK_DIR`** for work-id scoping). Treat output as **retrieved hints only**—**`state.json`**, **`progress.md`**, and repo files stay authoritative (**Source priority**). See **`docs/specs/memory-graph.md`** and the project docs site **[Durable memory](https://surajSFDC.github.io/agentic-swe/docs/durable-memory)**.
+
 **Work overview:** Slash **`/swe-dashboard`** (or **`npm run swe-dashboard -- --cwd <repo>`**) opens a **localhost** page listing all **`.worklogs`** work items with per-item and aggregate cost, tokens, and timing — see **`commands/swe-dashboard.md`**.
 
 Use this document as the **single authority** for transitions, required artifacts, budgets, and delegation. Phase bodies in **`${CLAUDE_PLUGIN_ROOT}/phases/*.md`** implement detail; they must not contradict this file.
@@ -154,6 +156,8 @@ Canonical edges are also listed in **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`*
 ---
 
 ## Operating loop
+
+Optional **memory prime** blocks (injected by default at session start unless **`AGENTIC_SWE_MEMORY_PRIME=0`**, or from explicit **`memory-prime`**) are **advisory** context for resumed work—reconcile with **`state.json`** and artifacts before acting; they do not replace gates or transitions.
 
 1. Read **`.worklogs/<id>/state.json`**.
 2. Determine **`current_state`** and **`pipeline.track`**.

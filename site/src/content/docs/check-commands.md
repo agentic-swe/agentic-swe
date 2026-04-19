@@ -39,4 +39,18 @@ Demo data for an empty repo (writes gitignored **`.worklogs/_demo-*`**):
 npm run seed-dashboard-demo
 ```
 
-Related: [troubleshooting.md](troubleshooting.md), [usage.md](usage.md).
+## Pack CLIs: durable memory (optional)
+
+From a checkout of the pack (or with **`${CLAUDE_PLUGIN_ROOT}/scripts/`** on the path):
+
+```bash
+npm run memory-index -- --project-root "$(pwd)"
+npm run memory-prime -- --project-root "$(pwd)" --query "your task keywords"
+npm run memory-compact -- --work-dir "$(pwd)/.worklogs/<id>"
+npm run memory-import -- --project-root "$(pwd)" --file bundle.json --force
+npm run memory-sliding-summary -- --work-dir "$(pwd)/.worklogs/<id>" --transcript-path /path/to/transcript.jsonl
+```
+
+**`hooks/session-start`** appends **memory-prime** by default; set **`AGENTIC_SWE_MEMORY_PRIME=0`** to disable. Full reference: [Durable memory](durable-memory.md) and the repo spec [memory-graph.md](https://github.com/surajSFDC/agentic-swe/blob/main/docs/specs/memory-graph.md).
+
+Related: [troubleshooting.md](troubleshooting.md), [usage.md](usage.md), [durable-memory.md](durable-memory.md).

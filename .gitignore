@@ -24,6 +24,11 @@ Thumbs.db
 # Local tooling (MCP / IDE; paths vary by machine)
 .mcp.json
 
+# Phase 2 durable memory — local SQLite + WAL (optional JSON under .agentic-swe/ may be committed per repo)
+.agentic-swe/memory.sqlite
+.agentic-swe/memory.sqlite-shm
+.agentic-swe/memory.sqlite-wal
+
 # Secrets and env (never commit real values)
 .env
 .env.*

@@ -15,6 +15,7 @@ Applies to **every host**: policy in root **`CLAUDE.md`**, work state under **`.
 | Location | Purpose |
 |----------|---------|
 | **`AGENTS.md`** (repo root) | Conventions, commands, boundaries for agent sessions |
+| **`.agentic-swe/memory.json`** | Optional overrides for **durable memory** (chunk index, prime, embeddings) — see [Durable memory](../durable-memory.md) |
 | **`docs/agentic-swe/*.md`** | Optional: `CONVENTIONS.md`, `PITFALLS.md`, `PLAYBOOK.md`, … |
 
 Copy-paste stubs ship in the pack under **`templates/repo-knowledge-stub.md`**. None of this is required for the pipeline to run.

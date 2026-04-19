@@ -16,4 +16,4 @@
 
 4. In Antigravity, keep **root `CLAUDE.md`** and the **pack path** in context. There is no separate runtime: the session follows the policy and writes under **`.worklogs/<id>/`**.
 
-**More detail:** [Installation](installation.md) · [Multi-platform support](multi-platform-support.md)
+**More detail:** [Installation](installation.md) · [Multi-platform support](multi-platform-support.md) · [Durable memory](durable-memory.md)

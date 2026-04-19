@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Session-start hook for agentic-swe (Claude Code + Cursor).
 # Injects Hypervisor policy context + compact implicit-routing hint.
+# Appends memory-prime by default (bounded markdown). Opt out: AGENTIC_SWE_MEMORY_PRIME=0
 set -euo pipefail
 
+INPUT=$(cat || true)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLAUDE_MD="$REPO_ROOT/CLAUDE.md"
@@ -20,7 +22,46 @@ if [ -f "$HINT_FILE" ]; then
   ROUTING=$(cat "$HINT_FILE")
 fi
 
+PROJECT_ROOT="${AGENTIC_SWE_PROJECT_ROOT:-}"
+if [[ -z "$PROJECT_ROOT" ]] && command -v jq >/dev/null 2>&1; then
+  CWD_JSON=$(echo "$INPUT" | jq -r '.cwd // empty' 2>/dev/null || echo "")
+  if [[ -n "$CWD_JSON" ]]; then
+    PROJECT_ROOT="$CWD_JSON"
+  fi
+fi
+if [[ -z "$PROJECT_ROOT" ]]; then
+  PROJECT_ROOT="$(pwd)"
+fi
+
+MEM_PRIME_BLOCK=""
+RUN_MEM_PRIME=1
+case "${AGENTIC_SWE_MEMORY_PRIME:-}" in
+  0|false|FALSE|no|NO|off|OFF) RUN_MEM_PRIME=0 ;;
+esac
+
+if [[ "$RUN_MEM_PRIME" = "1" ]]; then
+  MP_ARGS=(--project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT")
+  if [[ -n "${AGENTIC_SWE_WORK_DIR:-}" ]]; then
+    WID=$(basename "$AGENTIC_SWE_WORK_DIR")
+    MP_ARGS+=(--work-id "$WID")
+  fi
+  if [[ -n "${AGENTIC_SWE_MEMORY_PRIME_QUERY:-}" ]]; then
+    MP_ARGS+=(--query "$AGENTIC_SWE_MEMORY_PRIME_QUERY")
+  fi
+  set +e
+  MEM_PRIME_BLOCK=$(node "$REPO_ROOT/scripts/memory-prime.cjs" "${MP_ARGS[@]}" 2>/dev/null)
+  _MP_EXIT=$?
+  set -e
+  if [[ "$_MP_EXIT" != "0" ]]; then
+    MEM_PRIME_BLOCK=""
+  fi
+fi
+
 FULL_CTX="${BASE}"$'\n\n'"${ROUTING}"
+
+if [[ -n "$MEM_PRIME_BLOCK" ]]; then
+  FULL_CTX="${FULL_CTX}"$'\n\n'"---"$'\n\n'"${MEM_PRIME_BLOCK}"
+fi
 
 emit_json() {
   local mode="$1"

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`memory-import`** (validated JSON bundle → SQLite nodes/edges), **`memory-sliding-summary`** (Claude JSONL transcript → `sliding-summary.md`, optional OpenAI for older turns), schema **`schemas/memory-import-bundle.schema.json`**, config **`sliding.*`**; session-start **memory prime default on** (opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**).
+- **Durable memory (Phase 2):** site doc **[Durable memory](https://surajSFDC.github.io/agentic-swe/docs/durable-memory)** (`site/src/content/docs/durable-memory.md`, registry slug **`durable-memory`**); cross-links from Usage, Multi-platform support, check-commands, Claude/Cursor plugin pages, Guide, and Documentation hub. Roadmap Phase 2 notes in-repo vs site pointers.
 - **`work-engine doctor`** and **`work-engine migrate`** (delegates to **`scripts/migrate-work-state.js`**); **`AGENTIC_SWE_PROJECT_ROOT`** / **`--project-root`** for **`record-cost`**, **`doctor`**, and **`summarize-work.js`**; active work discovery **tie-break** + stderr warning when multiple actives share max **`state.json`** mtime (**`discover-workdir.cjs`**).
 - **Best-effort `state.json` write lock** (**.`agentic-swe-write.lock`**) for **`applyTransition`** and **`syncCostFromTranscript`** (**`state-lock.cjs`**).
 - **Dashboard API pagination:** **`collectWorkDashboard(cwd, { limit, offset })`**, **`GET /api/work-items?limit=&offset=`**, **`total_count`**; UI **Load more**, full-repo **rollup** on cards/chart, **Δ cost** column, richer **export JSON**.

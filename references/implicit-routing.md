@@ -6,6 +6,7 @@ Hosts differ: some expose a **Skill** tool; agentic-swe uses **`CLAUDE.md`**, **
 
 1. **Active work** — If `.worklogs/<id>/` exists, read `state.json` and follow the operating loop in `CLAUDE.md`. Do not ignore an in-progress work item.
 2. **Install** — If the plugin is not enabled or root `CLAUDE.md` is missing the pipeline policy in the target repo, run **`/install`** (plugin + optional `CLAUDE.md` merge) before routing.
+3. **Optional durable memory** — If the repo uses **`memory-index`** / **`memory-prime`**, session start **usually injects** a memory block (opt out: **`AGENTIC_SWE_MEMORY_PRIME=0`**). Use it as **hints** only; **`state.json`** and work artifacts override retrieved text on conflict (see root `CLAUDE.md` Source priority).
 
 ## Intent → suggested entry
 
@@ -25,7 +26,7 @@ Hosts differ: some expose a **Skill** tool; agentic-swe uses **`CLAUDE.md`**, **
 - **Do not skip human gates** — `ambiguity-wait`, design approval, `approval-wait` stay mandatory when the state machine requires them.
 - **Ambiguity** — If requirements are unclear, transition to `ambiguity-wait` (or ask one clarifying question at a time in design) instead of guessing.
 - **Budget** — Invoke `/check budget` before expensive phases; if budget is low, skip optional background subagents per `CLAUDE.md`.
-- **Session hook** — On session start, Claude Code runs `hooks/session-start`, which injects a short copy of this routing hint; the canonical detail lives here.
+- **Session hook** — On session start, Claude Code runs `hooks/session-start`, which injects this routing hint and (unless **`AGENTIC_SWE_MEMORY_PRIME=0`**) **memory prime** output; the canonical routing detail lives here. Memory prime is **advisory**—always align with **`state.json`**.
 
 ## Relationship to “skills”
 

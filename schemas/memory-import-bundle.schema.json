@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-swe.local/schemas/memory-import-bundle.schema.json",
+  "title": "agentic-swe memory graph import bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "nodes", "edges", "provenance"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1, "maximum": 1 },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "kind": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "path": { "type": ["string", "null"] },
+          "label": { "type": ["string", "null"] },
+          "meta": { "type": "object" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["src_id", "dst_id", "kind"],
+        "properties": {
+          "src_id": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "dst_id": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "kind": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "meta": { "type": "object" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "imported_at": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

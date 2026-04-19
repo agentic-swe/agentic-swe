@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-swe.local/schemas/memory-config.schema.json",
+  "title": "agentic-swe memory config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "store",
+    "ingest",
+    "prime",
+    "embeddings",
+    "compact",
+    "graph",
+    "import_adapter",
+    "sliding"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "description": { "type": "string" },
+    "store": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sqlite_relative_path", "directory_relative"],
+      "properties": {
+        "sqlite_relative_path": { "type": "string", "minLength": 1 },
+        "directory_relative": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ingest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include_globs", "exclude_globs", "max_file_bytes"],
+      "properties": {
+        "include_globs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "exclude_globs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "max_file_bytes": { "type": "integer", "minimum": 1024, "maximum": 104857600 },
+        "max_chunk_chars": { "type": "integer", "minimum": 512, "maximum": 500000 },
+        "chunk_extensions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "prime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_chars_out",
+        "max_fts_hits",
+        "retrieval_mode",
+        "rrf_k",
+        "semantic_candidate_limit"
+      ],
+      "properties": {
+        "max_chars_out": { "type": "integer", "minimum": 512, "maximum": 500000 },
+        "max_fts_hits": { "type": "integer", "minimum": 1, "maximum": 200 },
+        "retrieval_mode": {
+          "type": "string",
+          "enum": ["auto", "lexical", "semantic", "hybrid"]
+        },
+        "rrf_k": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "semantic_candidate_limit": { "type": "integer", "minimum": 100, "maximum": 500000 }
+      }
+    },
+    "embeddings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "provider",
+        "model",
+        "ollama_host",
+        "openai_model",
+        "test_dimension"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "ollama_host": { "type": "string", "minLength": 1 },
+        "openai_model": { "type": "string", "minLength": 1 },
+        "test_dimension": { "type": "integer", "minimum": 8, "maximum": 4096 }
+      }
+    },
+    "compact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include_names", "max_chars_per_file", "max_total_chars", "output_filename"],
+      "properties": {
+        "include_names": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "max_chars_per_file": { "type": "integer", "minimum": 256, "maximum": 500000 },
+        "max_total_chars": { "type": "integer", "minimum": 512, "maximum": 2000000 },
+        "output_filename": { "type": "string", "minLength": 1 }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "package_manifests"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "package_manifests": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "import_adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "max_nodes_per_merge", "max_edges_per_merge"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "max_nodes_per_merge": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "max_edges_per_merge": { "type": "integer", "minimum": 1, "maximum": 5000000 }
+      }
+    },
+    "sliding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recent_turns_verbatim",
+        "max_old_turn_chars",
+        "output_filename",
+        "llm_enabled",
+        "llm_model"
+      ],
+      "properties": {
+        "recent_turns_verbatim": { "type": "integer", "minimum": 1, "maximum": 200 },
+        "max_old_turn_chars": { "type": "integer", "minimum": 80, "maximum": 10000 },
+        "output_filename": { "type": "string", "minLength": 1 },
+        "llm_enabled": { "type": "boolean" },
+        "llm_model": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

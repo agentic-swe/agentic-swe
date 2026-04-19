@@ -14,4 +14,6 @@
 
 **Full Codex layout:** see **`.codex/INSTALL.md`** in the pack repo.
 
-**More detail:** [Installation](installation.md) · [Usage](usage.md) · [Multi-platform support](multi-platform-support.md)
+**Optional durable memory:** pack **`scripts/`** CLIs — [Durable memory](durable-memory.md).
+
+**More detail:** [Installation](installation.md) · [Usage](usage.md) · [Multi-platform support](multi-platform-support.md) · [Durable memory](durable-memory.md)

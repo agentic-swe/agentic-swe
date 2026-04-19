@@ -209,7 +209,7 @@ agentic-swe runs the same markdown pipeline — driven by the **Hypervisor** ses
 
 All platforms share the same markdown source at this repo’s **plugin root** (`commands/`, `phases/`, `agents/`, …). Platform-specific tool mappings are in `${CLAUDE_PLUGIN_ROOT}/references/` (`codex-tools.md`, `opencode-tools.md`, `gemini-tools.md`, `copilot-tools.md`).
 
-**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start`, plus `${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`.
+**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start` (**memory prime** appended by default; opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**), plus `${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`. **Durable memory** (local index, `memory-prime`, import, sliding summary, optional embeddings): [docs site](https://surajSFDC.github.io/agentic-swe/docs/durable-memory) · [spec](docs/specs/memory-graph.md).
 
 ## CI and pre-push checks
 
