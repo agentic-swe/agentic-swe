@@ -263,9 +263,9 @@ Core agents (`developer-agent.md`, panel agents) can spawn subagents themselves 
 ## Budget Constraints
 
 - Subagent spawns count against the iteration budget
-- Each subagent spawn adds estimated cost to `cost_used` in state.json
+- Each subagent spawn should still be reflected in **`budget.cost_used`** when possible (main-session **`Stop`** hook aggregates transcript **`usage`** into **`state.json`**; subagent transcripts may require separate tooling or manual adjustment until multi-transcript aggregation ships)
 - Model routing from subagent frontmatter determines cost tier (opus > sonnet > haiku)
-- **If `budget_remaining` < 3, skip all subagent auto-selection** — preserve budget for core work
+- **If `budget.budget_remaining` is below `budget.policy.subagent_skip_below_budget_remaining` (defaults from **`config/budget-thresholds.default.json`**, typically **3**), skip all subagent auto-selection** — preserve budget for core work
 - Maximum 2 Hypervisor-spawned subagents per phase invocation
 - Maximum 1 agent-to-agent delegation per calling agent per phase
 - Total subagent spawns tracked in `state.json.counters.subagent_spawns`

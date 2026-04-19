@@ -22,7 +22,7 @@ Demanding senior reviewer — correctness outranks style, regressions outrank el
      - Infrastructure changes → `security-engineer` (background)
    - Spawn selected subagent(s) in **background** with the changed files and implementation context.
    - They run in parallel with the main review — do NOT wait for them before proceeding.
-   - If `budget_remaining` < 3, skip specialist spawning.
+   - If `budget.budget_remaining` is below **`budget.policy.subagent_skip_below_budget_remaining`** (when set; else **3**), skip specialist spawning.
 
 ### Main Review
 

@@ -2,7 +2,7 @@
 
 Autonomous software engineering pipeline for Claude Code with 135+ specialized subagents.
 
-Claude Code becomes a full SWE pipeline -- from task analysis through implementation, review, and PR creation -- with no runtime code. Everything is pure markdown: policies, phase prompts, agent definitions, and templates.
+Claude Code becomes a full SWE pipeline—from task analysis through implementation, review, and PR creation—driven primarily by **markdown** (policies, phase prompts, agent definitions, templates). The pack also ships an **optional Node work engine** (`scripts/work-engine.cjs`) so **CI** can enforce the same budgets, transitions, and artifact rules as **`/check`** without relying on chat alone.
 
 ## Quick Start
 
@@ -192,6 +192,7 @@ Hypervisor (Claude Code + CLAUDE.md policy)
 - **Add a core agent**: Create `.md` in `${CLAUDE_PLUGIN_ROOT}/agents/`, reference in `CLAUDE.md`
 - **Adjust budgets**: Edit `CLAUDE.md` Budgets section and `${CLAUDE_PLUGIN_ROOT}/templates/state.json`
 - **Inspect work folders**: From the pack/repo root, `npm run summarize-work` (or `node scripts/summarize-work.js --json`)
+- **Local dashboard** (filters, export, metrics): `npm run swe-dashboard -- --cwd /path/to/your/repo` or **`/swe-dashboard`** in Claude Code (**`commands/swe-dashboard.md`**). Sample rows: **`npm run seed-dashboard-demo`** (then refresh the dashboard).
 - **Migrate old work state**: `node scripts/migrate-work-state.js` then `node scripts/migrate-work-state.js --apply` after major upgrades (see `CHANGELOG.md`)
 
 ## Multi-Platform Support

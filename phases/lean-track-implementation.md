@@ -28,7 +28,7 @@ Follow the same delegation model as `${CLAUDE_PLUGIN_ROOT}/phases/implementation
 3. If `subagent_auto_select` is enabled and a language specialist is recommended with `high` confidence AND it matches the primary language of the files to be changed:
    - Select that **one** language specialist for background advisory.
    - No domain specialists on the lean track.
-4. If `budget_remaining` < 3, skip subagent selection entirely.
+4. If `budget.budget_remaining` is below **`budget.policy.subagent_skip_below_budget_remaining`** (when set; else **3**), skip subagent selection entirely.
 
 ### Spawning
 

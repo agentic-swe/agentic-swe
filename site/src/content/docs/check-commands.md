@@ -10,4 +10,33 @@ The pipeline’s enforcement checks are invoked as **`/check <subcommand>`** ins
 
 Use these **before** advancing the state machine when the Hypervisor policy (`CLAUDE.md`) requires it.
 
+## Headless work engine (CI)
+
+From a checkout of the **agentic-swe** pack (or with **`${CLAUDE_PLUGIN_ROOT}`** pointing at the installed plugin), you can run the same structural checks **without** the IDE:
+
+```bash
+npm run work-engine -- help
+node "${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs" validate --work-dir .worklogs/<id>
+node "${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs" budget --work-dir .worklogs/<id> --json
+node "${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs" record-cost --transcript-path /path/to/transcript.jsonl --cwd "$(pwd)"
+```
+
+In Claude Code, **`budget.cost_used`** is normally updated automatically via the **`Stop`** hook (see pack **`hooks/hooks.json`**). The **`record-cost`** command is for manual replay or CI if you export a transcript path.
+
+See **`commands/check.md`** in the pack for **`init`**, **`plan-transition`**, **`transition`**, and **`record-cost`**. Spec: [work-item-engine.md](https://github.com/surajSFDC/agentic-swe/blob/main/docs/specs/work-item-engine.md) in the repo.
+
+## Local work dashboard (`/swe-dashboard`)
+
+Slash **`/swe-dashboard`** (see pack **`commands/swe-dashboard.md`**) opens a **read-only** page at **`http://127.0.0.1:47822/`** (default; set **`SWE_DASHBOARD_PORT`**) listing all **`.worklogs/<id>/state.json`** work items: cost, token totals, filters, export, and rollups. **Claude Code** can auto-start the server via **`UserPromptSubmit`** (**`hooks/dashboard-on-prompt.sh`**); elsewhere run:
+
+```bash
+npm run swe-dashboard -- --cwd "$(pwd)"
+```
+
+Demo data for an empty repo (writes gitignored **`.worklogs/_demo-*`**):
+
+```bash
+npm run seed-dashboard-demo
+```
+
 Related: [troubleshooting.md](troubleshooting.md), [usage.md](usage.md).

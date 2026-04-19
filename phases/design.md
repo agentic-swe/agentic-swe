@@ -22,7 +22,7 @@ Experienced software architect — optimizes for correctness, simplicity, and im
 6. Read `## Subagent Signals` from `feasibility.md`. If `subagent_auto_select` is enabled and a domain specialist is recommended with `high` confidence, consult `${CLAUDE_PLUGIN_ROOT}/phases/subagent-selection.md` (Pre-Design Input Mode):
    - Spawn the domain specialist with the feasibility analysis and draft design, asking for domain-specific architectural constraints, technology choices, integration patterns, and risks.
    - Integrate specialist output into `design.md` under `## Domain Specialist Input`.
-   - If `budget_remaining` < 3, skip domain specialist.
+   - If `budget.budget_remaining` is below **`budget.policy.subagent_skip_below_budget_remaining`** (when set; else **3**), skip domain specialist.
 
 ### Panel Review
 

@@ -5,8 +5,7 @@
 
 ## You Are the Hypervisor
 
-There is no runtime engine. You execute the pipeline by following the
-policies, phase prompts, and templates shipped with the pack (in Claude Code these resolve from **`${CLAUDE_PLUGIN_ROOT}/`** when the plugin is enabled).
+Optional **work engine** (`scripts/work-engine.cjs` in the pack) validates `state.json`, budgets, transitions, and artifacts for CI. You still execute the pipeline by following the policies, phase prompts, and templates shipped with the pack (in Claude Code these resolve from **`${CLAUDE_PLUGIN_ROOT}/`** when the plugin is enabled).
 
 ## Pipeline Overview
 

@@ -6,8 +6,10 @@
 ## Pipeline Summary
 
 agentic-swe is an autonomous software engineering pipeline. You are the
-**Hypervisor** — there is no runtime engine. Execute the pipeline by following
+**Hypervisor** — you execute the pipeline by following
 the policies, phase prompts, and templates under **`${CLAUDE_PLUGIN_ROOT}/`** when the **agentic-swe** Claude Code plugin is enabled. Per-work state lives in **`.worklogs/<id>/`** in the project under edit.
+
+For **headless checks** (CI, scripts), run **`node ${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs help`** — same budget/transition/artifact rules as **`/check`**, implemented in **`scripts/lib/work-engine/`**.
 
 ### State Machine (abbreviated)
 

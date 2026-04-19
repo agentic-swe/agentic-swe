@@ -16,7 +16,7 @@ Use this when the Hypervisor or a core agent considers **multiple agents or spec
 - **Shared state** — both agents would modify the same file or the same mutable resource; use one owner or serialize.
 - **Sequential dependencies** — agent B needs agent A’s output as input; run A first, then B.
 - **Complex merge scenarios** — changes likely to conflict (touching adjacent logic, same config keys, overlapping refactors); prefer a single agent or strictly non-overlapping slices.
-- **Low budget** — each agent consumes budget and context; when `budget_remaining` is tight, skip parallel fan-out and do the minimum serial path.
+- **Low budget** — each agent consumes budget and context; when `budget.budget_remaining` is tight, skip parallel fan-out and do the minimum serial path.
 
 ## Prompt structure for parallel dispatch
 
@@ -48,7 +48,7 @@ Expected output: Bullets + verdict (pass/concerns/blocker) ≤ N words; list fil
 
 ## Relationship to this pipeline
 
-- The **Hypervisor** owns multi-slice splits, conflict checks after parallel returns, and whether to fan out at all given `budget_remaining`.
+- The **Hypervisor** owns multi-slice splits, conflict checks after parallel returns, and whether to fan out at all given `budget.budget_remaining`.
 - The **developer agent** may run one background subagent while continuing work; that subagent’s prompt should still follow the scope / goal / constraints / expected-output pattern.
 - **Multi-slice implementation** (multiple developer agents with non-overlapping ownership) must be planned with this document plus `audit.log` and `implementation.md` integration so results reconcile to one coherent branch state.
 

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "description": "Default iteration/cost ceilings, loop counter caps, and subagent thresholds. Override in-repo with .agentic-swe/budget-thresholds.json (merge) or AGENTIC_SWE_BUDGET_THRESHOLDS=/abs/path.json.",
+  "tracks": {
+    "lean": {
+      "iteration_budget": 12,
+      "cost_budget_usd": 2.5
+    },
+    "standard": {
+      "iteration_budget": 10,
+      "cost_budget_usd": 6
+    },
+    "rigorous": {
+      "iteration_budget": 10,
+      "cost_budget_usd": 10
+    }
+  },
+  "counter_caps": {
+    "lean_iter": 2,
+    "design_iter": 3,
+    "design_iter_high_risk_min_score": 4,
+    "design_iter_high_risk": 4,
+    "code_iter": 5,
+    "merge_iter": 2,
+    "approval_iter": 3,
+    "self_review_iter": 1,
+    "test_adequacy_iter": 1,
+    "panel_runs": 8,
+    "subagent_spawns": 60
+  },
+  "subagents": {
+    "skip_auto_select_below_budget_remaining": 3,
+    "max_spawns_per_phase": 2,
+    "max_delegation_per_agent_per_phase": 1
+  }
+}

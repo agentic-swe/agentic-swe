@@ -29,6 +29,8 @@
     "templates",
     "references",
     "state-machine.json",
+    "schemas",
+    "config",
     ".claude-plugin/",
     ".cursor-plugin/",
     ".codex/",
@@ -50,7 +52,13 @@
     "ci": "npm run verify && npm run version:check && npm run lint --prefix site && npm run build --prefix site && npm test",
     "verify": "node scripts/verify-sanity.js",
     "summarize-work": "node scripts/summarize-work.js",
+    "swe-dashboard": "node scripts/swe-dashboard-server.cjs",
+    "seed-dashboard-demo": "node scripts/seed-dashboard-demo.cjs",
+    "work-engine": "node scripts/work-engine.cjs",
     "version:check": "bash scripts/bump-version.sh check",
     "version:bump": "bash scripts/bump-version.sh bump"
+  },
+  "dependencies": {
+    "ajv": "^8.18.0"
   }
 }

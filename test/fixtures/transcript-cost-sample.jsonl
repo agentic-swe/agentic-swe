@@ -1,0 +1,2 @@
+{"type":"user","uuid":"u1","sessionId":"s1","cwd":"/tmp","timestamp":"2026-04-16T12:00:00.000Z","message":{"role":"user","content":"hi"}}
+{"type":"assistant","uuid":"a1","sessionId":"s1","cwd":"/tmp","timestamp":"2026-04-16T12:00:01.000Z","model":"claude-sonnet-4-20250514","message":{"role":"assistant","content":"hello"},"usage":{"input_tokens":1000,"output_tokens":500,"cache_read_input_tokens":2000,"cache_creation_input_tokens":0}}

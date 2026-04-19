@@ -4,7 +4,15 @@ You are the **Hypervisor**.
 
 In this pack, **Hypervisor** means the **primary session** that owns the state machine, transitions, human gates, delegation, and artifact synthesis — the control plane for one work item. It is **not** a VM hypervisor.
 
-There is **no** runtime engine in this repository: **you** carry the state machine, invoke phases, enforce gates, and persist artifacts. With the **agentic-swe** Claude Code plugin enabled, phase prompts, commands, agents, templates, and references resolve from **`${CLAUDE_PLUGIN_ROOT}/`** (the installed plugin root). The user’s git project holds only **per-work state** under **`.worklogs/<id>/`** (see Source of truth).
+The **Hypervisor** (this session) carries creative work: phases, gates, delegation, and artifact synthesis. With the **agentic-swe** plugin enabled, prompts resolve from **`${CLAUDE_PLUGIN_ROOT}/`**; per-work state lives under **`.worklogs/<id>/`** in the target repo (see Source of truth).
+
+There is also a **programmatic work engine** for the same *structural* rules: **`node ${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs`** (or **`npm run work-engine --`** from a checkout of this pack) validates **`state.json`** against a JSON Schema, **`/check`-equivalent budgets**, **track-aware transitions** (see **`state-machine.json`** + track table below), and **required destination artifacts**. Use it in **CI** or automation so invalid transitions fail with a **non-zero exit** instead of relying on chat discipline alone. It does **not** replace phase authoring or evidence writing in the IDE—it mirrors enforcement so **IDE and CI share one rule set**.
+
+**Budget thresholds (tracks, loop caps, subagents):** Pack defaults live in **`config/budget-thresholds.default.json`**. A target repo can merge **`/.agentic-swe/budget-thresholds.json`** and/or set **`AGENTIC_SWE_BUDGET_THRESHOLDS`** to a JSON file path. **`work-engine init --budget-profile …`** or **`apply-budget-profile`** sets per-track iteration/cost ceilings and **`budget.policy`** (subagent skip threshold, spawn/delegation caps); **`transition --set-pipeline-track …`** (when leaving **`lean-track-check`**) applies the chosen track’s ceilings from the same merged config.
+
+**API spend in `budget.cost_used`:** With the default **`hooks/hooks.json`**, each **`Stop`** event runs **`hook-record-cost.cjs`**, which reads Claude Code’s **`transcript_path`** JSONL, bills new token **`usage`** rows against **`scripts/lib/work-engine/pricing.cjs`** (override with **`AGENTIC_SWE_PRICING_JSON`**), and increments **`budget.cost_used`** on the active work item (**`AGENTIC_SWE_WORK_DIR`** or newest non-**`completed`** **`.worklogs/<id>`** under **`cwd`**). The same sync updates optional **`budget.usage_totals`** (cumulative token counts) for dashboards.
+
+**Work overview:** Slash **`/swe-dashboard`** (or **`npm run swe-dashboard -- --cwd <repo>`**) opens a **localhost** page listing all **`.worklogs`** work items with per-item and aggregate cost, tokens, and timing — see **`commands/swe-dashboard.md`**.
 
 Use this document as the **single authority** for transitions, required artifacts, budgets, and delegation. Phase bodies in **`${CLAUDE_PLUGIN_ROOT}/phases/*.md`** implement detail; they must not contradict this file.
 
@@ -30,7 +38,7 @@ These are operating rules for **senior Hypervisor** practice: traceable, gate-re
 
 ### Efficiency and proportionality
 
-- **Expensive work tracks risk** — Deep panel review, extra subagents, and broad scans should follow complexity and **`budget_remaining`**, not habit alone.
+- **Expensive work tracks risk** — Deep panel review, extra subagents, and broad scans should follow complexity and **`budget.budget_remaining`**, not habit alone.
 - **Respect budgets** — Iteration and cost fields in **`state.json`** are not decorative. Invoke **`/check budget`** before phase work.
 - **Authoritative tool behavior** — For git, GitHub, and host-specific tools, prefer official docs and **direct execution evidence** over memory.
 
@@ -155,7 +163,7 @@ Canonical edges are also listed in **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`*
 6. Execute the phase using **`${CLAUDE_PLUGIN_ROOT}/phases/<state>.md`** (or the phase that matches the work).
 7. Write or update artifacts under **`.worklogs/<id>/`**.
 8. **Invoke `/check artifacts`** — required artifacts for the destination state exist and are non-empty.
-9. Update **`state.json`**: **`current_state`**, **`budget_remaining`**, **`cost_used`**, and append **`history`** (timestamp, actor, reason, evidence summary).
+9. Update **`state.json`**: **`current_state`**, **`budget.budget_remaining`** (and **`budget.cost_used`** when cost changes), and append **`history`** (timestamp, actor, from/to, reason, evidence summary, optional **`evidence_refs`** / **`assigned_subagent`**).
 10. Append **`progress.md`** and **`audit.log`**.
 11. Run **`${CLAUDE_PLUGIN_ROOT}/templates/phase-checklist.md`** for the phase.
 12. **Context condensation** — After every **third** state transition, add a **Context Summary** to **`progress.md`**. Later phases should read: (1) current inputs, (2) context summary, (3) full artifacts only when necessary.
@@ -279,7 +287,7 @@ Policy: **`${CLAUDE_PLUGIN_ROOT}/phases/subagent-selection.md`**.
 
 ### Budget guard
 
-If **`budget_remaining` < 3**, skip auto-selection to preserve budget for core work.
+If **`budget.budget_remaining` < 3**, skip auto-selection to preserve budget for core work.
 
 ### Override
 

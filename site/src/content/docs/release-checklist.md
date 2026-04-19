@@ -42,6 +42,7 @@ When the **Claude CLI** is on **`PATH`**, the same suite also runs **`claude plu
 | **Codex** | **`.codex/INSTALL.md`** mentions **AGENTS** / **CLAUDE**; **`AGENTS.md`** present |
 | **OpenCode** | **`.opencode/INSTALL.md`**, **`node --check`** on the plugin, **dynamic `import()`** of **`config`** + **`experimental.chat.messages.transform`** and resolved **`paths`** |
 | **Packaging** | **`package.json` `files[]`** includes each host bundle path |
+| **Work engine** | **`npm run work-engine -- help`** exits 0; **`schemas/work-item.schema.json`** present; **`test/work-engine-*.test.js`** pass with **`npm test`** |
 
 These checks **do not** open Cursor, Codex, OpenCode, or Gemini — use **Manual smoke** below for real host runtime.
 

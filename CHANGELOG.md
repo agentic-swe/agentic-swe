@@ -7,12 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`templates/audit.log`:** ship the template file referenced by **`work-engine init`** and **`phases/initialized.md`** so CI and fresh clones do not fail with **ENOENT** on **`copyFileSync`**.
+
+### Added
+
+- **`work-engine doctor`** and **`work-engine migrate`** (delegates to **`scripts/migrate-work-state.js`**); **`AGENTIC_SWE_PROJECT_ROOT`** / **`--project-root`** for **`record-cost`**, **`doctor`**, and **`summarize-work.js`**; active work discovery **tie-break** + stderr warning when multiple actives share max **`state.json`** mtime (**`discover-workdir.cjs`**).
+- **Best-effort `state.json` write lock** (**.`agentic-swe-write.lock`**) for **`applyTransition`** and **`syncCostFromTranscript`** (**`state-lock.cjs`**).
+- **Dashboard API pagination:** **`collectWorkDashboard(cwd, { limit, offset })`**, **`GET /api/work-items?limit=&offset=`**, **`total_count`**; UI **Load more**, full-repo **rollup** on cards/chart, **Δ cost** column, richer **export JSON**.
+- **`test/fixtures/work-engine/transition-cases.json`** and **`test/work-engine-transition-fixtures.test.js`** for stable illegal transition codes.
+- **Local work dashboard (`/swe-dashboard`) — UX polish:** Filters (all / active / completed), search, Refresh + optional auto-refresh (30s), export JSON/CSV, per-row copy path + VS Code link, empty-state help, **by-state** bar chart for the filtered view, transition dots from **`history`**. **`GET /api/meta`**, **`POST /api/rollup`**, per-item **`state_json_abs_path`**, **`recent_transitions`**, **`state_histogram`** in **`collect-work-dashboard.cjs`**. **`npm run seed-dashboard-demo`** writes sample **`.worklogs/_demo-*`**. Site: [check-commands](site/src/content/docs/check-commands.md), [usage](site/src/content/docs/usage.md). Tests: **`test/swe-dashboard-server.test.js`** (meta + rollup), **`test/seed-dashboard-demo.test.js`**. Command: **`commands/swe-dashboard.md`**; hook **`hooks/dashboard-on-prompt.sh`** (port **47822** / **`SWE_DASHBOARD_PORT`**).
+- **`budget.usage_totals`:** Cost sync (**`transcript-cost.cjs`**) now accumulates **input / output / cache read / cache creation** token counts on the same incremental transcript scan as **`cost_used`** (optional field in **`schemas/work-item.schema.json`**).
+- **Configurable budget thresholds:** **`config/budget-thresholds.default.json`** defines per-track iteration/cost ceilings, **`counter_caps`** (including **`panel_runs`** / **`subagent_spawns`**), and **`subagents`** thresholds. **`AGENTIC_SWE_BUDGET_THRESHOLDS`** and **`.agentic-swe/budget-thresholds.json`** deep-merge over defaults. **`work-engine init --budget-profile …`**, **`apply-budget-profile`**, and **`transition --set-pipeline-track …`** apply profiles; engine **`checkBudgets`** uses merged caps when **`--work-dir`** is under **`.worklogs/`**. Loader: **`scripts/lib/work-engine/budget-config.cjs`**. Tests: **`test/budget-thresholds-config.test.js`**.
+- **Work engine (Phase 1):** programmatic validation and transitions for **`.worklogs/<id>/state.json`** — JSON Schema (**`schemas/work-item.schema.json`**, Ajv), **`/check`-equivalent budgets**, **track-aware edges** (same graph as **`state-machine.json`** + CLAUDE track table), **required destination artifacts**, and safe **`--evidence`** paths. Implementation: **`scripts/lib/work-engine/`**; CLI: **`scripts/work-engine.cjs`** (**`npm run work-engine -- …`**). Tests under **`test/work-engine-*.test.js`**; CI runs **`node scripts/work-engine.cjs help`**. Maintainer spec: **`docs/specs/work-item-engine.md`**.
+- **`budget.cost_used` from API usage:** Claude Code **`Stop`** hook (**`hooks/hooks.json`**) runs **`hook-record-cost.cjs`**, which increments **`cost_used`** from new **`transcript_path`** JSONL lines (token **`usage`** → USD via **`pricing.cjs`**; optional **`AGENTIC_SWE_PRICING_JSON`**). CLI: **`npm run work-engine -- record-cost --transcript-path … --cwd …`**. Discovery: **`AGENTIC_SWE_WORK_DIR`** or newest active **`.worklogs/<id>`** under the project.
+- **Dependency:** **`ajv`** (root **`package.json`**) for schema validation.
+
 ### Changed
 
+- **`schemas/work-item.schema.json`:** object-shaped **`history`** entries now require **`from`**, **`to`**, and **`at`** or **`timestamp`** (may reject legacy hand-edited rows until fixed or migrated).
 - **Cursor manifest:** **`.cursor-plugin/plugin.json`** follows [Cursor’s plugin reference](https://cursor.com/docs/reference/plugins.md): default discovery for **`commands/`** and **`agents/`** at repo root (explicit **`../…`** paths removed), **`hooks`** set to **`hooks/hooks-cursor.json`**, **`author`** as an object, plus **`homepage`** and **`repository`** for marketplace submission.
 - **Git workflow:** removed the **`uat`** line for this repo — topic branches open PRs **directly to `main`**; **`.github/workflows/main-merge-source.yml`** no longer restricts PR heads. **`docs/branch-workflow.md`** and **`.cursor/rules/development-branch-workflow.mdc`** describe **`main`**-only flow and that **only `@surajSFDC`** should merge (**GitHub** collaborator + branch rules, not YAML). CI **`push` / `pull_request`** triggers run on **`main`** only.
 - **Plugin layout:** moved **`tools/brainstorm-server/`** and **`tools/subagent-catalog/`** to **`agents/plugin-runtime/`** so tooling ships next to **`agents/`** without mixing into **`agents/subagents/`**. **`package.json` `files[]`** no longer lists a top-level **`tools/`** tree. CI installs brainstorm deps via **`npm ci --prefix agents/plugin-runtime/brainstorm-server`**.
-- **Claude Code hooks:** **`hooks/hooks.json`** adds async **`UserPromptSubmit`** → **`hooks/brainstorm-on-prompt.sh`** to start the brainstorm HTTP/WebSocket server when the user submits **`/brainstorm`** (if the listen port is free).
+- **Claude Code hooks:** **`hooks/hooks.json`** adds async **`UserPromptSubmit`** hooks: **`hooks/brainstorm-on-prompt.sh`** when the user submits **`/brainstorm`** (if the brainstorm port is free), and **`hooks/dashboard-on-prompt.sh`** when the user submits **`/swe-dashboard`** (if **`SWE_DASHBOARD_PORT`** is free).
 
 ### Removed
 

@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/surajSFDC/agentic-swe/schemas/work-item.schema.json",
+  "title": "WorkItem",
+  "description": "Per-work state persisted as .worklogs/<id>/state.json (agentic-swe).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "work_id",
+    "task",
+    "current_state",
+    "created_at",
+    "updated_at",
+    "timeout_at",
+    "owner",
+    "mode",
+    "resume",
+    "budget",
+    "counters",
+    "ambiguity",
+    "approvals",
+    "metrics",
+    "risk",
+    "artifacts",
+    "validation",
+    "git",
+    "pipeline",
+    "convergence",
+    "history"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "work_id": { "type": "string", "minLength": 1 },
+    "task": { "type": "string" },
+    "current_state": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "updated_at": { "type": "string", "minLength": 1 },
+    "timeout_at": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string" },
+    "mode": { "type": "string" },
+    "resume": { "type": "object" },
+    "budget": {
+      "type": "object",
+      "required": ["iteration_budget", "budget_remaining", "cost_budget_usd", "cost_used"],
+      "properties": {
+        "iteration_budget": { "type": "number" },
+        "budget_remaining": { "type": "number" },
+        "cost_budget_usd": { "type": "number" },
+        "cost_used": { "type": "number" },
+        "cost_ledger": {
+          "type": "object",
+          "properties": {
+            "transcript_path": { "type": "string" },
+            "line_cursor": { "type": "number" },
+            "last_sync_at": { "type": "string" },
+            "last_delta_usd": { "type": "number" },
+            "usage_rows_last_sync": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "policy": {
+          "type": "object",
+          "properties": {
+            "subagent_skip_below_budget_remaining": { "type": "number" },
+            "max_spawns_per_phase": { "type": "number" },
+            "max_delegation_per_agent_per_phase": { "type": "number" },
+            "budget_profile_track": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "usage_totals": {
+          "type": "object",
+          "description": "Cumulative token counts from transcript usage rows (incremental cost sync).",
+          "properties": {
+            "input_tokens": { "type": "number" },
+            "output_tokens": { "type": "number" },
+            "cache_read_input_tokens": { "type": "number" },
+            "cache_creation_input_tokens": { "type": "number" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "counters": {
+      "type": "object",
+      "properties": {
+        "lean_iter": { "type": "number" },
+        "design_iter": { "type": "number" },
+        "code_iter": { "type": "number" },
+        "panel_runs": { "type": "number" },
+        "merge_iter": { "type": "number" },
+        "approval_iter": { "type": "number" },
+        "self_review_iter": { "type": "number" },
+        "test_adequacy_iter": { "type": "number" },
+        "subagent_spawns": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "ambiguity": { "type": "object" },
+    "approvals": { "type": "object" },
+    "metrics": { "type": "object" },
+    "risk": { "type": "object" },
+    "artifacts": { "type": "object" },
+    "validation": { "type": "object" },
+    "git": { "type": "object" },
+    "pipeline": { "type": "object" },
+    "convergence": { "type": "object" },
+    "history": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "required": ["from", "to"],
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "required": ["at"],
+                    "properties": { "at": { "type": "string", "minLength": 1 } }
+                  },
+                  {
+                    "required": ["timestamp"],
+                    "properties": { "timestamp": { "type": "string", "minLength": 1 } }
+                  }
+                ]
+              }
+            ],
+            "properties": {
+              "at": { "type": "string" },
+              "timestamp": { "type": "string" },
+              "actor": { "type": "string" },
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "reason": { "type": "string" },
+              "evidence_refs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "assigned_subagent": { "type": "string" },
+              "evidence_summary": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": true
+}

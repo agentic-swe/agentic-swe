@@ -20,6 +20,24 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/brainstorm-on-prompt.sh\"",
             "async": true,
             "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/dashboard-on-prompt.sh\"",
+            "async": true,
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/lib/work-engine/hook-record-cost.cjs\"",
+            "async": true,
+            "timeout": 30
           }
         ]
       }

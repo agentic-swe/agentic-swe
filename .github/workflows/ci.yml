@@ -60,3 +60,6 @@ jobs:
 
       - name: Test (repo + platform wiring + plugin validate when claude available)
         run: npm test
+
+      - name: Work engine CLI (help smoke)
+        run: node scripts/work-engine.cjs help

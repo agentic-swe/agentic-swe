@@ -20,4 +20,6 @@
 
 3. Open the **target project** in Cursor. Use your build’s command UI to open pack **`commands/*.md`** (same prompts as Claude Code). Policy and work state live in that project’s **`CLAUDE.md`** and **`.worklogs/<id>/`**.
 
+**Work dashboard:** Cursor’s **`hooks/hooks-cursor.json`** in this pack only wires **`sessionStart`** (no **`UserPromptSubmit`** hook is assumed). The **local `/swe-dashboard`** server is therefore **Claude Code–first** when using **`hooks/dashboard-on-prompt.sh`** there. In Cursor, start the dashboard yourself from the project root, for example **`npm run swe-dashboard`** (or **`node …/scripts/swe-dashboard-server.cjs --cwd .`**) and open the printed **`http://127.0.0.1:47822/`** URL. See the pack’s **[swe-dashboard command](https://github.com/surajSFDC/agentic-swe/blob/main/commands/swe-dashboard.md)** (`commands/swe-dashboard.md` in the repo).
+
 **More detail:** [Installation](installation.md) · [Multi-platform support](multi-platform-support.md) · [Troubleshooting](troubleshooting.md)

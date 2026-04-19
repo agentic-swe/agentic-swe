@@ -33,7 +33,7 @@ You are operating under the **agentic-swe** pipeline for this project.
 
 4. **Artifacts:** Write pipeline outputs only under **`.worklogs/<id>/`** in **this** repository (never treat **`PACK_ROOT/.worklogs/`** as the work tree unless that checkout *is* the target project).
 
-5. **Enforcement:** Before changing **`state.json`**, follow the prompts in **`PACK_ROOT/commands/check.md`** (budget, transition, artifacts). Evidence expectations: **`PACK_ROOT/templates/evidence-standard.md`**.
+5. **Enforcement:** Before changing **`state.json`**, follow the prompts in **`PACK_ROOT/commands/check.md`** (budget, transition, artifacts). In CI you may shell out to **`node PACK_ROOT/scripts/work-engine.cjs`** for the same structural rules. Evidence expectations: **`PACK_ROOT/templates/evidence-standard.md`**.
 
 6. **Optional org context:** If present, read root **`AGENTS.md`** and **`docs/agentic-swe/*.md`** when they inform feasibility or implementation.
 ```

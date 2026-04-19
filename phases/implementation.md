@@ -28,7 +28,7 @@ Before spawning the developer agent:
 2. If the task involves **external APIs**, **MCP servers**, **non-repo** systems, or **destructive shell** operations, consult `${CLAUDE_PLUGIN_ROOT}/references/tooling-expectations.md` and ensure the developer agent scopes tool use accordingly.
 3. Read `## Subagent Signals` from `feasibility.md`.
 4. If `subagent_auto_select` is enabled and `subagent-mode` is `full`, consult `${CLAUDE_PLUGIN_ROOT}/phases/subagent-selection.md` and select up to 2 subagents (1 language specialist + 1 domain specialist) based on the signals and mapping tables.
-5. If `budget_remaining` < 3, skip subagent selection to preserve budget.
+5. If `budget.budget_remaining` is below **`budget.policy.subagent_skip_below_budget_remaining`** (when set; else **3**), skip subagent selection to preserve budget.
 
 ### Working Directory
 

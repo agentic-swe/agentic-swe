@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "id": "not-in-graph",
+      "expectCode": "EDGE_NOT_IN_GRAPH",
+      "from": "initialized",
+      "to": "design",
+      "track": "lean"
+    },
+    {
+      "id": "track-forbidden-lean-check-to-design",
+      "expectCode": "EDGE_FORBIDDEN_FOR_TRACK",
+      "from": "lean-track-check",
+      "to": "design",
+      "track": "lean"
+    }
+  ]
+}

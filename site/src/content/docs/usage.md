@@ -4,6 +4,8 @@
 
 No separate eval, audit, or setup steps are required. The pipeline is self-bootstrapping once the **agentic-swe** Claude Code plugin is enabled — give it a task and it handles the rest. If install or slash commands fail, see [troubleshooting.md](troubleshooting.md), run **`/install`** in the target project for **`CLAUDE.md`** / **`.worklogs/`** setup, and see [installation.md](installation.md). From a checkout of this repo you can run **`claude plugin validate /path/to/agentic-swe`** (repo root) to verify the marketplace manifest.
 
+**See all work items locally:** use slash **`/swe-dashboard`** or **`npm run swe-dashboard -- --cwd "$(pwd)"`** for a browser dashboard (metrics, filters, export). Empty tree? Run **`npm run seed-dashboard-demo`** then refresh. Details: [check-commands.md](check-commands.md) and the pack’s **`commands/swe-dashboard.md`**.
+
 **Step 1: Open Claude Code in your project**
 
 ```bash
