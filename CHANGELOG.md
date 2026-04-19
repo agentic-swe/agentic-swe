@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-04-20
+
 ### Documentation
 
 - **Catalog routing & CI:** new site page [Catalog routing](https://surajSFDC.github.io/agentic-swe/docs/catalog-routing) (`site/src/content/docs/catalog-routing.md`), maintainer spec **`docs/specs/catalog-routing.md`**, hub/registry wiring, cross-links from **Usage**, **Check commands**, **Subagent catalog**, **Durable memory**, **Troubleshooting**, **README**, **GEMINI.md**, and the in-app **Guide** / **Documentation** pages.
@@ -50,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs:** link to **[plugin submission tracker](https://claude.ai/settings/plugins/submissions)** in **Distribution** and **Claude Code plugin** (maintainers).
 - **Cursor:** [Cursor plugin](https://surajSFDC.github.io/agentic-swe/docs/cursor-plugin) guide — one-command local install (**`scripts/install-cursor-plugin.sh`** → **`~/.cursor/plugins/local/`**), Marketplace submit link, and doc updates across **README**, **installation**, **distribution**, **Guide**, **Support**, **PageShell**, **multi-platform-support**, **`site/src/docs/registry.ts`** (see **Changed** for manifest layout).
 - **Templates:** **`templates/cursor-rules-stub.md`** — copy-paste stub for the target repo’s **`.cursor/rules/`** with a **`PACK_ROOT`** placeholder; linked from the Cursor plugin doc.
+
+### Changed
+
+- **Claude Code & Cursor plugin manifests:** release **3.1.0**. **`.cursor-plugin/plugin.json`** now includes **`keywords`** (aligned with the Claude plugin / marketplace) and a **description** that explicitly names **Claude Code**, **Cursor**, and compatible hosts, matching **`.claude-plugin/plugin.json`**. **`gemini-extension.json`** description updated for the same multi-host positioning.
 
 ## [3.0.5] - 2026-04-05
 

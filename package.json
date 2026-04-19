@@ -1,6 +1,6 @@
 {
   "name": "agentic-swe",
-  "version": "3.0.5",
+  "version": "3.1.0",
   "description": "Autonomous SWE pipeline (Claude Code–first; Cursor, Codex, OpenCode, and compatible hosts) — install as a plugin (marketplace or --plugin-dir). Per-work state uses .worklogs/ in your project.",
   "license": "MIT",
   "author": "Suraj Gupta",

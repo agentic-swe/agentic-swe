@@ -1,7 +1,7 @@
 {
   "name": "agentic-swe",
-  "version": "3.0.5",
-  "description": "Autonomous SWE pipeline for Claude Code — Hypervisor policy, structured phases, human gates, and 135+ specialist agents",
+  "version": "3.1.0",
+  "description": "Autonomous SWE pipeline for Claude Code, Cursor, and compatible hosts — Hypervisor policy, structured phases, human gates, and 135+ specialist agents",
   "author": {
     "name": "Suraj Gupta",
     "email": "10187486+surajSFDC@users.noreply.github.com"
@@ -11,6 +11,7 @@
   "homepage": "https://surajSFDC.github.io/agentic-swe/",
   "keywords": [
     "claude-code",
+    "cursor",
     "pipeline",
     "orchestration",
     "swe",

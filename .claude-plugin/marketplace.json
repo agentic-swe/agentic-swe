@@ -11,8 +11,8 @@
     {
       "name": "agentic-swe",
       "source": "./",
-      "description": "Autonomous SWE pipeline: structured phases, human gates, three tracks (lean / standard / rigorous), 135+ specialist agents.",
-      "version": "3.0.5",
+      "description": "Autonomous SWE pipeline: structured phases, human gates, three tracks (lean / standard / rigorous), catalog CI and routing, 135+ specialist agents.",
+      "version": "3.1.0",
       "author": {
         "name": "Suraj Gupta"
       },
@@ -21,6 +21,7 @@
       "license": "MIT",
       "keywords": [
         "claude-code",
+        "cursor",
         "swe",
         "pipeline",
         "hypervisor",

@@ -1,6 +1,6 @@
 {
   "name": "agentic-swe",
-  "version": "3.0.5",
-  "description": "Autonomous SWE pipeline with structured phases and 135+ specialist agents",
+  "version": "3.1.0",
+  "description": "Autonomous SWE pipeline for Gemini CLI, Claude Code, Cursor, and compatible hosts — structured phases, human gates, and 135+ specialist agents",
   "contextFileName": "GEMINI.md"
 }
