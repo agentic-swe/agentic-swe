@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-04-20
+
 ### Added
 
-- **`scripts/github/apply-agentic-swe-site-main-ruleset.sh`** (+ JSON payload) — idempotently create/update the **`main`** branch ruleset on **`agentic-swe/agentic-swe-site`** with required checks **`site (20)`**, **`site (22)`**, and **`main-merge-source`**, aligned with that repo’s workflows. Documented in **`docs/branch-workflow.md`**.
+- **`scripts/github/apply-agentic-swe-site-main-ruleset.sh`** (+ JSON payload) — idempotently create/update the **`main`** branch ruleset on **`agentic-swe/agentic-swe-site`** with required checks **`site (20)`**, **`site (22)`**, and **`main-merge-source`**. Documented in **`docs/branch-workflow.md`**.
 
 ### Changed
 
-- **Organization & repositories:** canonical GitHub location is **[agentic-swe/agentic-swe](https://github.com/agentic-swe/agentic-swe)**. The Vite docs/marketing site source lives in **[agentic-swe/agentic-swe-site](https://github.com/agentic-swe/agentic-swe-site)** with GitHub Pages at **`https://agentic-swe.github.io/agentic-swe-site/`**; pack **`homepage`** and plugin **`homepage`** fields point there. Optional private workspace: **[agentic-swe/agentic-swe-lab](https://github.com/agentic-swe/agentic-swe-lab)**. Root **`npm run ci`** no longer builds **`site/`** (site has its own CI).
+- **Organization & repositories:** canonical GitHub location is **[agentic-swe/agentic-swe](https://github.com/agentic-swe/agentic-swe)**. The docs/marketing site is **[agentic-swe/agentic-swe-site](https://github.com/agentic-swe/agentic-swe-site)** (**`https://agentic-swe.github.io/agentic-swe-site/`**); optional private workspace **[agentic-swe-lab](https://github.com/agentic-swe/agentic-swe-lab)**. Root **`npm run ci`** no longer builds **`site/`**.
+- **`.cursor-plugin/plugin.json`:** explicit **`commands`**, **`agents`**, **`hooks`**, and **`mcpServers`** (relative paths from the pack root) for Cursor marketplace / validation alignment with the [Cursor plugins reference](https://cursor.com/docs/reference/plugins).
+- **Release `3.1.1`:** synchronized **`package.json`**, **`.claude-plugin/plugin.json`**, **`.claude-plugin/marketplace.json`**, **`.cursor-plugin/plugin.json`**, and **`gemini-extension.json`** via **`scripts/bump-version.sh`**.
 
 ## [3.1.0] - 2026-04-20
 
