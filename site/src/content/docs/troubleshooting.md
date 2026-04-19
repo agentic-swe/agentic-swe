@@ -24,6 +24,14 @@ Ensure **git** and **`gh`** (if you use PR flows) match [installation.md](instal
 
 If you still have a **vendored** **`.claude/commands`**, **`.claude/phases`**, etc., you can remove those after enabling the plugin if you no longer want a duplicate copy. Move **`.claude/.work/`** to **`.worklogs/`** if needed.
 
+## `catalog:lint` fails after editing subagents
+
+Phase 3 **`npm run catalog:lint`** (also run as part of **`npm run verify`**) checks YAML frontmatter, unique agent names, **`model`**, required **`tools`**, **`name`** matching the filename, invocation-style **descriptions**, and high **Jaccard** overlap between descriptions. Fix the reported paths or tune **`AGENTIC_SWE_CATALOG_OVERLAP_JACCARD`** only if you understand the trade-off. See [Catalog routing](catalog-routing.md).
+
+## Semantic `catalog:route` errors
+
+Build the index with **`npm run catalog:index`** (writes **`.agentic-swe/catalog-embeddings.json`**) and ensure an embedding backend is configured (`test` / Ollama / OpenAI — same patterns as [Durable memory](durable-memory.md)). Use **`--mode lexical`** to skip embeddings.
+
 ## Still stuck
 
 Follow **[Golden path](golden-path.md)** once end-to-end on a scratch repo to separate “install” issues from “project” issues. Confirm **`claude plugin validate`** passes on a checkout of this repository. Re-read [claude-code-plugin.md](claude-code-plugin.md) and [installation.md](installation.md).

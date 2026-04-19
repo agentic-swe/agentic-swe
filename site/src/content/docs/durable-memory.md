@@ -32,7 +32,7 @@ Config merges **`config/memory.default.json`** → **`AGENTIC_SWE_MEMORY_CONFIG`
 ## Retrieval and embeddings
 
 - Default **`prime.retrieval_mode`** is **`auto`**: use **hybrid** (lexical + semantic fusion) when embedding rows exist and a backend is configured; otherwise **lexical**.
-- Optional backends: **`AGENTIC_SWE_EMBEDDINGS_BACKEND=test`** (CI/deterministic), **`ollama`**, **`openai`** — requires **`embeddings.enabled: true`** in merged config. See the [spec](https://github.com/surajSFDC/agentic-swe/blob/main/docs/specs/memory-graph.md).
+- Optional backends: **`AGENTIC_SWE_EMBEDDINGS_BACKEND=test`** (CI/deterministic), **`ollama`**, **`openai`** — requires **`embeddings.enabled: true`** in merged config. See the [spec](https://github.com/surajSFDC/agentic-swe/blob/main/docs/specs/memory-graph.md). The same embedding stack is reused for **catalog semantic routing** ([Catalog routing](catalog-routing.md), [catalog-routing spec](https://github.com/surajSFDC/agentic-swe/blob/main/docs/specs/catalog-routing.md)).
 
 ## Related
 

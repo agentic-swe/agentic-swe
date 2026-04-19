@@ -43,6 +43,7 @@ Agentic SWE is a **workflow pack for Claude Code** (markdown policies, phases, a
 | Distribution and hosting | [Distribution](https://surajSFDC.github.io/agentic-swe/docs/distribution) |
 | Troubleshooting | [Troubleshooting](https://surajSFDC.github.io/agentic-swe/docs/troubleshooting) |
 | `/check` quick reference | [Check commands](https://surajSFDC.github.io/agentic-swe/docs/check-commands) |
+| Catalog lint / router / CI | [Catalog routing](https://surajSFDC.github.io/agentic-swe/docs/catalog-routing) |
 
 **Marketing site (source):** the React app lives under **`site/src/`**; long-form docs are **`site/src/content/docs/*.md`** (rendered at **`/docs/*`**). **`site/public/`** holds static assets (favicon, icons). Run **`npm run build:site`** to emit **`site/dist/`**. Publish via **GitHub Actions** to Pages: **Settings → Pages → Source: GitHub Actions**; pushes to **`main`** run [`.github/workflows/pages.yml`](.github/workflows/pages.yml) → **`https://surajSFDC.github.io/agentic-swe/`** (adjust owner/repo if you fork).
 

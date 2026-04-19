@@ -53,4 +53,16 @@ npm run memory-sliding-summary -- --work-dir "$(pwd)/.worklogs/<id>" --transcrip
 
 **`hooks/session-start`** appends **memory-prime** by default; set **`AGENTIC_SWE_MEMORY_PRIME=0`** to disable. Full reference: [Durable memory](durable-memory.md) and the repo spec [memory-graph.md](https://github.com/surajSFDC/agentic-swe/blob/main/docs/specs/memory-graph.md).
 
-Related: [troubleshooting.md](troubleshooting.md), [usage.md](usage.md), [durable-memory.md](durable-memory.md).
+## Pack CLIs: catalog lint and routing (Phase 3)
+
+**`npm run verify`** includes **`catalog:lint`** (subagent frontmatter and overlap checks). Routing and optional semantic index:
+
+```bash
+npm run catalog:lint
+npm run catalog:route -- "your task text" --mode auto --k 5 --json
+npm run catalog:index -- --project-root "$(pwd)" --plugin-root "${CLAUDE_PLUGIN_ROOT:-$(pwd)}"
+```
+
+Details: [Catalog routing](catalog-routing.md).
+
+Related: [troubleshooting.md](troubleshooting.md), [usage.md](usage.md), [durable-memory.md](durable-memory.md), [catalog-routing.md](catalog-routing.md).

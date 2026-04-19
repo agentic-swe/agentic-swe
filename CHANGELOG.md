@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- **Catalog routing & CI:** new site page [Catalog routing](https://surajSFDC.github.io/agentic-swe/docs/catalog-routing) (`site/src/content/docs/catalog-routing.md`), maintainer spec **`docs/specs/catalog-routing.md`**, hub/registry wiring, cross-links from **Usage**, **Check commands**, **Subagent catalog**, **Durable memory**, **Troubleshooting**, **README**, **GEMINI.md**, and the in-app **Guide** / **Documentation** pages.
+
 ### Fixed
 
 - **`templates/audit.log`:** ship the template file referenced by **`work-engine init`** and **`phases/initialized.md`** so CI and fresh clones do not fail with **ENOENT** on **`copyFileSync`**.

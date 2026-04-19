@@ -37,6 +37,11 @@ The pack can maintain **`.agentic-swe/memory.sqlite`** and emit **memory prime**
 | `/test-runner` | Run detected test suites |
 | `/lint` | Run linters in check mode |
 | `/subagent` | Browse and invoke specialist agents |
+| `npm run catalog:lint` | Lint **`agents/subagents`** (also part of **`npm run verify`** on a checkout) |
+| `npm run catalog:route` | Headless top‑k routing for a query (`--mode auto`, `lexical`, or `semantic`) |
+| `npm run catalog:index` | Build **`.agentic-swe/catalog-embeddings.json`** for semantic mode |
+
+See [docs/specs/catalog-routing.md](docs/specs/catalog-routing.md) and the site page **Catalog routing** (same content as `site/src/content/docs/catalog-routing.md`).
 
 ## State and Artifacts
 

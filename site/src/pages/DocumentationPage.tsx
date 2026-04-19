@@ -22,6 +22,7 @@ const GROUPS: { label: string; slugs: DocSlug[]; extraCards?: HubExtraCard[] }[]
     slugs: [
       'check-commands',
       'durable-memory',
+      'catalog-routing',
       'examples',
       'subagent-catalog',
       'distribution',
@@ -55,7 +56,8 @@ export function DocumentationPage() {
       <p className="hub-intro">
         Browse structured pages below (same content as the repo markdown, rendered in-site). New users:{' '}
         <Link to="/docs/golden-path">Golden path</Link> (~15 minutes), then <Link to="/docs/installation">Installation</Link>,{' '}
-        <Link to="/docs/usage">Usage</Link>, <Link to="/docs/durable-memory">Durable memory</Link>, and{' '}
+        <Link to="/docs/usage">Usage</Link>, <Link to="/docs/durable-memory">Durable memory</Link>,{' '}
+        <Link to="/docs/catalog-routing">Catalog routing</Link>, and{' '}
         <Link to="/docs/multi-platform-support">Multi-platform support</Link>.
       </p>
 

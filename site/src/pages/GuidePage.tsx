@@ -445,7 +445,8 @@ claude`}
         (clone or browse files; root <code>CLAUDE.md</code> is the Hypervisor policy)
         <br />
         <strong>More</strong> — <Link to="/docs/subagent-catalog">Subagent catalog</Link> ·{' '}
-        <Link to="/docs/usage">Usage</Link> · <Link to="/docs/durable-memory">Durable memory</Link> ·{' '}
+        <Link to="/docs/catalog-routing">Catalog routing</Link> · <Link to="/docs/usage">Usage</Link> ·{' '}
+        <Link to="/docs/durable-memory">Durable memory</Link> ·{' '}
         <Link to="/docs/claude-code-plugin">Claude Code plugin</Link> ·{' '}
         <Link to="/docs/multi-platform-support">Multi-platform support</Link>
       </div>

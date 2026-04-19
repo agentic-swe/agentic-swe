@@ -46,6 +46,8 @@ initialized → feasibility → lean-track-check → branch by pipeline.track �
 | `npm run catalog:route` | Top‑k subagents from a query (**`--mode auto|lexical|semantic`**) |
 | `npm run catalog:index` | Build **`.agentic-swe/catalog-embeddings.json`** for semantic routing |
 
+**Docs (site):** [Catalog routing & CI](https://surajSFDC.github.io/agentic-swe/docs/catalog-routing) · [Durable memory](https://surajSFDC.github.io/agentic-swe/docs/durable-memory)
+
 ### Key Directories
 
 - `${CLAUDE_PLUGIN_ROOT}/commands/` — slash command definitions (per [Claude Plugins reference](https://code.claude.com/docs/en/plugins-reference#skills), plugins may use `commands/*.md` or `skills/<name>/SKILL.md`; this pack uses **`commands/`** only)

@@ -109,6 +109,17 @@ Spawn the devops-engineer to optimize our Docker build
 
 During pipeline execution, the Hypervisor can automatically delegate to subagents when domain expertise is needed. For example, if the task involves Rust code, it may spawn the `rust-engineer` subagent during implementation.
 
+### Way 4: Headless catalog router (CLI)
+
+From a checkout of **agentic-swe**, you can rank specialists without the IDE:
+
+```bash
+npm run catalog:route -- "kubernetes helm rollout" --k 5 --json
+npm run catalog:lint
+```
+
+Semantic similarity requires **`npm run catalog:index`** first (writes **`.agentic-swe/catalog-embeddings.json`**). See [Catalog routing](catalog-routing.md) for modes, CI, and model tier hints.
+
 ### Repo-specific custom subagents
 
 For expertise not covered by the catalog, add definitions under:

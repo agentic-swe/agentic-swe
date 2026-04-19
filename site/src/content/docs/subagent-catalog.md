@@ -8,6 +8,8 @@
 - Details: `/subagent info <name>`
 - Invoke: `/subagent invoke <name> <task>`
 
+**Phase 3 — routing & CI (headless):** from a checkout of the pack, **`npm run catalog:lint`** enforces catalog quality in **`npm run verify`**; **`npm run catalog:route`** ranks agents for a task string (lexical or semantic with **`npm run catalog:index`**). Model tier hints for the active work item are injected at session start (see [Catalog routing](catalog-routing.md)).
+
 ---
 
 ## 01 - Core Development (10 agents)
