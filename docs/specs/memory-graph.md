@@ -1,6 +1,6 @@
 # Durable memory and project graph (Phase 2)
 
-**Site (user guide):** [Durable memory](https://surajSFDC.github.io/agentic-swe/docs/durable-memory) on the project docs site mirrors this topic at a higher level.
+**Site (user guide):** [Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory) on the project docs site mirrors this topic at a higher level.
 
 This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAUDE.md`](../../CLAUDE.md). It is **original** to agentic-swe; do not copy prompts or code from third-party graph products.
 

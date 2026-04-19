@@ -4,7 +4,7 @@
   "description": "Autonomous SWE pipeline (Claude Code–first; Cursor, Codex, OpenCode, and compatible hosts) — install as a plugin (marketplace or --plugin-dir). Per-work state uses .worklogs/ in your project.",
   "license": "MIT",
   "author": "Suraj Gupta",
-  "homepage": "https://surajSFDC.github.io/agentic-swe/",
+  "homepage": "https://agentic-swe.github.io/agentic-swe-site/",
   "keywords": [
     "claude",
     "claude-code",
@@ -44,12 +44,11 @@
     "ws": "^8.18.0"
   },
   "scripts": {
-    "build:site": "npm run build --prefix site",
     "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('phases');if(!fs.existsSync(r))process.exit(1)\"",
     "test": "node scripts/run-node-tests.js",
     "test:smoke": "bash test/smoke/run-smoke.sh",
     "test:llm": "node test/llm/run-llm-tests.cjs",
-    "ci": "npm run verify && npm run version:check && npm run lint --prefix site && npm run build --prefix site && npm test",
+    "ci": "npm run verify && npm run version:check && npm test",
     "verify": "node scripts/verify-sanity.js && node scripts/catalog-lint.cjs",
     "catalog:lint": "node scripts/catalog-lint.cjs",
     "catalog:route": "node scripts/catalog-route.cjs",

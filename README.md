@@ -9,7 +9,7 @@ Claude Code becomes a full SWE pipeline—from task analysis through implementat
 **Claude Code (recommended):** add this repository as a **plugin marketplace**, install **`agentic-swe@agentic-swe-catalog`**, then open your target project in Claude Code. Pipeline commands, phases, and agents resolve from **`${CLAUDE_PLUGIN_ROOT}/`** (the plugin root). Per-work state lives under **`.worklogs/<id>/`** in your project; **`/install`** can walk you through merging root **`CLAUDE.md`** and optional **`.gitignore`** for worklogs.
 
 ```text
-/plugin marketplace add surajSFDC/agentic-swe
+/plugin marketplace add agentic-swe/agentic-swe
 /plugin install agentic-swe@agentic-swe-catalog
 ```
 
@@ -21,9 +21,9 @@ Then start a task:
 /work Add retry logic to the API client
 ```
 
-See the [installation guide](https://surajSFDC.github.io/agentic-swe/docs/installation) and the [Claude Code plugin](https://surajSFDC.github.io/agentic-swe/docs/claude-code-plugin) for details, upgrades, and **optional org knowledge files** (`AGENTS.md`, `docs/agentic-swe/`).
+See the [installation guide](https://agentic-swe.github.io/agentic-swe-site/docs/installation) and the [Claude Code plugin](https://agentic-swe.github.io/agentic-swe-site/docs/claude-code-plugin) for details, upgrades, and **optional org knowledge files** (`AGENTS.md`, `docs/agentic-swe/`).
 
-**First success in ~15 minutes:** follow the [Golden path](https://surajSFDC.github.io/agentic-swe/docs/golden-path) (install → `/work` → `.worklogs/` → approval gate). **Socialize / pitch:** [Who this is for](https://surajSFDC.github.io/agentic-swe/docs/adoption-one-pager) and [Host support tiers](https://surajSFDC.github.io/agentic-swe/docs/host-support-tiers) (OpenCode + Antigravity Tier B vs Claude Code reference). **Tiny demo repo:** [`examples/golden-path-demo/`](examples/golden-path-demo/) (scratch target + `DEMO_SCRIPT.md`).
+**First success in ~15 minutes:** follow the [Golden path](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path) (install → `/work` → `.worklogs/` → approval gate). **Socialize / pitch:** [Who this is for](https://agentic-swe.github.io/agentic-swe-site/docs/adoption-one-pager) and [Host support tiers](https://agentic-swe.github.io/agentic-swe-site/docs/host-support-tiers) (OpenCode + Antigravity Tier B vs Claude Code reference). **Tiny demo repo:** [`examples/golden-path-demo/`](examples/golden-path-demo/) (scratch target + `DEMO_SCRIPT.md`).
 
 **What this is:** a **markdown workflow pack** that runs inside **Claude Code** on your repo (phases, gates, evidence). It is **not** a hosted async coding agent or cloud sandbox—that is a different class of product (e.g. remote harnesses with triggers and isolated runners).
 
@@ -31,21 +31,21 @@ See the [installation guide](https://surajSFDC.github.io/agentic-swe/docs/instal
 
 Agentic SWE is a **workflow pack for Claude Code** (markdown policies, phases, and agents)—not a hosted cloud runtime. More on the product and licensing:
 
-**Public site:** **[GitHub Pages](https://surajSFDC.github.io/agentic-swe/)**
+**Public site:** **[GitHub Pages](https://agentic-swe.github.io/agentic-swe-site/)**
 
 | Topic | Docs |
 |-------|------|
-| First run (~15 min) | [Golden path](https://surajSFDC.github.io/agentic-swe/docs/golden-path) |
-| Who it is for (short matrix) | [Adoption one-pager](https://surajSFDC.github.io/agentic-swe/docs/adoption-one-pager) |
-| Multi-IDE scope (Tier A–D) | [Host support tiers](https://surajSFDC.github.io/agentic-swe/docs/host-support-tiers) |
-| Who it is for and hero messaging | [Product positioning](https://surajSFDC.github.io/agentic-swe/docs/product-positioning) |
-| MIT and commercial strategy | [Licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) |
-| Distribution and hosting | [Distribution](https://surajSFDC.github.io/agentic-swe/docs/distribution) |
-| Troubleshooting | [Troubleshooting](https://surajSFDC.github.io/agentic-swe/docs/troubleshooting) |
-| `/check` quick reference | [Check commands](https://surajSFDC.github.io/agentic-swe/docs/check-commands) |
-| Catalog lint / router / CI | [Catalog routing](https://surajSFDC.github.io/agentic-swe/docs/catalog-routing) |
+| First run (~15 min) | [Golden path](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path) |
+| Who it is for (short matrix) | [Adoption one-pager](https://agentic-swe.github.io/agentic-swe-site/docs/adoption-one-pager) |
+| Multi-IDE scope (Tier A–D) | [Host support tiers](https://agentic-swe.github.io/agentic-swe-site/docs/host-support-tiers) |
+| Who it is for and hero messaging | [Product positioning](https://agentic-swe.github.io/agentic-swe-site/docs/product-positioning) |
+| MIT and commercial strategy | [Licensing](https://agentic-swe.github.io/agentic-swe-site/docs/licensing) |
+| Distribution and hosting | [Distribution](https://agentic-swe.github.io/agentic-swe-site/docs/distribution) |
+| Troubleshooting | [Troubleshooting](https://agentic-swe.github.io/agentic-swe-site/docs/troubleshooting) |
+| `/check` quick reference | [Check commands](https://agentic-swe.github.io/agentic-swe-site/docs/check-commands) |
+| Catalog lint / router / CI | [Catalog routing](https://agentic-swe.github.io/agentic-swe-site/docs/catalog-routing) |
 
-**Marketing site (source):** the React app lives under **`site/src/`**; long-form docs are **`site/src/content/docs/*.md`** (rendered at **`/docs/*`**). **`site/public/`** holds static assets (favicon, icons). Run **`npm run build:site`** to emit **`site/dist/`**. Publish via **GitHub Actions** to Pages: **Settings → Pages → Source: GitHub Actions**; pushes to **`main`** run [`.github/workflows/pages.yml`](.github/workflows/pages.yml) → **`https://surajSFDC.github.io/agentic-swe/`** (adjust owner/repo if you fork).
+**Marketing site (source):** the Vite + React app lives in **[`agentic-swe/agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)** (sibling repository). Long-form docs are **`src/content/docs/*.md`** there (rendered at **`/docs/*`** on Pages). Pushes to **`main`** in that repo run **GitHub Actions** ([`pages.yml`](https://github.com/agentic-swe/agentic-swe-site/blob/main/.github/workflows/pages.yml)) → **`https://agentic-swe.github.io/agentic-swe-site/`**.
 
 ## How It Works
 
@@ -106,7 +106,7 @@ Example tasks and the routes they follow (see the **state machine** diagram abov
 | `/repo-scan` | Structured codebase snapshot |
 | `/check budget` | Verify iteration budgets |
 
-See the [usage reference](https://surajSFDC.github.io/agentic-swe/docs/usage) for the full commands list.
+See the [usage reference](https://agentic-swe.github.io/agentic-swe-site/docs/usage) for the full commands list.
 
 ## Specialized Subagents
 
@@ -125,7 +125,7 @@ See the [usage reference](https://surajSFDC.github.io/agentic-swe/docs/usage) fo
 | **Meta & Orchestration** | 10 | `multi-agent-coordinator`, `workflow-orchestrator` |
 | **Research & Analysis** | 7 | `competitive-analyst`, `trend-analyst`, `research-analyst` |
 
-See the [subagent catalog](https://surajSFDC.github.io/agentic-swe/docs/subagent-catalog) for the full catalog with models and descriptions.
+See the [subagent catalog](https://agentic-swe.github.io/agentic-swe-site/docs/subagent-catalog) for the full catalog with models and descriptions.
 
 ## Examples
 
@@ -163,7 +163,7 @@ to audit the payment processing module in src/payments/
 /execute-plan
 ```
 
-See [examples](https://surajSFDC.github.io/agentic-swe/docs/examples) for detailed walkthroughs.
+See [examples](https://agentic-swe.github.io/agentic-swe-site/docs/examples) for detailed walkthroughs.
 
 ## Architecture
 
@@ -202,21 +202,21 @@ agentic-swe runs the same markdown pipeline — driven by the **Hypervisor** ses
 
 | Platform | Install Method | Details |
 |----------|---------------|---------|
-| **Claude Code** | Plugin marketplace + `/plugin install` (or `claude --plugin-dir` for dev) | Primary platform. See [claude-code-plugin.md](site/src/content/docs/claude-code-plugin.md). |
-| **Cursor** | Plugin via `.cursor-plugin/` | `curl -fsSL https://raw.githubusercontent.com/surajSFDC/agentic-swe/main/scripts/install-cursor-plugin.sh \| bash` then reload; add **`AGENTIC_SWE_TARGET_REPO=/path/to/app`** on the same line to auto-merge **`CLAUDE.md`** (needs **`node`**). [Cursor plugin](https://surajSFDC.github.io/agentic-swe/docs/cursor-plugin). |
-| **Codex** | Clone + symlink or copy | See `.codex/INSTALL.md` and `site/src/content/docs/README.codex.md`. |
-| **OpenCode** | Plugin via `.opencode/` | ESM plugin injects orchestration policy. See `site/src/content/docs/README.opencode.md`. |
+| **Claude Code** | Plugin marketplace + `/plugin install` (or `claude --plugin-dir` for dev) | Primary platform. See [Claude Code plugin](https://agentic-swe.github.io/agentic-swe-site/docs/claude-code-plugin). |
+| **Cursor** | Plugin via `.cursor-plugin/` | `curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/scripts/install-cursor-plugin.sh \| bash` then reload; add **`AGENTIC_SWE_TARGET_REPO=/path/to/app`** on the same line to auto-merge **`CLAUDE.md`** (needs **`node`**). [Cursor plugin](https://agentic-swe.github.io/agentic-swe-site/docs/cursor-plugin). |
+| **Codex** | Clone + symlink or copy | See `.codex/INSTALL.md` and the [Codex doc](https://github.com/agentic-swe/agentic-swe-site/blob/main/src/content/docs/README.codex.md) in **agentic-swe-site**. |
+| **OpenCode** | Plugin via `.opencode/` | ESM plugin injects orchestration policy. See the [OpenCode doc](https://github.com/agentic-swe/agentic-swe-site/blob/main/src/content/docs/README.opencode.md) in **agentic-swe-site**. |
 | **Gemini CLI** | Extension via `gemini-extension.json` | Context loaded from `GEMINI.md`. |
 
 All platforms share the same markdown source at this repo’s **plugin root** (`commands/`, `phases/`, `agents/`, …). Platform-specific tool mappings are in `${CLAUDE_PLUGIN_ROOT}/references/` (`codex-tools.md`, `opencode-tools.md`, `gemini-tools.md`, `copilot-tools.md`).
 
-**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start` (**memory prime** appended by default; opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**), plus `${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`. **Durable memory** (local index, `memory-prime`, import, sliding summary, optional embeddings): [docs site](https://surajSFDC.github.io/agentic-swe/docs/durable-memory) · [spec](docs/specs/memory-graph.md).
+**Skill-like triggering:** agentic-swe does not use a separate Skill-tool registry. The same habit is implemented with **session hooks** (`hooks/hooks.json` for Claude Code, `hooks/hooks-cursor.json` for Cursor) running `hooks/session-start` (**memory prime** appended by default; opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**), plus `${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md` for intent → command/phase hints. The pipeline remains authoritative in root `CLAUDE.md`. **Durable memory** (local index, `memory-prime`, import, sliding summary, optional embeddings): [docs site](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory) · [spec](docs/specs/memory-graph.md).
 
 ## CI and pre-push checks
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on **push / pull request** to **`main`**, on **merge queue**, and **manually** (`workflow_dispatch`). It uses **Node 20 and 22**, **`npm ci`** for root, **`site/`**, and **`agents/plugin-runtime/brainstorm-server`**, then **site lint**, **site build**, **`npm run verify`**, **`npm run version:check`**, optional **`claude plugin validate`**, and **`npm test`** (state machine, references, **multi-platform wiring**, brainstorm-server, etc.).
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) in **this** repo runs on **push / pull request** to **`main`**, on **merge queue**, and **manually** (`workflow_dispatch`). It uses **Node 20 and 22**, **`npm ci`** for the root pack and **`agents/plugin-runtime/brainstorm-server`**, then **`npm run verify`**, **`npm run version:check`**, optional **`claude plugin validate`**, and **`npm test`** (state machine, references, **multi-platform wiring**, brainstorm-server, etc.). The docs site has its own CI in **[`agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)**.
 
-Locally, with dependencies installed under **`site/`**, run **`npm run ci`** for the same bar (minus the Node matrix and unless **`claude`** is on your **`PATH`**). See the [Release checklist](https://surajSFDC.github.io/agentic-swe/docs/release-checklist) for the full maintainer sequence (mirrors CI plus optional manual smoke).
+Locally, run **`npm run ci`** at this repo root for the same bar as Actions here (minus the Node matrix and unless **`claude`** is on your **`PATH`**). See the [Release checklist](https://agentic-swe.github.io/agentic-swe-site/docs/release-checklist) for the full maintainer sequence (includes the separate site repo checks).
 
 ## Research Basis
 
@@ -224,4 +224,4 @@ Built on research from SWE-agent, Agentless, Ambig-SWE, Reflexion, Self-Refine, 
 
 ## License
 
-[MIT](LICENSE). See [licensing](https://surajSFDC.github.io/agentic-swe/docs/licensing) for how the license applies to the pack and typical use (not legal advice).
+[MIT](LICENSE). See [licensing](https://agentic-swe.github.io/agentic-swe-site/docs/licensing) for how the license applies to the pack and typical use (not legal advice).

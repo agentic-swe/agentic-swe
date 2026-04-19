@@ -19,9 +19,9 @@ The **npm CLI (`npx agentic-swe`) was removed in v3**. Codex users should treat 
 
 4. Use **`.worklogs/<id>/`** in the **target repo root** for per-work state (not **`.claude/.work/`**).
 
-5. Optional: **durable memory** (local SQLite index, **`memory-prime`**) uses pack **`scripts/`** with **`npm install`** at the pack root; see the docs site **Durable memory** page (`site/src/content/docs/durable-memory.md` in this repo).
+5. Optional: **durable memory** (local SQLite index, **`memory-prime`**) uses pack **`scripts/`** with **`npm install`** at the pack root; see the docs site **[Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory)** (source in [`agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)).
 
-6. Optional: enable multi-agent mode in Codex if your environment supports it (see **`site/src/content/docs/README.codex.md`**).
+6. Optional: enable multi-agent mode in Codex if your environment supports it (see **[README.codex.md](https://github.com/agentic-swe/agentic-swe-site/blob/main/src/content/docs/README.codex.md)** in **agentic-swe-site**).
 
 ## Symlink example (local dev)
 

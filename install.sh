@@ -7,5 +7,5 @@ set -euo pipefail
 
 echo "install.sh is deprecated (agentic-swe v3+)." >&2
 echo "Install the Claude Code plugin instead; run /install in your project for CLAUDE.md + .worklogs/." >&2
-echo "Docs: https://github.com/surajSFDC/agentic-swe#quick-start" >&2
+echo "Docs: https://github.com/agentic-swe/agentic-swe#quick-start" >&2
 exit 1

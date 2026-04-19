@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/surajSFDC/agentic-swe/schemas/work-item.schema.json",
+  "$id": "https://github.com/agentic-swe/agentic-swe/schemas/work-item.schema.json",
   "title": "WorkItem",
   "description": "Per-work state persisted as .worklogs/<id>/state.json (agentic-swe).",
   "type": "object",

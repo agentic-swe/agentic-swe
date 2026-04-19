@@ -1,6 +1,6 @@
 # Golden path demo (scratch target repo)
 
-Minimal project for trying **[Golden path](https://surajSFDC.github.io/agentic-swe/docs/golden-path)** in Claude Code (or any host following the same policy). Copy this folder into a new git repository or merge **`src/counter.js`** into your existing app and point **`/work`** at it.
+Minimal project for trying **[Golden path](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)** in Claude Code (or any host following the same policy). Copy this folder into a new git repository or merge **`src/counter.js`** into your existing app and point **`/work`** at it.
 
 ## What is here
 
@@ -30,4 +30,4 @@ Do **not** commit **`.worklogs/`** to public forks if your policy forbids it —
 
 ## Public link
 
-This demo ships inside **[agentic-swe](https://github.com/surajSFDC/agentic-swe)** at **`examples/golden-path-demo/`**. Link that path when you post install instructions.
+This demo ships inside **[agentic-swe](https://github.com/agentic-swe/agentic-swe)** at **`examples/golden-path-demo/`**. Link that path when you post install instructions.

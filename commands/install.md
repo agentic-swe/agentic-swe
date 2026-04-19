@@ -18,7 +18,7 @@ The pipeline markdown (commands, phases, agents including bundled helpers under 
 
 ### 2. Project policy (`CLAUDE.md`)
 
-- **Automation (shells, Cursor install, CI):** from a checkout of this pack, run **`node scripts/merge-claude-policy.js --target /path/to/target-repo`** (optional **`--gitignore`** to append **`.worklogs/`** to **`.gitignore`** when missing). The Cursor install script runs the same merger when **`AGENTIC_SWE_TARGET_REPO`** is set — see **`site/src/content/docs/cursor-plugin.md`**.
+- **Automation (shells, Cursor install, CI):** from a checkout of this pack, run **`node scripts/merge-claude-policy.js --target /path/to/target-repo`** (optional **`--gitignore`** to append **`.worklogs/`** to **`.gitignore`** when missing). The Cursor install script runs the same merger when **`AGENTIC_SWE_TARGET_REPO`** is set — see the [Cursor plugin](https://agentic-swe.github.io/agentic-swe-site/docs/cursor-plugin) doc on the project site.
 - If the target repo has **no** root **`CLAUDE.md`**: offer to add one by copying or summarizing the Hypervisor policy from this pack’s root **`CLAUDE.md`** (or tell the user to copy it manually).
 - If **`CLAUDE.md` already exists**: **append** (do not replace) the pipeline policy using this delimiter convention:
 

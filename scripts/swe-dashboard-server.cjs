@@ -518,7 +518,7 @@ function htmlPage() {
         <p>Create one from your project root, for example:</p>
         <p><code>npm run work-engine -- init --id my-task --task "Describe the task"</code></p>
         <p>Or try demo data: <code>npm run seed-dashboard-demo</code> (writes sample <code>.worklogs</code> folders).</p>
-        <p>Docs: <a href="https://surajSFDC.github.io/agentic-swe/docs/usage" target="_blank" rel="noopener noreferrer">Usage</a> · <a href="https://surajSFDC.github.io/agentic-swe/docs/check-commands" target="_blank" rel="noopener noreferrer">Check commands</a></p>
+        <p>Docs: <a href="https://agentic-swe.github.io/agentic-swe-site/docs/usage" target="_blank" rel="noopener noreferrer">Usage</a> · <a href="https://agentic-swe.github.io/agentic-swe-site/docs/check-commands" target="_blank" rel="noopener noreferrer">Check commands</a></p>
       </div>
       <div class="dash-toolbar">
         <div class="dash-seg" id="filter-seg" role="group" aria-label="Filter by completion">

@@ -39,7 +39,7 @@ Avoid ad-hoc branch names (`dev`, `temp`, …) unless they use an allowed prefix
 
 2. Implement and commit on the topic branch.
 
-3. Before **every** push (repo root): **`npm test`**. If you touched **`site/`** (or site tooling): also **`npm run lint --prefix site`** and **`npm run build --prefix site`**.
+3. Before **every** push (repo root): **`npm test`**. If you changed the **docs/marketing site**, open a PR in **[`agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)** and run **`npm run lint`** / **`npm run build`** there (this pack repo no longer contains **`site/`**).
 
 4. Push and open a PR into **`main`**:
 
@@ -70,9 +70,29 @@ The workflow **[`.github/workflows/main-merge-source.yml`](../.github/workflows/
 
 | Branch | Notes |
 |--------|--------|
-| `main` | [Rules](https://github.com/surajSFDC/agentic-swe/rules): PR required, code owners as configured, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`**, no force-push. Adjust **who has merge rights** in repo settings as above. |
+| `main` | [Rules](https://github.com/agentic-swe/agentic-swe/rules): PR required, code owners as configured, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`**, no force-push. Adjust **who has merge rights** in repo settings as above. |
 
 ## Hypervisor pipeline (plugin) vs this Git workflow
 
 - **`CLAUDE.md`** describes the **Hypervisor** state machine, phases, and artifacts when the pack runs **inside some project** (plugin installed). That is **orthogonal** to the **branch / PR rules above**, which exist **only** to govern **this repository’s** GitHub lifecycle.
 - Per-work state in a **target** project may live under **`.worklogs/<id>/`** or **`.claude/.work/<id>/`** depending on install; that is **not** the same as “use a `uat` branch” — the latter is **not** used for this repo anymore.
+
+## Related repositories (**[agentic-swe](https://github.com/agentic-swe)** org)
+
+| Repository | Role |
+|------------|------|
+| **[`agentic-swe/agentic-swe`](https://github.com/agentic-swe/agentic-swe)** (this pack) | Plugin root, CI **`test (20)`** / **`test (22)`**, **`main-merge-source`**, verify, tests |
+| **[`agentic-swe/agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)** | Public docs / marketing site; CI **`site (20)`** / **`site (22)`**; GitHub Pages **`github-pages`** |
+| **[`agentic-swe/agentic-swe-lab`](https://github.com/agentic-swe/agentic-swe-lab)** | Private drafts (optional rules; no required parity with the pack) |
+
+## GitHub settings parity (org migration)
+
+Transfers and new repos **do not copy** rulesets, required status checks, **Secrets**, **Variables**, or **Environments**. Mirror your previous setup on **each** repo that needs it:
+
+1. **Rulesets / branch protection on `main`** — Require PR before merge; add required checks that match workflow job names (this pack: **`test (20)`**, **`test (22)`**, **`main-merge-source`** when used; **agentic-swe-site**: **`site (20)`**, **`site (22)`**, **`main-merge-source`** if enabled).
+2. **Collaborators / roles** — Who may merge to **`main`** (org owners + your user as needed).
+3. **Environments** — **`github-pages`** on **agentic-swe-site** for the Pages deploy job; confirm **Settings → Pages → Source: GitHub Actions**.
+4. **Org Actions** — **[Organization → Settings → Actions](https://github.com/organizations/agentic-swe/settings/actions)** — allow the same **Actions** and reusable workflows you rely on (often stricter than a personal account).
+5. **Secrets** — Recreate repo or environment secrets (for example optional **LLM** workflow API keys) on the new location.
+
+After any change, open a small PR to confirm every required check appears and passes.

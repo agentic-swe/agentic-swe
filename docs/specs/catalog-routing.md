@@ -1,6 +1,6 @@
 # Catalog routing (implementation spec)
 
-User-facing overview: [Catalog routing](https://surajSFDC.github.io/agentic-swe/docs/catalog-routing) on the docs site.
+User-facing overview: [Catalog routing](https://agentic-swe.github.io/agentic-swe-site/docs/catalog-routing) on the docs site.
 
 ## Layout
 

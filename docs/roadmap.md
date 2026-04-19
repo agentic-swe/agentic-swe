@@ -42,7 +42,7 @@ Phases below can overlap in implementation, but **protocol and state correctness
 
 **Exit criteria:** A new session on an old work item gets injected context that measurably reduces repeated questions and rework (qualitatively at first; later measurable via evals in Phase 4).
 
-**In-repo progress:** Local SQLite index (**`memory-index`**), **memory prime** CLI, optional **embeddings** + **auto/hybrid** retrieval, deterministic **`memory-compact`**, **`memory-import`** (graph JSON bundle), **transcript sliding summary** (deterministic + optional LLM), and **session-start** memory prime **on by default** (opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**) — see [`docs/specs/memory-graph.md`](specs/memory-graph.md) and [Durable memory](https://surajSFDC.github.io/agentic-swe/docs/durable-memory).
+**In-repo progress:** Local SQLite index (**`memory-index`**), **memory prime** CLI, optional **embeddings** + **auto/hybrid** retrieval, deterministic **`memory-compact`**, **`memory-import`** (graph JSON bundle), **transcript sliding summary** (deterministic + optional LLM), and **session-start** memory prime **on by default** (opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**) — see [`docs/specs/memory-graph.md`](specs/memory-graph.md) and [Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory).
 
 ---
 
@@ -93,6 +93,6 @@ Phase 1 (WorkItem schema, **programmatic** state machine, headless harness) is a
 1. **CI sameness** — You need the pipeline to advance states with **identical rules** in GitHub Actions (or similar) without a human in chat, and markdown policy is no longer acceptable as the only source of truth.
 2. **Incident pressure** — Sessions repeatedly **skip or corrupt** transitions (`state.json` / `history` diverge from what shipped), and `/check` is not enough because hosts ignore it.
 3. **Design partner** — A team refuses to scale usage until **invalid transitions are rejected by code**, not by reviewer vigilance.
-4. **Multi-host contract** — You committed to **Tier D** in [Host support tiers](https://surajSFDC.github.io/agentic-swe/docs/host-support-tiers) (same engine in IDE and automation), not only Tier B docs.
+4. **Multi-host contract** — You committed to **Tier D** in [Host support tiers](https://agentic-swe.github.io/agentic-swe-site/docs/host-support-tiers) (same engine in IDE and automation), not only Tier B docs.
 
-Until then, prefer the **[Golden path](https://surajSFDC.github.io/agentic-swe/docs/golden-path)** and pre-roadmap docs: prove value with **`.worklogs/`**, gates, and evidence before investing in a runtime control plane.
+Until then, prefer the **[Golden path](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)** and pre-roadmap docs: prove value with **`.worklogs/`**, gates, and evidence before investing in a runtime control plane.

@@ -44,4 +44,4 @@ You are operating under the **agentic-swe** pipeline for this project.
 
 - Replace every **`PACK_ROOT`** in the pasted body with your real path (no trailing slash required if your tools accept either form).
 - Re-read **`CLAUDE.md`** after pack upgrades; run **`node scripts/migrate-work-state.js`** from a pack checkout when **`CHANGELOG.md`** calls for work state migration.
-- For install order and Cursor plugin wiring, use **`scripts/install-cursor-plugin.sh`** with **`AGENTIC_SWE_TARGET_REPO`** for an automated **`CLAUDE.md`** merge, or **`node scripts/merge-claude-policy.js --target …`**, plus **`site/src/content/docs/cursor-plugin.md`** / **`commands/install.md`** for rules and delimiters.
+- For install order and Cursor plugin wiring, use **`scripts/install-cursor-plugin.sh`** with **`AGENTIC_SWE_TARGET_REPO`** for an automated **`CLAUDE.md`** merge, or **`node scripts/merge-claude-policy.js --target …`**, plus the [Cursor plugin](https://agentic-swe.github.io/agentic-swe-site/docs/cursor-plugin) doc / **`commands/install.md`** for rules and delimiters.

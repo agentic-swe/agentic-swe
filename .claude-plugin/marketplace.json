@@ -16,8 +16,8 @@
       "author": {
         "name": "Suraj Gupta"
       },
-      "homepage": "https://surajSFDC.github.io/agentic-swe/",
-      "repository": "https://github.com/surajSFDC/agentic-swe",
+      "homepage": "https://agentic-swe.github.io/agentic-swe-site/",
+      "repository": "https://github.com/agentic-swe/agentic-swe",
       "license": "MIT",
       "keywords": [
         "claude-code",

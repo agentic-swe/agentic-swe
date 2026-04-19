@@ -3,7 +3,7 @@
 # so Cursor loads commands, agents, and hooks after a window reload.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/surajSFDC/agentic-swe/main/scripts/install-cursor-plugin.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/scripts/install-cursor-plugin.sh | bash
 # Or from a checkout:
 #   bash scripts/install-cursor-plugin.sh
 #
@@ -30,7 +30,7 @@ if [[ -n "${AGENTIC_SWE_PACK_ROOT:-}" ]]; then
   ln -sfn "$SRC" "$DEST"
   echo "Symlinked: $DEST -> $SRC"
 else
-  REPO_URL="${AGENTIC_SWE_REPO_URL:-https://github.com/surajSFDC/agentic-swe.git}"
+  REPO_URL="${AGENTIC_SWE_REPO_URL:-https://github.com/agentic-swe/agentic-swe.git}"
   REF="${AGENTIC_SWE_REF:-main}"
   mkdir -p "$LOCAL_ROOT"
   if [[ -d "$DEST/.git" ]]; then
@@ -71,4 +71,4 @@ echo "Next: restart Cursor or run “Developer: Reload Window”."
 if [[ -z "${AGENTIC_SWE_TARGET_REPO:-}" ]]; then
   echo "Optional: AGENTIC_SWE_TARGET_REPO=/path/to/your-app on the same command auto-merges CLAUDE.md (requires node). Add AGENTIC_SWE_AUTO_GITIGNORE=1 to append .worklogs/ to .gitignore."
 fi
-echo "Docs: https://surajSFDC.github.io/agentic-swe/docs/cursor-plugin"
+echo "Docs: https://agentic-swe.github.io/agentic-swe-site/docs/cursor-plugin"
