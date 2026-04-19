@@ -53,3 +53,18 @@ Optional: create **`.worklogs/.gitkeep`** only if the user wants an empty tracke
 ### 5. Verification
 
 Confirm the user can run slash commands such as **`/work`** and **`/check transition`** in Claude Code with the plugin enabled, and that **`.worklogs/`** (or a chosen work id folder) is writable under the target repo root.
+
+---
+
+## Maintainer: republish on Claude Code
+
+**Custom marketplace (this repo):** Consumers point at **`https://github.com/agentic-swe/agentic-swe`**, which hosts **`.claude-plugin/marketplace.json`** (catalog **`agentic-swe-catalog`**) and **`.claude-plugin/plugin.json`**. To ship a new version:
+
+1. Bump **`package.json`** / manifests together: **`bash scripts/bump-version.sh bump <semver>`** (see **`.version-bump.json`**).
+2. Run **`npm test`** (includes **`claude plugin validate`** when **`claude`** is on your **`PATH`**).
+3. Merge to **`main`**, then tag if you pin installs: **`git tag -a vX.Y.Z -m "…" origin/main && git push origin vX.Y.Z`**.
+4. Tell users to refresh the catalog, then reinstall the plugin version they want, for example:
+   - **`/plugin marketplace add agentic-swe/agentic-swe`** (once per profile)
+   - **`/plugin install agentic-swe@agentic-swe-catalog`** (or **`agentic-swe@<version>`** if your clients pin versions)
+
+**Official Anthropic listings:** if the plugin is or will be in Anthropic’s public directory, follow their current publish/update process (see [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) and linked submission guidance). A Git push to your own repo is enough for **custom** marketplaces only.
