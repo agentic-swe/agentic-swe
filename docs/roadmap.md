@@ -42,6 +42,8 @@ Phases below can overlap in implementation, but **protocol and state correctness
 
 **Exit criteria:** A new session on an old work item gets injected context that measurably reduces repeated questions and rework (qualitatively at first; later measurable via evals in Phase 4).
 
+**In-repo progress:** Local SQLite index (**`memory-index`**), **memory prime** CLI, optional **embeddings** + **auto/hybrid** retrieval, deterministic **`memory-compact`**, and optional **session-start** injection via **`AGENTIC_SWE_MEMORY_PRIME`** are documented in [`docs/specs/memory-graph.md`](specs/memory-graph.md) and the site page [Durable memory](https://surajSFDC.github.io/agentic-swe/docs/durable-memory).
+
 ---
 
 ## Phase 3 — Orchestration, routing, and catalog hygiene

@@ -20,4 +20,6 @@ That’s it: commands, phases, agents, and hooks load from **`${CLAUDE_PLUGIN_RO
 
 **Official docs:** [Plugins](https://code.claude.com/docs/en/plugins) · [Plugins reference](https://code.claude.com/docs/en/plugins-reference)
 
-**More detail:** [Installation](installation.md) · [Usage](usage.md) · [Troubleshooting](troubleshooting.md)
+**Hooks:** **`hooks/hooks.json`** runs **`session-start`** (routing hint; optional **memory prime** when **`AGENTIC_SWE_MEMORY_PRIME=1`**), **`Stop`** → cost sync, and async helpers for **`/brainstorm`** / **`/swe-dashboard`**. See [Durable memory](durable-memory.md).
+
+**More detail:** [Installation](installation.md) · [Usage](usage.md) · [Durable memory](durable-memory.md) · [Troubleshooting](troubleshooting.md)

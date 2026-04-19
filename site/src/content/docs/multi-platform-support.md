@@ -19,7 +19,7 @@ Platform-specific **tool name** hints (when a host renames tools) live under **`
 
 ## Hooks and “skill-like” routing
 
-This pack does **not** rely on a separate Skill-tool registry. Session **hooks** (**`hooks/hooks.json`** for Claude Code, **`hooks/hooks-cursor.json`** for Cursor) run **`hooks/session-start`** so policy and routing hints load early. Intent → command/phase nudges are also described in **`${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md`**. The **state machine and artifacts** in **`CLAUDE.md`** remain the source of truth.
+This pack does **not** rely on a separate Skill-tool registry. Session **hooks** (**`hooks/hooks.json`** for Claude Code, **`hooks/hooks-cursor.json`** for Cursor) run **`hooks/session-start`** so policy and routing hints load early. When **`AGENTIC_SWE_MEMORY_PRIME=1`**, session start can also append **memory prime** (same output as **`npm run memory-prime`**) — advisory retrieval from the local index; **`state.json`** still wins on conflict. See [Durable memory](durable-memory.md). Intent → command/phase nudges are also described in **`${CLAUDE_PLUGIN_ROOT}/references/implicit-routing.md`**. The **state machine and artifacts** in **`CLAUDE.md`** remain the source of truth.
 
 ## Walkthrough on this site
 

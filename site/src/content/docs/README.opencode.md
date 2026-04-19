@@ -10,4 +10,6 @@
 
 4. Run the pipeline from **`/work`** (or your host’s equivalent). State and artifacts live under **`.worklogs/<id>/`** in the **target** repo.
 
-**More detail:** [Installation](installation.md) · [Multi-platform support](multi-platform-support.md) · [Troubleshooting](troubleshooting.md)
+**Optional durable memory:** local index + **memory prime** from pack **`scripts/`** (see [Durable memory](durable-memory.md)).
+
+**More detail:** [Installation](installation.md) · [Multi-platform support](multi-platform-support.md) · [Durable memory](durable-memory.md) · [Troubleshooting](troubleshooting.md)

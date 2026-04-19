@@ -190,3 +190,9 @@ This shows:
 | `/subagent search <query>` | Find subagents by keyword |
 | `/subagent info <name>` | View full subagent definition and capabilities |
 | `/subagent invoke <name> <task>` | Spawn a subagent for a specific task |
+
+---
+
+## Durable memory (optional)
+
+Local graph + chunk index under **`.agentic-swe/memory.sqlite`** (`npm run memory-index`), bounded **memory prime** output (`npm run memory-prime`), optional **session-start** injection when **`AGENTIC_SWE_MEMORY_PRIME=1`**, and optional **embeddings** / **hybrid** retrieval. Does not replace **`state.json`**. See [Durable memory](durable-memory.md).
