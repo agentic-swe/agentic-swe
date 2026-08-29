@@ -129,6 +129,18 @@ Canonical edges are also listed in **`${CLAUDE_PLUGIN_ROOT}/state-machine.json`*
 
 ---
 
+## Goal loop (outer)
+
+The **goal loop** wraps the per-work-item state machine above with a recursive, verifiable objective — the loop-engineering layer. It is a **structural twin** of the inner machine, one level up, and does **not** modify inner transitions. Child work items still run the full inner pipeline (including its human gates) unchanged.
+
+- **Canonical outer edges:** **`${CLAUDE_PLUGIN_ROOT}/goal-state-machine.json`** (human-readable graph + per-state behavior in **`${CLAUDE_PLUGIN_ROOT}/commands/goal.md`**; drift-guarded by **`test/goal-state-machine.test.js`**).
+- **Outer state:** **`.worklogs/goals/<goal-id>/goal.json`** (from **`${CLAUDE_PLUGIN_ROOT}/templates/goal.json`**) — `objective`, `completion_criteria`, outer `budget`, `convergence`, `children`, `history`.
+- **Engine (CI parity):** **`node ${CLAUDE_PLUGIN_ROOT}/scripts/goal-engine.cjs`** validates and applies outer transitions; invalid edges exit non-zero (mirrors `work-engine.cjs`).
+- **Checker:** **`${CLAUDE_PLUGIN_ROOT}/agents/goal-verifier-agent.md`** evaluates `completion_criteria` against repo reality (maker/checker, one level up — distinct from per-item validation).
+- **Governing rule — loop *up to* the gate, not *through* it:** the outer loop advances autonomously but **halts** at any human gate (`ambiguity-wait`/`approval-wait` in a child, or `goal-approval`), outer budget ceiling, or stall (same reflection-based rule as the inner loop). Entry point: **`/goal`** (namespaced `agentic-swe:goal`).
+
+---
+
 ## Required Artifacts by State
 
 | State | Required artifacts |

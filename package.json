@@ -74,6 +74,7 @@
     "swe-dashboard": "node scripts/swe-dashboard-server.cjs",
     "seed-dashboard-demo": "node scripts/seed-dashboard-demo.cjs",
     "work-engine": "node scripts/work-engine.cjs",
+    "goal-engine": "node scripts/goal-engine.cjs",
     "memory-index": "node scripts/memory-index.cjs",
     "memory-prime": "node scripts/memory-prime.cjs",
     "memory-compact": "node scripts/memory-compact.cjs",

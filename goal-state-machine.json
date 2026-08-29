@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "description": "Canonical allowed transitions for the OUTER goal loop (goal orchestrator). Separate from the per-work-item state-machine.json. Must match the first fenced transition block in commands/goal.md (test/goal-state-machine.test.js).",
+  "terminal_states": ["goal-met", "goal-failed"],
+  "gate_states": ["goal-gate", "goal-approval", "goal-escalated"],
+  "edges": [
+    ["goal-initialized", "goal-discovery"],
+    ["goal-discovery", "goal-execute"],
+    ["goal-discovery", "goal-failed"],
+    ["goal-execute", "goal-verify"],
+    ["goal-execute", "goal-gate"],
+    ["goal-execute", "goal-escalated"],
+    ["goal-verify", "goal-execute"],
+    ["goal-verify", "goal-approval"],
+    ["goal-verify", "goal-escalated"],
+    ["goal-gate", "goal-execute"],
+    ["goal-gate", "goal-failed"],
+    ["goal-approval", "goal-met"],
+    ["goal-approval", "goal-execute"],
+    ["goal-escalated", "goal-execute"],
+    ["goal-escalated", "goal-failed"]
+  ]
+}
