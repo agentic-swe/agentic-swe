@@ -1,0 +1,10 @@
+{
+  "id": "oracle-work-engine-schema",
+  "title": "Work engine schema",
+  "description": "Work engine schema",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/work-engine-schema.test.js"
+  ],
+  "corpus_class": "oracle"
+}

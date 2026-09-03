@@ -17,6 +17,7 @@ Senior staff engineer doing early technical discovery — skeptical of vague req
    - If `docs/agentic-swe/` exists, list markdown files there and skim any of: `CONVENTIONS.md`, `PITFALLS.md`, `DECISIONS.md`, `PLAYBOOK.md` — summarize only what is **actionable** for this task.
    - If `docs/agentic-swe/PLAYBOOK.md` exists, note the **last 1–3** entries’ “weak dimension” or “next time” lines as **signals for this run** (do not treat as mandatory unless they conflict with the task).
    - If none of these exist, state that explicitly under `## Repo knowledge` in the artifact.
+   - Also check **`.agentic-swe/lessons.json`** (`npm run memory-reflect`) and **`.agentic-swe/style-profile.json`** (`npm run cold-start-warm`) for team constraints.
 
 3. Invoke `/repo-scan` to produce a structured codebase snapshot before manual inspection.
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('node:path');
+const fs = require('node:fs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
 const { openOrCreateDatabase, closeDatabase } = require('./graph-store.cjs');
 const {
@@ -8,6 +9,8 @@ const {
   queryTopNodesByDegreeDb,
   queryChunkCountDb,
   queryEmbeddingCountDb,
+  queryWorkIdChunksDb,
+  queryFleetSubmissionChunksDb,
 } = require('./graph-query.cjs');
 const {
   resolveEmbeddingRuntime,
@@ -175,15 +178,56 @@ function limitChars(s, max) {
   return `${s.slice(0, Math.max(0, max - 20))}\n\n… (truncated)`;
 }
 
+/** @param {string[]} lines @param {string} projectRoot */
+function appendAdvisoryDigests(lines, projectRoot) {
+  const lessonsPath = path.join(projectRoot, '.agentic-swe', 'lessons.json');
+  const stylePath = path.join(projectRoot, '.agentic-swe', 'style-profile.json');
+  if (fs.existsSync(lessonsPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(lessonsPath, 'utf8'));
+      if (data.lessons?.length) {
+        lines.push('### Lessons digest (from reflection logs)');
+        for (const l of data.lessons.slice(0, 5)) {
+          lines.push(`- **${l.category}** (${l.workId}): ${l.rootCause}`);
+        }
+        lines.push('');
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  if (fs.existsSync(stylePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(stylePath, 'utf8'));
+      if (data.constraints?.length) {
+        lines.push('### Style profile (constraints)');
+        for (const c of data.constraints.slice(0, 6)) {
+          lines.push(`- ${c.text} _(${c.provenance})_`);
+        }
+        lines.push('');
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  try {
+    const { muscleMemoryDigestMarkdown } = require('../descent/muscle-memory-digest.cjs');
+    const mm = muscleMemoryDigestMarkdown(projectRoot);
+    if (mm) lines.push(mm);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
- * @param {{ projectRoot: string, pluginRoot: string, query?: string|null, workId?: string|null }} opts
+ * @param {{ projectRoot: string, pluginRoot: string, query?: string|null, workId?: string|null, sqlitePath?: string }} opts
  * @returns {Promise<string>}
  */
 async function buildPrimeMarkdown(opts) {
   const projectRoot = path.resolve(opts.projectRoot);
   const pluginRoot = path.resolve(opts.pluginRoot);
   const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = sqlitePathForProject(merged, projectRoot);
+  const sqlitePath = opts.sqlitePath || sqlitePathForProject(merged, projectRoot);
 
   const maxOut = merged.prime && merged.prime.max_chars_out ? merged.prime.max_chars_out : 12000;
   const maxHits = merged.prime && merged.prime.max_fts_hits ? merged.prime.max_fts_hits : 12;
@@ -228,7 +272,45 @@ async function buildPrimeMarkdown(opts) {
     }
     lines.push('');
 
+    const teamChunks = queryWorkIdChunksDb(db, 'team', 5);
+    if (teamChunks.length) {
+      lines.push('### Team memory (git history + sync events)');
+      lines.push('');
+      lines.push('How this repo was actually changed. Advisory; `state.json` and files win.');
+      lines.push('');
+      for (const c of teamChunks) {
+        const snip = String(c.body || '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 180);
+        lines.push(`- \`${c.path}\`: ${snip}`);
+      }
+      lines.push('');
+    }
+
+    const fleetChunks = queryFleetSubmissionChunksDb(db, 4);
+    if (fleetChunks.length) {
+      lines.push('### Fleet learnings (archived consumer submissions)');
+      lines.push('');
+      lines.push('Cross-repo muscle-memory signals from fleet-submit → ingest. Advisory only.');
+      lines.push('');
+      for (const c of fleetChunks) {
+        const snip = String(c.body || '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 220);
+        lines.push(`- ${snip}`);
+      }
+      lines.push('');
+    }
+
+    appendAdvisoryDigests(lines, projectRoot);
+
     const q = opts.query != null ? opts.query : null;
+    if (q && opts.querySource) {
+      lines.push(`- **Query source:** \`${opts.querySource}\``);
+      lines.push('');
+    }
     const tokens = q ? extractSearchTokens(q) : [];
     if (tokens.length) {
       const rt = resolveEmbeddingRuntime(merged);

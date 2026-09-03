@@ -1,0 +1,65 @@
+{
+  "generated_at": "2026-08-29T10:27:41.627Z",
+  "ok": true,
+  "steps": [
+    {
+      "name": "descent",
+      "ok": true,
+      "out": "bench/results/descent-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "holdout",
+      "ok": true,
+      "out": "bench/results/descent-holdout-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "learning-curve",
+      "ok": true,
+      "out": "bench/results/descent-learning-curve-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "accumulate-holdout",
+      "ok": true,
+      "out": null,
+      "status": 0
+    },
+    {
+      "name": "production-evidence",
+      "ok": true,
+      "out": "bench/results/production-evidence-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "portfolio",
+      "ok": true,
+      "out": "bench/results/portfolio-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "production-sim",
+      "ok": true,
+      "out": "bench/results/production-sim-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "warm-cold",
+      "ok": true,
+      "out": "bench/results/warm-cold-2026-08-29.json",
+      "status": 0
+    },
+    {
+      "name": "token-scorecard",
+      "ok": true,
+      "out": "bench/results/token-reduction-2026-08-29.json",
+      "status": 0
+    }
+  ],
+  "claim": {
+    "target_met": false,
+    "claim_status": "proven_e2e_bench",
+    "portfolio_multiplier": 0.008425613866153106
+  }
+}

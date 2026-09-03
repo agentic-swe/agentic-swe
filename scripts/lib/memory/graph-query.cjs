@@ -102,6 +102,54 @@ function queryEmbeddingCountDb(db) {
   return 0;
 }
 
+/**
+ * Recent chunks for a work_id (team git/sync, personal, etc.).
+ * @param {*} db
+ * @param {string} workId
+ * @param {number} [limit]
+ */
+function queryWorkIdChunksDb(db, workId, limit = 6) {
+  const lim = Math.min(50, Math.max(1, Number(limit) || 6));
+  try {
+    const stmt = db.prepare(
+      `SELECT path, substr(body, 1, 500) AS body FROM chunks WHERE work_id = ? LIMIT ${lim}`
+    );
+    stmt.bind([String(workId)]);
+    const rows = [];
+    while (stmt.step()) {
+      rows.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fleet submission memory chunks (archived consumer evidence).
+ * @param {*} db
+ * @param {number} [limit]
+ */
+function queryFleetSubmissionChunksDb(db, limit = 5) {
+  const lim = Math.min(20, Math.max(1, Number(limit) || 5));
+  try {
+    const stmt = db.prepare(
+      `SELECT path, substr(body, 1, 600) AS body FROM chunks
+       WHERE path LIKE '%fleet-submissions%' AND path LIKE '%#memory'
+       ORDER BY rowid DESC LIMIT ${lim}`
+    );
+    const rows = [];
+    while (stmt.step()) {
+      rows.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
 module.exports = {
   queryGraphStats,
   queryGraphStatsDb,
@@ -109,4 +157,6 @@ module.exports = {
   queryTopNodesByDegreeDb,
   queryChunkCountDb,
   queryEmbeddingCountDb,
+  queryWorkIdChunksDb,
+  queryFleetSubmissionChunksDb,
 };

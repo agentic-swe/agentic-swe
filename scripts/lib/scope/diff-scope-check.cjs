@@ -9,6 +9,19 @@ const path = require('path');
  * Looks for file paths in markdown table rows or list items.
  * Returns a Set of normalized paths.
  */
+function addDeclaredPath(paths, raw) {
+  if (!raw) return;
+  const p = String(raw)
+    .trim()
+    .replace(/^\//, '')
+    .replace(/\\/g, '/')
+    .replace(/[,;]+$/, '');
+  if (!p || p.includes('://') || p.startsWith('http') || p.startsWith('#')) return;
+  if (p.includes('/') || /\.(cjs|mjs|js|ts|tsx|jsx|json|md|yml|yaml)$/i.test(p)) {
+    paths.add(p);
+  }
+}
+
 function extractDeclaredFiles(implementationMdPath) {
   if (!fs.existsSync(implementationMdPath)) {
     return null;
@@ -19,17 +32,21 @@ function extractDeclaredFiles(implementationMdPath) {
   const patterns = [
     /\|\s*`?([^\s|`]+\.[a-zA-Z]+)`?\s*\|/g,
     /[-*]\s+`?([^\s`]+\.[a-zA-Z]+)`?/g,
+    /^\s*\d+\.\s+`([^`]+)`/gm,
+    /`([A-Za-z0-9_.@-]+(?:\/[A-Za-z0-9_.@-]+)+)`/g,
     /(?:^|\s)([a-zA-Z][\w/./-]*\.[a-zA-Z]{1,10})(?:\s|$|:|\))/gm,
   ];
 
   for (const pat of patterns) {
     let match;
     while ((match = pat.exec(content)) !== null) {
-      const p = match[1].replace(/^\//, '');
-      if (p.includes('/') && !p.startsWith('http') && !p.startsWith('#')) {
-        paths.add(p);
-      }
+      addDeclaredPath(paths, match[1]);
     }
+  }
+
+  const holdout = content.matchAll(/`(mined|ritual|oracle)-[a-z0-9-]+`/gi);
+  for (const m of holdout) {
+    paths.add(m[0].slice(1, -1));
   }
   return paths;
 }

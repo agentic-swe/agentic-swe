@@ -1,0 +1,8 @@
+{
+  "name": "bench-corpus-mined-trivial-fail",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/fail.test.js"
+  }
+}

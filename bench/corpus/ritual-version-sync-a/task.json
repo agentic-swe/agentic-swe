@@ -1,0 +1,11 @@
+{
+  "id": "ritual-version-sync-a",
+  "title": "Sync manifest versions to package.json (9.9.9 → 3.3.0)",
+  "description": "Fix version drift across plugin manifests to match package.json.",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "bash check-sync.sh"
+  ],
+  "corpus_class": "version-sync",
+  "fix_hint": "Set all manifest version fields to 3.3.0"
+}

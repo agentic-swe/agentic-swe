@@ -85,6 +85,8 @@ describe('work-engine CLI', () => {
       const j = JSON.parse(r.stdout.trim());
       assert.strictEqual(j.active_non_completed_count, 0);
       assert.strictEqual(j.active_work_dir, null);
+      assert.ok(j.muscle_memory?.ok === true);
+      assert.equal(j.muscle_memory.consumer_mode, true);
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }

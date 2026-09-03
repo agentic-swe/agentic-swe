@@ -1,0 +1,26 @@
+{
+  "task_pass": {
+    "weight": 0.4,
+    "method": "run_command",
+    "command": "npm test",
+    "cwd": "repo",
+    "full_credit_exit_code": 0
+  },
+  "cost_efficiency": {
+    "weight": 0.2,
+    "method": "cost_vs_budget",
+    "cost_budget_usd": 0,
+    "default_score": 1
+  },
+  "cross_model": {
+    "weight": 0.2,
+    "method": "artifact_presence",
+    "artifact": "n/a",
+    "default_score": 1
+  },
+  "gate_respect": {
+    "weight": 0.2,
+    "method": "transition_chain",
+    "default_score": 1
+  }
+}

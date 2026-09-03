@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-09-02T13:35:24.050Z",
+  "ok": true,
+  "measurement_contract": "Isolated tmp consumer + maintainer roots. Proves fleet-submit→ingest pipeline without affecting pack fleet-scale counts.",
+  "submit_ok": true,
+  "ingest_ok": true,
+  "maintainer_archived": 1,
+  "pack_fleet_submissions": 4,
+  "pack_fleet_submissions_independent": 1,
+  "target_met": true
+}

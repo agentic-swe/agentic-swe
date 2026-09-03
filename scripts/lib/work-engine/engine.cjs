@@ -189,7 +189,79 @@ function applyTransition(opts) {
     return { ok: false, code: 'WRITE_ERROR', message: String(e.message) };
   }
 
-  return { ok: true, state: next };
+  if (
+    !opts.skipMuscleMemory &&
+    !opts.dryRun &&
+    (to === 'implementation' || to === 'lean-track-implementation')
+  ) {
+    try {
+      const { spawnSync } = require('node:child_process');
+      spawnSync(
+        process.execPath,
+        [
+          path.join(pluginRoot, 'scripts', 'implementation-descent.cjs'),
+          '--work-dir',
+          opts.workDir,
+          '--plugin-root',
+          pluginRoot,
+          '--json',
+        ],
+        { encoding: 'utf8', timeout: 180000 }
+      );
+    } catch {
+      /* best-effort pre-implementation descent */
+    }
+  }
+
+  if (
+    !opts.skipMuscleMemory &&
+    !opts.dryRun &&
+    from === 'validation' &&
+    (to === 'pr-creation' || to === 'completed')
+  ) {
+    try {
+      const { spawnSync } = require('node:child_process');
+      spawnSync(
+        process.execPath,
+        [
+          path.join(pluginRoot, 'scripts', 'validation-descent.cjs'),
+          '--work-dir',
+          opts.workDir,
+          '--plugin-root',
+          pluginRoot,
+          '--json',
+        ],
+        { encoding: 'utf8', timeout: 180000 }
+      );
+    } catch {
+      /* best-effort descent tier recording */
+    }
+    try {
+      const { captureProcedureFromWork } = require('../descent/capture-procedure.cjs');
+      const proj = projectRootFromWorkDir(opts.workDir) || pluginRoot;
+      captureProcedureFromWork({
+        workDir: opts.workDir,
+        projectRoot: proj,
+        storeRoot: opts.procedureStoreRoot || proj || pluginRoot,
+      });
+    } catch {
+      /* best-effort muscle memory capture */
+    }
+  }
+
+  const finalState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+  let muscleMemoryWarning = null;
+  if (
+    !opts.dryRun &&
+    from === 'validation' &&
+    (to === 'pr-creation' || to === 'completed') &&
+    !finalState.budget?.tier_totals
+  ) {
+    muscleMemoryWarning =
+      'tier_totals missing after validation transition — run validation-descent or descent-try before fleet submission';
+  }
+
+  return { ok: true, state: finalState, muscle_memory_warning: muscleMemoryWarning };
 }
 
 /**

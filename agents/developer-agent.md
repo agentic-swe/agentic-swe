@@ -1,7 +1,7 @@
 ---
 name: developer-agent
 description: "Primary implementation specialist for bounded code changes; spawned via the Agent tool."
-model: sonnet
+model: balanced
 ---
 
 # Developer Agent
@@ -23,6 +23,7 @@ Take an approved design slice and carry it to logical completion with strong eng
 
 ## Inputs
 
+- **`.worklogs/<id>/context-pack.json`** if present (evaluated muscle_memory + skip_llm constraint). If `descent-replay.md` already shows PASS, do not re-explore. Otherwise replay **declared files + the primary verify command only** on this host’s tools (Claude `Read`/`Bash`, Cursor `Read`/`Shell`, Codex `read_file`/`shell`, Gemini `read_file`/`run_shell_command`, OpenCode `opencode.file.read`/`opencode.shell.exec`) before exploring. Do not run every listed muscle-memory command.
 - relevant portion of `.worklogs/<id>/design.md`
 - target files or modules
 - existing tests and build commands

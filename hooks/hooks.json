@@ -38,6 +38,12 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/lib/work-engine/hook-record-cost.cjs\"",
             "async": true,
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/session-capture.cjs\"",
+            "async": true,
+            "timeout": 30
           }
         ]
       }

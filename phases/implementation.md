@@ -40,6 +40,8 @@ Choose a slicing strategy per `${CLAUDE_PLUGIN_ROOT}/references/slicing-strategi
 
 Before spawning the developer agent:
 
+0. **Descent-first (engine + L0 replay)**: Entering `implementation` / `lean-track-implementation` runs `implementation-descent` (fingerprint-scoped L0/L1 only; never skip a new feature because `npm test` already passes). The engine writes `.worklogs/<id>/context-pack.json` (schema-valid, includes evaluated `muscle_memory`). If `state.metrics.skip_llm_exploration` is true, record `## Descent replay` in `implementation.md` and skip redundant LLM exploration. Otherwise run `node ${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs descent-try --work-dir .worklogs/<id>` (optional `--verify`, optional `--files` comma-list when fingerprints are task keys rather than design paths). On **ESCALATE**, continue below. Pass `context-pack.json` to any delegate.
+
 1. Re-read `design.md`, `test-stubs.md` (if exists), `approval-feedback.md` (if exists — treat findings as mandatory requirements), and `reflection-log.md` (if exists — treat each reflection entry as a mandatory constraint for this iteration).
 2. If the task involves **external APIs**, **MCP servers**, **non-repo** systems, or **destructive shell** operations, consult `${CLAUDE_PLUGIN_ROOT}/references/tooling-expectations.md` and ensure the developer agent scopes tool use accordingly.
 3. Read `## Subagent Signals` from `feasibility.md`.

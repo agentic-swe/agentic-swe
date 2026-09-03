@@ -1,0 +1,10 @@
+{
+  "id": "oracle-goal-engine",
+  "title": "Goal engine tests",
+  "description": "Goal engine tests",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/goal-engine.test.js"
+  ],
+  "corpus_class": "oracle"
+}

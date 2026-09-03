@@ -1,0 +1,10 @@
+{
+  "id": "mined-trivial-fail",
+  "title": "Trivial failing test (negative control)",
+  "description": "Trivial failing test (negative control)",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "npm test"
+  ],
+  "corpus_class": "mined"
+}

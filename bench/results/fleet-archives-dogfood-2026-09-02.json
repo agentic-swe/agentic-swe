@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-09-02T13:35:23.228Z",
+  "ok": true,
+  "measurement_contract": "Pack-root archived maintainer_dogfood submissions prove multi-consumer ingest pipeline — excluded from fleet-scale-independent.",
+  "archived_total": 4,
+  "distinct_consumers": 4,
+  "independent_consumers": 1,
+  "maintainer_dogfood": 3,
+  "fleet_scale_met": false,
+  "entries": [
+    {
+      "project_root": "/Users/surajg/hobby-projects/salesforce-agentic-swe",
+      "fleet_evidence_class": "maintainer_dogfood",
+      "counts_toward_fleet_scale": false,
+      "submitted_at": "2026-09-02T12:54:45.180Z",
+      "organic_live": 3,
+      "portfolio_multiplier": 0.008425613866153106,
+      "git_origin": "https://github.com/surajSFDC/salesforce-agentic-swe.git"
+    },
+    {
+      "project_root": "/Users/surajg/hobby-projects/lead-generation-engine",
+      "fleet_evidence_class": "maintainer_dogfood",
+      "counts_toward_fleet_scale": false,
+      "submitted_at": "2026-09-02T13:07:11.443Z",
+      "organic_live": 3,
+      "portfolio_multiplier": 0.008425613866153106,
+      "git_origin": "https://github.com/surajSFDC/lead-gen-engine.git"
+    },
+    {
+      "project_root": "/Users/surajg/hobby-projects/salesforce-ai-assistant",
+      "fleet_evidence_class": "maintainer_dogfood",
+      "counts_toward_fleet_scale": false,
+      "submitted_at": "2026-09-02T13:09:49.970Z",
+      "organic_live": 3,
+      "portfolio_multiplier": 0.008425613866153106,
+      "git_origin": null
+    },
+    {
+      "project_root": "/Users/surajg/hobby-projects/sf-llm",
+      "fleet_evidence_class": "independent",
+      "counts_toward_fleet_scale": true,
+      "submitted_at": "2026-09-02T13:33:27.013Z",
+      "organic_live": 4,
+      "portfolio_multiplier": 0.008425613866153106,
+      "git_origin": null
+    }
+  ],
+  "target_met": true
+}

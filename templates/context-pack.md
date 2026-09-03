@@ -40,6 +40,9 @@ See `${CLAUDE_PLUGIN_ROOT}/schemas/context-pack.schema.json` for machine validat
 | Tests pass | `npm test` | Exit 0 |
 | Build succeeds | `npm run build` | Exit 0 |
 | Lint clean | `npm run lint` | Exit 0 |
+
+### Muscle memory (evaluated)
+When the orchestrator attached `muscle_memory` (L0/L1 procedures), replay those verify commands before asking a frontier model to re-derive them.
 ```
 
 ## Usage

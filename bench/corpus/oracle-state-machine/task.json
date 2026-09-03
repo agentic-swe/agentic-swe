@@ -1,0 +1,10 @@
+{
+  "id": "oracle-state-machine",
+  "title": "State machine JSON test",
+  "description": "State machine JSON test",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/state-machine-json.test.js"
+  ],
+  "corpus_class": "oracle"
+}

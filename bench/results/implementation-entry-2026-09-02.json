@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-09-02T11:52:07.258Z",
+  "ok": true,
+  "measurement_contract": "Fingerprint-scoped L0/L1 at implementation entry vs L3. Does not implement a new feature without a matching procedure.",
+  "skip_llm_exploration": true,
+  "tier": "L0",
+  "delivered_tokens": 0,
+  "cold_l3_tokens": 200000,
+  "multiplier": 0,
+  "target_multiplier": 0.02,
+  "target_met": true
+}

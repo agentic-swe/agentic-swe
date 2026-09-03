@@ -1,0 +1,10 @@
+{
+  "id": "oracle-references",
+  "title": "References integrity",
+  "description": "References integrity",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/references-integrity.test.js"
+  ],
+  "corpus_class": "oracle"
+}

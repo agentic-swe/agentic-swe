@@ -1,0 +1,143 @@
+{
+  "generated_at": "2026-09-02T11:52:08.188Z",
+  "ok": true,
+  "measurement_contract": "Organic /work: capture verify + READ_FILE of declared implementation paths; ladder vs in/out tokens AND billed session USD (cache weighted). Does not claim a new feature can skip L3.",
+  "capture": {
+    "ok": true,
+    "captured": 2,
+    "skipped": 1,
+    "captures": [
+      {
+        "work_id": "phase-2-durable-memory",
+        "work_dir": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/.worklogs/phase-2-durable-memory",
+        "from_fixture": false,
+        "ok": false,
+        "reason": "validation-results.md missing"
+      },
+      {
+        "work_id": "phase-3-orchestration",
+        "work_dir": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/.worklogs/phase-3-orchestration",
+        "from_fixture": false,
+        "ok": true,
+        "fingerprint": "a7b15a590ba409e40d58b9a0d9985809c2631efd8ad1cfd50a9ad3c56819585d",
+        "verifyCommand": "node --test test/agents-catalog.test.js test/catalog-lint.test.js test/catalog-route.test.js test/model-routing.test.js",
+        "tier": "L1",
+        "success_count": 1,
+        "files": [
+          ".agentic-swe/model-routing.json",
+          ".github/workflows/ci.yml",
+          "agents/plugin-runtime/subagent-catalog/config.sh",
+          "agents/subagents/**/*.md",
+          "agents/subagents/.../agent-organizer.md",
+          "commands/subagent.md",
+          "config/model-routing.default.json",
+          "docs/roadmap.md",
+          "embeddings-backend.cjs",
+          "feasibility.md",
+          "package.json",
+          "scripts/catalog-lint.cjs",
+          "scripts/catalog-route.cjs",
+          "scripts/lib/catalog-index.cjs",
+          "scripts/lib/catalog/model-routing.cjs",
+          "scripts/lib/memory/config.cjs",
+          "scripts/lib/memory/embeddings-backend.cjs",
+          "test/agents-catalog.test.js",
+          "test/catalog-*.test.js",
+          "test/catalog-lint.test.js",
+          "test/catalog-route.test.js",
+          "test/model-routing.test.js"
+        ],
+        "read_actions": 5
+      },
+      {
+        "work_id": "tui-mascot-sf-agents",
+        "work_dir": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/.worklogs/tui-mascot-sf-agents",
+        "from_fixture": false,
+        "ok": true,
+        "fingerprint": "da80ef5f4e78fe49628769cebe44ef3e1416779ad2b8404dabe64132b3a15ba9",
+        "verifyCommand": "node --test test/swe-tui.test.js",
+        "tier": "L1",
+        "success_count": 1,
+        "files": [
+          "Node.js",
+          "agents/subagents/specialized-domains/salesforce-agentforce.md",
+          "agents/subagents/specialized-domains/salesforce-developer.md",
+          "agents/subagents/specialized-domains/salesforce-headless.md",
+          "commands/swe-tui.md",
+          "scripts/swe-tui-server.cjs",
+          "state.json",
+          "swe-tui.md",
+          "test/swe-tui.test.js"
+        ],
+        "read_actions": 5
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "work_id": "phase-2-durable-memory",
+      "capture_ok": false,
+      "from_fixture": false,
+      "reason": "validation-results.md missing",
+      "tier": "L3"
+    },
+    {
+      "work_id": "phase-3-orchestration",
+      "capture_ok": true,
+      "from_fixture": false,
+      "verifyCommand": "node --test test/agents-catalog.test.js test/catalog-lint.test.js test/catalog-route.test.js test/model-routing.test.js",
+      "action_reads": 5,
+      "tier": "L1",
+      "hit": true,
+      "delivered_tokens": 1500,
+      "historical_tokens": 200000,
+      "session": {
+        "has_session": false,
+        "usd": 0,
+        "billed_equiv_input_tokens": 0,
+        "raw_token_sum": 0
+      },
+      "session_usd_warm": 0.00975,
+      "session_usd_multiplier": null,
+      "warm_vs_historical": 0.015647568608570053
+    },
+    {
+      "work_id": "tui-mascot-sf-agents",
+      "capture_ok": true,
+      "from_fixture": false,
+      "verifyCommand": "node --test test/swe-tui.test.js",
+      "action_reads": 5,
+      "tier": "L1",
+      "hit": true,
+      "delivered_tokens": 1500,
+      "historical_tokens": 182333,
+      "session": {
+        "has_session": true,
+        "usd": 20.006333,
+        "billed_equiv_input_tokens": 6668777.666666667,
+        "raw_token_sum": 41358609
+      },
+      "session_usd_warm": 0.00975,
+      "session_usd_multiplier": 0.0004873456819897979,
+      "warm_vs_historical": 0.017102292759678582
+    }
+  ],
+  "summary": {
+    "items": 3,
+    "captured": 2,
+    "capture_failed": 1,
+    "ladder_hits": 2,
+    "live_captured": 2,
+    "live_ladder_hits": 2,
+    "fixture_captured": 0,
+    "cold_per_task_tokens": 198866.5,
+    "warm_per_task_tokens": 3250,
+    "portfolio_multiplier": 0.01634262180910309,
+    "session_usd_multiplier": 0.0004873456819897979,
+    "session_items_with_cost": 1,
+    "target_multiplier": 0.02,
+    "token_target_met": true,
+    "usd_target_met": true,
+    "target_met": true
+  }
+}

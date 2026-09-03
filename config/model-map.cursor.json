@@ -1,0 +1,14 @@
+{
+  "host": "cursor",
+  "tiers": {
+    "fast": "gemini-3.5-flash",
+    "balanced": "composer-2.5",
+    "heavy": "claude-4.6-sonnet-high-thinking",
+    "frontier": "claude-opus-5-thinking-max"
+  },
+  "legacy_map": {
+    "haiku": "fast",
+    "sonnet": "balanced",
+    "opus": "heavy"
+  }
+}

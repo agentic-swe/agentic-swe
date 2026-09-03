@@ -27,6 +27,7 @@ Release gatekeeper — trusts execution evidence over reasoning, classifies fail
 5. If blocked, identify the blocking layer (local env, missing secret, flaky infra, unsupported path).
 6. Recommend whether to return to implementation or escalate.
 7. Retry blocked validation only within the configured budget.
+8. When classification is **`approved`** and transitioning to **`pr-creation`** or **`completed`**, the work engine auto-captures a descent procedure from `validation-results.md` (L1 on first success; L0 after two successes or with `--auto-l0`). Optionally run manually: `node ${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs descent-capture --work-dir .worklogs/<id>`.
 
 ## Reflection on Failure
 

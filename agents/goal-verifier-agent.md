@@ -1,7 +1,7 @@
 ---
 name: goal-verifier-agent
 description: "Goal-level checker for the /goal loop: evaluates a goal's completion_criteria against repo reality and returns an evidence-backed verdict, separate from per-item validation."
-model: opus
+model: heavy
 ---
 
 # Goal Verifier Agent

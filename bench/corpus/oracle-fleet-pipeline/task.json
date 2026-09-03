@@ -1,0 +1,10 @@
+{
+  "id": "oracle-fleet-pipeline",
+  "title": "Fleet muscle-memory pipeline",
+  "description": "Consumer onboard, submission gate, ingest, and memory sync",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/fleet-oracle.test.js"
+  ],
+  "corpus_class": "oracle"
+}

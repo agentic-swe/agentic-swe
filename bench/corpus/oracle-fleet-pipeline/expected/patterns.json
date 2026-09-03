@@ -1,0 +1,3 @@
+{
+  "patterns": ["fleet-onboard", "fleet-submit", "fleet_submission_ready", "ingest-fleet-submission"]
+}

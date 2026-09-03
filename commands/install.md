@@ -45,13 +45,23 @@ When you **first** create `.worklogs/` or the first work id under it:
 
 Optional: create **`.worklogs/.gitkeep`** only if the user wants an empty tracked folder before any work id exists (ask; do not assume).
 
-### 4. What not to do
+### 5. Day-one muscle memory (recommended)
+
+From the pack checkout (or with **`CLAUDE_PLUGIN_ROOT`** set), run once per target repo:
+
+```bash
+npm run fleet-onboard -- --project-root /path/to/target-repo
+```
+
+This warms memory scopes (repo docs, transcripts, corpus L0, verify-command descent ladder), captures organic `/work`, runs evolve-cycle, and reports fleet submission readiness. For memory-only warm without fleet gates, use **`npm run cold-start-warm -- --project-root /path/to/target-repo`**. Opt out of transcript ingest with **`--skip-sessions`**.
+
+### 6. What not to do
 
 - Do **not** tell users to run **`npx`** against the wrong package: the **unscoped** npm name **`agentic-swe`** points at a **different** project. For this pack, consumers install **`@agentic-swe/agentic-swe`** from the public registry (or Git clone / marketplace only).
 - The **`agentic-swe`** CLI from **`npm install -g @agentic-swe/agentic-swe`** only prints **`path`** / **`version`** — it is **not** a hosted runner. Use it to resolve **`claude --plugin-dir "$(agentic-swe path)"`** or **`AGENTIC_SWE_PACK_ROOT`** for Cursor — see **`README.md`** and **`docs/PUBLISHING.md`**.
 - Do **not** bulk-copy **`commands/`**, **`phases/`**, **`agents/`**, etc. into **`target/.claude/`** unless the user explicitly asks for a **legacy/vendored** layout (out of scope for default onboarding).
 
-### 5. Verification
+### 7. Verification
 
 Confirm the user can run slash commands such as **`/work`** and **`/check transition`** in Claude Code with the plugin enabled, and that **`.worklogs/`** (or a chosen work id folder) is writable under the target repo root.
 

@@ -57,5 +57,11 @@ jobs:
       - name: Test (repo + platform wiring + plugin validate when claude available)
         run: npm test
 
+      - name: Measurement bench suite (token reduction evidence)
+        run: npm run bench:suite
+        # Suite dogfoods pack-root .worklogs via applyTransition before portfolio so CI can
+        # measure live tier_totals. Those files are gitignored; organic /work is still required
+        # for auditor organic-team-learning.
+
       - name: Work engine CLI (help smoke)
         run: node scripts/work-engine.cjs help

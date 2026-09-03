@@ -50,6 +50,10 @@ function parseArgs(argv) {
     else if (a === '--budget-profile') out.budgetProfile = argv[++i];
     else if (a === '--set-pipeline-track') out.setPipelineTrack = argv[++i];
     else if (a === '--track') out.track = argv[++i];
+    else if (a === '--skill') out.skill = argv[++i];
+    else if (a === '--verify') out.verify = argv[++i];
+    else if (a === '--files') out.files = argv[++i];
+    else if (a === '--allow-manual') out.allowManual = true;
     else if (!a.startsWith('-')) rest.push(a);
   }
   out.command = rest[0];
@@ -91,8 +95,14 @@ Commands:
   apply-budget-profile --work-dir <dir> --track lean|standard|rigorous [--json]
   transition … [--set-pipeline-track lean|standard|rigorous]  (when leaving lean-track-check; merges track budgets from config)
   doctor [--project-root <abs>] [--plugin-root <pack>] [--json]
-      Prints project root, plugin root, discovered active work dir, schema/budget snapshot.
-      Exits 1 if the active item fails JSON Schema validation or budget verdict is STOP.
+  skill-check --skill <name> [--allow-manual] [--json]
+  descent-try [--verify "cmd"] [--work-dir <dir>] [--files a,b] [--json]
+      Attempt L0 recorded procedure replay before frontier execution; records tier telemetry.
+      Optional --files overrides design/implementation declared paths (holdout task keys, etc).
+  replay-pack --work-dir <dir> [--json]
+      Zero-LLM replay of context-pack.json (declared files + primary verify only).
+  descent-capture --work-dir <dir> [--project-root <abs>] [--auto-l0] [--json]
+      Capture verify procedure from approved validation-results.md into descent store.
   migrate [--apply] …
       Delegates to scripts/migrate-work-state.js (same flags as that script).
 `);
@@ -141,9 +151,14 @@ Commands:
     }
     const schemaOk = !activeWorkDir || (loadResult && loadResult.ok);
     const budgetOk = !activeWorkDir || (budgetCheck && budgetCheck.ok);
+    const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+    const muscleMemory = checkMuscleMemoryReadiness({
+      projectRoot,
+      pluginRoot: pluginRootResolved,
+    });
     const exitCode = activeWorkDir && (!schemaOk || !budgetOk) ? 1 : 0;
     const report = {
-      ok: exitCode === 0,
+      ok: exitCode === 0 && muscleMemory.ok,
       project_root: projectRoot,
       plugin_root: pluginRootResolved,
       active_work_dir: activeWorkDir,
@@ -171,6 +186,7 @@ Commands:
               schemaErrors: loadResult && loadResult.schemaErrors,
             }
         : { ok: true, skipped: true },
+      muscle_memory: muscleMemory,
     };
     if (args.json) {
       printJson(report);
@@ -202,8 +218,31 @@ Commands:
         console.error('validate', loadResult.message);
         if (loadResult.schemaErrors) console.error(JSON.stringify(loadResult.schemaErrors, null, 2));
       }
+      console.log(
+        'muscle_memory',
+        muscleMemory.ok ? 'ok' : 'issues',
+        `consumer_mode=${muscleMemory.consumer_mode}`
+      );
+      if (muscleMemory.skill_eval?.promote_candidates?.length) {
+        console.log('skill_eval_promote_candidates', muscleMemory.skill_eval.promote_candidates.join(', '));
+      }
+      if (muscleMemory.fleet_evidence) {
+        const fe = muscleMemory.fleet_evidence;
+        console.log(
+          'fleet_evidence',
+          `organic_live=${fe.organic_live}`,
+          `tier_totals_items=${fe.tier_totals_work_items}`,
+          `portfolio=${(fe.portfolio_multiplier * 100).toFixed(3)}%`,
+          `submission_ready=${fe.fleet_submission_ready}`
+        );
+        for (const b of fe.blockers || []) console.log(`  fleet_blocker: ${b}`);
+        if (fe.next_command) console.log('fleet_next:', fe.next_command);
+      }
+      for (const c of muscleMemory.checks) {
+        if (c.ok === false) console.log(`  FAIL ${c.id}`);
+      }
     }
-    process.exit(exitCode);
+    process.exit(report.ok ? 0 : 1);
   }
 
   if (cmd === 'init') {
@@ -360,6 +399,10 @@ Commands:
       ? args.evidence.split(',').map((s) => s.trim()).filter(Boolean)
       : [];
 
+    const loadedBefore = loadWorkItem(workDir, pluginRoot);
+    const fromState =
+      args.from != null ? args.from : loadedBefore.ok ? loadedBefore.state.current_state : null;
+
     const r = applyTransition({
       workDir,
       pluginRoot,
@@ -378,14 +421,83 @@ Commands:
       else fail(r.message || 'transition failed', 1, r);
       process.exit(1);
     }
+
+    const toState = r.state ? r.state.current_state : r.nextState.current_state;
+
     const out = {
       ok: true,
-      current_state: r.state ? r.state.current_state : r.nextState.current_state,
+      current_state: toState,
       dryRun: !!r.dryRun,
+      muscle_memory_warning: r.muscle_memory_warning || undefined,
     };
     if (args.json) printJson(out);
-    else console.log('OK', out.current_state, r.dryRun ? '(dry-run)' : '');
+    else {
+      console.log('OK', out.current_state, r.dryRun ? '(dry-run)' : '');
+      if (r.muscle_memory_warning) console.error('WARN', r.muscle_memory_warning);
+    }
     return;
+  }
+
+  if (cmd === 'replay-pack') {
+    if (!args.workDir) fail('replay-pack requires --work-dir', 2);
+    const { spawnSync } = require('node:child_process');
+    const extra = ['--work-dir', path.resolve(args.workDir)];
+    if (args.json) extra.push('--json');
+    if (args.projectRoot) extra.push('--project-root', path.resolve(args.projectRoot));
+    const r = spawnSync(process.execPath, [path.join(__dirname, 'replay-context-pack.cjs'), ...extra], {
+      encoding: 'utf8',
+    });
+    if (r.stdout) process.stdout.write(r.stdout);
+    if (r.stderr) process.stderr.write(r.stderr);
+    process.exit(r.status === null ? 1 : r.status);
+  }
+
+  if (cmd === 'descent-try') {
+    const { spawnSync } = require('node:child_process');
+    const script = path.join(__dirname, 'descent-try.cjs');
+    const extra = args.json ? ['--json'] : [];
+    if (args.verify) extra.push('--verify', args.verify);
+    if (args.workDir) extra.push('--work-dir', path.resolve(args.workDir));
+    if (args.projectRoot) extra.push('--project-root', path.resolve(args.projectRoot));
+    if (args.files) extra.push('--files', args.files);
+    extra.push('--plugin-root', pluginRoot);
+    const r = spawnSync(process.execPath, [script, ...extra], { encoding: 'utf8' });
+    if (args.json && r.stdout) process.stdout.write(r.stdout);
+    else if (r.stdout) process.stdout.write(r.stdout);
+    if (r.stderr) process.stderr.write(r.stderr);
+    process.exit(r.status === null ? 1 : r.status);
+  }
+
+  if (cmd === 'descent-capture') {
+    if (!args.workDir) fail('descent-capture requires --work-dir', 2);
+    const { captureProcedureFromWork } = require('./lib/descent/capture-procedure.cjs');
+    const wd = path.resolve(args.workDir);
+    const proj = path.resolve(args.projectRoot || projectRootFromWorkDir(wd));
+    const r = captureProcedureFromWork({
+      workDir: wd,
+      projectRoot: proj,
+      storeRoot: pluginRoot,
+      autoL0: process.argv.includes('--auto-l0'),
+    });
+    if (args.json) printJson(r);
+    else if (r.ok) console.log('CAPTURED', r.tier, r.fingerprint?.slice(0, 12), r.verifyCommand);
+    else console.error('SKIP', r.reason);
+    process.exit(r.ok ? 0 : 1);
+  }
+
+  if (cmd === 'skill-check') {
+    const { checkSkillEvalGate } = require('./lib/skills/eval-gate.cjs');
+    if (!args.skill) fail('skill-check requires --skill', 2);
+    const gate = checkSkillEvalGate({
+      pluginRoot,
+      skillName: args.skill,
+      autonomous: !args.allowManual,
+    });
+    const out = { ok: gate.allowed, skill: args.skill, eval_status: gate.eval_status, reason: gate.reason };
+    if (args.json) printJson(out);
+    else if (gate.allowed) console.log('OK', args.skill, gate.eval_status || 'unknown');
+    else console.error('BLOCKED', gate.reason);
+    process.exit(gate.allowed ? 0 : 1);
   }
 
   if (cmd === 'plan-transition') {

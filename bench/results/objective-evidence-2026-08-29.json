@@ -1,0 +1,135 @@
+{
+  "generated_at": "2026-08-29T19:06:22.223Z",
+  "claim_status": "proven_at_scale",
+  "skills": {
+    "total": 182,
+    "unevaluated": 0
+  },
+  "production_tier_totals": {
+    "live": 5,
+    "fixtures": 3,
+    "dogfood": 3,
+    "organic": 4
+  },
+  "live_path": {
+    "ok": true,
+    "live_work_items": 3,
+    "live_production_verified": true,
+    "measurement_contract": "Isolated temp .worklogs via applyTransition; not pack-root live usage; does not by itself prove proven_at_scale"
+  },
+  "requirements": [
+    {
+      "id": "installable-plugin",
+      "requirement": "Single installable plugin/tool",
+      "evidence": [
+        ".claude-plugin/plugin.json",
+        "package.json"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "versioned-evaluated-skills",
+      "requirement": "Every SWE operation is a versioned, evaluated skill",
+      "evidence": [
+        "182 skills, 0 unevaluated"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "eval-harness",
+      "requirement": "Eval harness gating every skill (fail-closed, flags unevaluated/unknown)",
+      "evidence": [
+        "scripts/lib/skills/eval-gate.cjs",
+        "scripts/skill-eval.cjs"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "session-memory-graph",
+      "requirement": "Conversations chunked into sessions and distilled into memory graph (personal + team/repo)",
+      "evidence": [
+        "scripts/lib/memory/ingest-scopes.cjs",
+        "scripts/lib/memory/discover-transcripts.cjs",
+        "scripts/ingest-memory-scopes.cjs",
+        "scripts/session-capture.cjs",
+        "ingestOrganicWorklogs"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "runtime-skill-discovery",
+      "requirement": "Discovers/selects skills at runtime and flags unevaluated",
+      "evidence": [
+        "scripts/lib/skills/skill-router.cjs",
+        "scripts/session-skill-route-hint.cjs"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "model-agnostic",
+      "requirement": "Survives model churn (capability tiers, host maps)",
+      "evidence": [
+        "config/model-map.claude-code.json",
+        "config/model-map.cursor.json",
+        "config/model-map.codex.json",
+        "scripts/model-conformance.cjs"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "architecture-research",
+      "requirement": "Deep research + validated architecture plan",
+      "evidence": [
+        "docs/research/muscle-memory-sota.md",
+        "docs/specs/muscle-memory-orchestrator.md",
+        "docs/specs/memory-graph.md"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "token-reduction-benchmarks",
+      "requirement": "Benchmarks proving per-task tokens toward 1–2% of cold",
+      "evidence": [
+        "proven_at_scale",
+        "portfolio_multiplier=0.008425613866153106"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "live-path-reproducible",
+      "requirement": "Isolated work-engine live-path bench (tmp .worklogs; not pack-root proven_at_scale)",
+      "evidence": [
+        "live-path ok=true items=3 verified=true"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "live-production-learning",
+      "requirement": "Pack-root live .worklogs with tier_totals (includes CI/maintainer dogfood applyTransition)",
+      "evidence": [
+        "pack_live_work_items=5",
+        "dogfood=3"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "organic-team-learning",
+      "requirement": "Learns from non-dogfood /work (organic pipeline worklogs + memory distill)",
+      "evidence": [
+        "organic_live_work_items=4"
+      ],
+      "status": "met"
+    },
+    {
+      "id": "organic-token-reduction",
+      "requirement": "Organic /work verify commands replayed on the descent ladder toward 1–2% of historical/L3 cold",
+      "evidence": [
+        "hits=2/3 multiplier=0.008799873281824742"
+      ],
+      "status": "met"
+    }
+  ],
+  "unmet": [],
+  "goal_complete": true,
+  "honesty": "goal_complete requires organic-token-reduction (ladder on real /work verify) plus proven_at_scale; holdout dogfood alone is not the product token claim"
+}

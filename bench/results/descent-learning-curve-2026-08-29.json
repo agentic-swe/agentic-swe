@@ -1,0 +1,108 @@
+{
+  "generated_at": "2026-08-29T10:28:02.861Z",
+  "ok": true,
+  "measurement_contract": "Incremental holdout capture simulation after oracle-only seed; models production procedure accumulation",
+  "target_multiplier": 0.02,
+  "curve": [
+    {
+      "iteration": 0,
+      "label": "oracle-seed-only",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 0,
+      "l0_hit_rate_delivered": 0,
+      "frontier_tokens_total": 600000,
+      "portfolio_multiplier": 0.42857142857142855,
+      "target_met": false
+    },
+    {
+      "iteration": 1,
+      "label": "+capture-mined-check-pass",
+      "captured_task": "mined-check-pass",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 1,
+      "l0_hit_rate_delivered": 0.3333333333333333,
+      "frontier_tokens_total": 400000,
+      "portfolio_multiplier": 0.2857142857142857,
+      "target_met": false
+    },
+    {
+      "iteration": 2,
+      "label": "+capture-mined-smoke-pass",
+      "captured_task": "mined-smoke-pass",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 2,
+      "l0_hit_rate_delivered": 0.6666666666666666,
+      "frontier_tokens_total": 200000,
+      "portfolio_multiplier": 0.14285714285714285,
+      "target_met": false
+    },
+    {
+      "iteration": 3,
+      "label": "+capture-mined-trivial-fail",
+      "captured_task": "mined-trivial-fail",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 2,
+      "l0_hit_rate_delivered": 0.6666666666666666,
+      "frontier_tokens_total": 200000,
+      "portfolio_multiplier": 0.14285714285714285,
+      "target_met": false
+    },
+    {
+      "iteration": 4,
+      "label": "+capture-mined-trivial-pass",
+      "captured_task": "mined-trivial-pass",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 3,
+      "l0_hit_rate_delivered": 1,
+      "frontier_tokens_total": 0,
+      "portfolio_multiplier": 0,
+      "target_met": true
+    },
+    {
+      "iteration": 5,
+      "label": "+capture-ritual-version-sync-a",
+      "captured_task": "ritual-version-sync-a",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 3,
+      "l0_hit_rate_delivered": 1,
+      "frontier_tokens_total": 0,
+      "portfolio_multiplier": 0,
+      "target_met": true
+    },
+    {
+      "iteration": 6,
+      "label": "+capture-ritual-version-sync-b",
+      "captured_task": "ritual-version-sync-b",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 3,
+      "l0_hit_rate_delivered": 1,
+      "frontier_tokens_total": 0,
+      "portfolio_multiplier": 0,
+      "target_met": true
+    },
+    {
+      "iteration": 7,
+      "label": "+capture-ritual-version-sync-c",
+      "captured_task": "ritual-version-sync-c",
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 3,
+      "l0_hit_rate_delivered": 1,
+      "frontier_tokens_total": 0,
+      "portfolio_multiplier": 0,
+      "target_met": true
+    }
+  ],
+  "projection": {
+    "iterations_needed": 0,
+    "achievable": true
+  },
+  "honesty": "Curve simulates validation-approved captures on holdout tasks; real production path requires work-engine descent-capture after approved validation"
+}

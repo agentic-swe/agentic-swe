@@ -9,7 +9,7 @@ const { rewriteOne, parseArgs } = require('../scripts/render-catalog-counts.cjs'
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SUBAGENTS_ROOT = path.join(REPO_ROOT, 'agents', 'subagents');
-const DEFAULT_TARGETS = ['README.md', 'CLAUDE.md', 'AGENTS.md', 'commands/subagent.md'];
+const DEFAULT_TARGETS = ['README.md', 'references/deferred/hypervisor-deferred.md', 'AGENTS.md', 'commands/subagent.md'];
 
 test('computeCatalogCounts matches the actual filesystem', () => {
   const counts = computeCatalogCounts(SUBAGENTS_ROOT);

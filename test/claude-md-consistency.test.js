@@ -87,3 +87,35 @@ describe('claude-md-consistency: artifact table states are in transition block',
     });
   }
 });
+
+describe('claude-md-consistency: core mirror and deferred reference', () => {
+  const claudeBody = fs.readFileSync(claudeMdPath, 'utf8');
+  const agentsPath = path.join(__dirname, '..', 'AGENTS.md');
+  const deferredPath = path.join(__dirname, '..', 'references', 'deferred', 'hypervisor-deferred.md');
+
+  it('CLAUDE.md references deferred hypervisor policy', () => {
+    assert.match(claudeBody, /hypervisor-deferred\.md/);
+  });
+
+  it('CLAUDE.md contains cache boundary marker', () => {
+    assert.match(claudeBody, /CACHE_BOUNDARY/);
+  });
+
+  it('deferred reference file exists', () => {
+    assert.ok(fs.existsSync(deferredPath), 'references/deferred/hypervisor-deferred.md missing');
+  });
+
+  it('AGENTS.md mirrors transition block from CLAUDE.md', () => {
+    const agentsBody = fs.readFileSync(agentsPath, 'utf8');
+    assert.match(agentsBody, /initialized -> feasibility/);
+    assert.match(agentsBody, /Required Artifacts by State/);
+  });
+
+  it('core CLAUDE.md is smaller than full backup', () => {
+    const backup = path.join(__dirname, '..', 'references', 'deferred', 'hypervisor-deferred-full-backup.md');
+    if (!fs.existsSync(backup)) return;
+    const coreLen = fs.statSync(claudeMdPath).size;
+    const fullLen = fs.statSync(backup).size;
+    assert.ok(coreLen < fullLen * 0.5, `core should be <50% of backup (${coreLen} vs ${fullLen})`);
+  });
+});

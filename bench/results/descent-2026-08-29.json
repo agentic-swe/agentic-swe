@@ -1,0 +1,799 @@
+{
+  "generated_at": "2026-08-29T10:27:50.689Z",
+  "ok": true,
+  "tasks": [
+    {
+      "id": "mined-check-pass",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node test/check.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-check-pass/repo"
+            },
+            "ok": true,
+            "output": "check ok\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node test/check.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-check-pass/repo"
+            },
+            "ok": true,
+            "output": "check ok\n"
+          }
+        ],
+        "fingerprint": "f24cf82a97acfc5cc973ead24f15ad1f7fed9bfeaf0ea850cab37f3151f62be9",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "mined-smoke-pass",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node test/smoke.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-smoke-pass/repo"
+            },
+            "ok": true,
+            "output": "smoke ok\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node test/smoke.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-smoke-pass/repo"
+            },
+            "ok": true,
+            "output": "smoke ok\n"
+          }
+        ],
+        "fingerprint": "c743897c3555e03cff0e355ba859348ce12667d0ac7cb8a66e4fd61f53a318b9",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "mined-trivial-fail",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "escalate": true,
+        "tier": "L2",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "npm test",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-trivial-fail/repo"
+            },
+            "ok": false,
+            "output": "\n> test\n> node test/fail.test.js\n\nnode:internal/modules/run_main:123\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n2 !== 3\n\n    at file:///Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-trivial-fail/repo/test/fail.test.js:2:8\n    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)\n    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 2,\n  expected: 3,\n  operator: 'strictEqual'\n}\n\nNode.js v20.20.2\n",
+            "error": "exit 1"
+          }
+        ],
+        "reason": "action failed",
+        "fingerprint": "850887257cee21bbbb35cfa1f66cbb2a6edb4552a24661d7ef16513398a6ff90",
+        "frontier_tokens": null,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "mined-trivial-pass",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "npm test",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-trivial-pass/repo"
+            },
+            "ok": true,
+            "output": "\n> test\n> node test/pass.test.js\n\nok\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "npm test",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/mined-trivial-pass/repo"
+            },
+            "ok": true,
+            "output": "\n> test\n> node test/pass.test.js\n\nok\n"
+          }
+        ],
+        "fingerprint": "504f8ceacdc90f6617ad9ca7101140318b761c7c7ee05b4f42dab9024779f7c8",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-bench-tasks",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/bench-tasks.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: bench/tasks has at least the three required starter tasks\nok 1 - bench/tasks has at least the three required starter tasks\n  ---\n  duration_ms: 0.834625\n  ...\n# Subtest: bench task 01-off-by-one validates without errors\nok 2 - bench task 01-off-by-one validates without errors\n  ---\n  duration_ms: 0.779792\n  ...\n# Subtest: bench task 02-add-retry validates without errors\nok 3 - bench task 02-add-retry validates without errors\n  ---\n  duration_ms: 0.359333\n  ...\n# Subtest: bench task 03-rate-limiter validates without errors\nok 4 - bench task 03-rate-limiter validates without errors\n  ---\n  duration_ms: 0.635667\n  ...\n# Subtest: bench runner validate CLI exits 0 for all tasks (integration)\nok 5 - bench runner validate CLI exits 0 for all tasks (integration)\n  ---\n  duration_ms: 58.693083\n  ...\n1..5\n# tests 5\n# suites 0\n# pass 5\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 125.685834\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/bench-tasks.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: bench/tasks has at least the three required starter tasks\nok 1 - bench/tasks has at least the three required starter tasks\n  ---\n  duration_ms: 0.772167\n  ...\n# Subtest: bench task 01-off-by-one validates without errors\nok 2 - bench task 01-off-by-one validates without errors\n  ---\n  duration_ms: 0.819583\n  ...\n# Subtest: bench task 02-add-retry validates without errors\nok 3 - bench task 02-add-retry validates without errors\n  ---\n  duration_ms: 0.367709\n  ...\n# Subtest: bench task 03-rate-limiter validates without errors\nok 4 - bench task 03-rate-limiter validates without errors\n  ---\n  duration_ms: 0.668459\n  ...\n# Subtest: bench runner validate CLI exits 0 for all tasks (integration)\nok 5 - bench runner validate CLI exits 0 for all tasks (integration)\n  ---\n  duration_ms: 52.475583\n  ...\n1..5\n# tests 5\n# suites 0\n# pass 5\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 114.820375\n"
+          }
+        ],
+        "fingerprint": "cda873b8088b4093329dbba34f9af50b79a07e8ddad8972ac461b90099dc1e3e",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-catalog-counts",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node scripts/render-catalog-counts.cjs --check",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": ""
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node scripts/render-catalog-counts.cjs --check",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": ""
+          }
+        ],
+        "fingerprint": "5fc87bb30c258d951b02e3d3694c73c6bae4fcbde8656689a501b1f3d24f0abb",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-catalog-lint",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node scripts/catalog-lint.cjs",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "catalog-lint: OK (138 agents under agents/subagents)\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node scripts/catalog-lint.cjs",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "catalog-lint: OK (138 agents under agents/subagents)\n"
+          }
+        ],
+        "fingerprint": "87d4d7b2524f14e477f38674af78cec56bab1557ee08a3a0014994e596ff4a83",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-claude-consistency",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/claude-md-consistency.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: claude-md-consistency: state machine transitions match phase files\n    # Subtest: extracted at least 10 states from transition block\n    ok 1 - extracted at least 10 states from transition block\n      ---\n      duration_ms: 0.438334\n      ...\n    # Subtest: state \"initialized\" has a corresponding phase file or known exception\n    ok 2 - state \"initialized\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.064209\n      ...\n    # Subtest: state \"feasibility\" has a corresponding phase file or known exception\n    ok 3 - state \"feasibility\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.042833\n      ...\n    # Subtest: state \"ambiguity-wait\" has a corresponding phase file or known exception\n    ok 4 - state \"ambiguity-wait\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.03525\n      ...\n    # Subtest: state \"lean-track-check\" has a corresponding phase file or known exception\n    ok 5 - state \"lean-track-check\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.0355\n      ...\n    # Subtest: state \"pipeline-failed\" has a corresponding phase file or known exception\n    ok 6 - state \"pipeline-failed\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.034083\n      ...\n    # Subtest: state \"lean-track-implementation\" has a corresponding phase file or known exception\n    ok 7 - state \"lean-track-implementation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.071083\n      ...\n    # Subtest: state \"design\" has a corresponding phase file or known exception\n    ok 8 - state \"design\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.033292\n      ...\n    # Subtest: state \"validation\" has a corresponding phase file or known exception\n    ok 9 - state \"validation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.113375\n      ...\n    # Subtest: state \"escalate-code\" has a corresponding phase file or known exception\n    ok 10 - state \"escalate-code\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.07625\n      ...\n    # Subtest: state \"design-review\" has a corresponding phase file or known exception\n    ok 11 - state \"design-review\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.040792\n      ...\n    # Subtest: state \"verification\" has a corresponding phase file or known exception\n    ok 12 - state \"verification\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.030833\n      ...\n    # Subtest: state \"test-strategy\" has a corresponding phase file or known exception\n    ok 13 - state \"test-strategy\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.059834\n      ...\n    # Subtest: state \"implementation\" has a corresponding phase file or known exception\n    ok 14 - state \"implementation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.031\n      ...\n    # Subtest: state \"self-review\" has a corresponding phase file or known exception\n    ok 15 - state \"self-review\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.366708\n      ...\n    # Subtest: state \"code-review\" has a corresponding phase file or known exception\n    ok 16 - state \"code-review\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.033209\n      ...\n    # Subtest: state \"permissions-check\" has a corresponding phase file or known exception\n    ok 17 - state \"permissions-check\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.029125\n      ...\n    # Subtest: state \"pr-creation\" has a corresponding phase file or known exception\n    ok 18 - state \"pr-creation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.08625\n      ...\n    # Subtest: state \"escalate-validation\" has a corresponding phase file or known exception\n    ok 19 - state \"escalate-validation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.059917\n      ...\n    # Subtest: state \"approval-wait\" has a corresponding phase file or known exception\n    ok 20 - state \"approval-wait\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.028666\n      ...\n    # Subtest: state \"completed\" has a corresponding phase file or known exception\n    ok 21 - state \"completed\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.037917\n      ...\n    1..21\nok 1 - claude-md-consistency: state machine transitions match phase files\n  ---\n  duration_ms: 2.344625\n  type: 'suite'\n  ...\n# Subtest: claude-md-consistency: artifact table states are in transition block\n    # Subtest: extracted artifact table states\n    ok 1 - extracted artifact table states\n      ---\n      duration_ms: 0.064875\n      ...\n    # Subtest: artifact table state \"feasibility\" appears in transition block\n    ok 2 - artifact table state \"feasibility\" appears in transition block\n      ---\n      duration_ms: 0.022125\n      ...\n    # Subtest: artifact table state \"ambiguity-wait\" appears in transition block\n    ok 3 - artifact table state \"ambiguity-wait\" appears in transition block\n      ---\n      duration_ms: 0.016833\n      ...\n    # Subtest: artifact table state \"lean-track-check\" appears in transition block\n    ok 4 - artifact table state \"lean-track-check\" appears in transition block\n      ---\n      duration_ms: 0.01575\n      ...\n    # Subtest: artifact table state \"lean-track-implementation\" appears in transition block\n    ok 5 - artifact table state \"lean-track-implementation\" appears in transition block\n      ---\n      duration_ms: 0.015375\n      ...\n    # Subtest: artifact table state \"design\" appears in transition block\n    ok 6 - artifact table state \"design\" appears in transition block\n      ---\n      duration_ms: 0.016291\n      ...\n    # Subtest: artifact table state \"design-review\" appears in transition block\n    ok 7 - artifact table state \"design-review\" appears in transition block\n      ---\n      duration_ms: 0.016125\n      ...\n    # Subtest: artifact table state \"verification\" appears in transition block\n    ok 8 - artifact table state \"verification\" appears in transition block\n      ---\n      duration_ms: 0.015542\n      ...\n    # Subtest: artifact table state \"test-strategy\" appears in transition block\n    ok 9 - artifact table state \"test-strategy\" appears in transition block\n      ---\n      duration_ms: 0.080458\n      ...\n    # Subtest: artifact table state \"implementation\" appears in transition block\n    ok 10 - artifact table state \"implementation\" appears in transition block\n      ---\n      duration_ms: 0.017791\n      ...\n    # Subtest: artifact table state \"self-review\" appears in transition block\n    ok 11 - artifact table state \"self-review\" appears in transition block\n      ---\n      duration_ms: 0.043\n      ...\n    # Subtest: artifact table state \"code-review\" appears in transition block\n    ok 12 - artifact table state \"code-review\" appears in transition block\n      ---\n      duration_ms: 0.017958\n      ...\n    # Subtest: artifact table state \"permissions-check\" appears in transition block\n    ok 13 - artifact table state \"permissions-check\" appears in transition block\n      ---\n      duration_ms: 0.015917\n      ...\n    # Subtest: artifact table state \"validation\" appears in transition block\n    ok 14 - artifact table state \"validation\" appears in transition block\n      ---\n      duration_ms: 0.016334\n      ...\n    # Subtest: artifact table state \"pr-creation\" appears in transition block\n    ok 15 - artifact table state \"pr-creation\" appears in transition block\n      ---\n      duration_ms: 0.017916\n      ...\n    # Subtest: artifact table state \"approval-wait\" appears in transition block\n    ok 16 - artifact table state \"approval-wait\" appears in transition block\n      ---\n      duration_ms: 0.016292\n      ...\n    # Subtest: artifact table state \"completed\" appears in transition block\n    ok 17 - artifact table state \"completed\" appears in transition block\n      ---\n      duration_ms: 0.098\n      ...\n    # Subtest: artifact table state \"escalate-code\" appears in transition block\n    ok 18 - artifact table state \"escalate-code\" appears in transition block\n      ---\n      duration_ms: 0.015583\n      ...\n    # Subtest: artifact table state \"escalate-validation\" appears in transition block\n    ok 19 - artifact table state \"escalate-validation\" appears in transition block\n      ---\n      duration_ms: 0.015792\n      ...\n    # Subtest: artifact table state \"pipeline-failed\" appears in transition block\n    ok 20 - artifact table state \"pipeline-failed\" appears in transition block\n      ---\n      duration_ms: 0.015667\n      ...\n    1..20\nok 2 - claude-md-consistency: artifact table states are in transition block\n  ---\n  duration_ms: 0.673042\n  type: 'suite'\n  ...\n# Subtest: claude-md-consistency: core mirror and deferred reference\n    # Subtest: CLAUDE.md references deferred hypervisor policy\n    ok 1 - CLAUDE.md references deferred hypervisor policy\n      ---\n      duration_ms: 0.067167\n      ...\n    # Subtest: CLAUDE.md contains cache boundary marker\n    ok 2 - CLAUDE.md contains cache boundary marker\n      ---\n      duration_ms: 0.031125\n      ...\n    # Subtest: deferred reference file exists\n    ok 3 - deferred reference file exists\n      ---\n      duration_ms: 0.023625\n      ...\n    # Subtest: AGENTS.md mirrors transition block from CLAUDE.md\n    ok 4 - AGENTS.md mirrors transition block from CLAUDE.md\n      ---\n      duration_ms: 0.076792\n      ...\n    # Subtest: core CLAUDE.md is smaller than full backup\n    ok 5 - core CLAUDE.md is smaller than full backup\n      ---\n      duration_ms: 0.113625\n      ...\n    1..5\nok 3 - claude-md-consistency: core mirror and deferred reference\n  ---\n  duration_ms: 0.348125\n  type: 'suite'\n  ...\n1..3\n# tests 46\n# suites 3\n# pass 46\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 71.20625\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/claude-md-consistency.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: claude-md-consistency: state machine transitions match phase files\n    # Subtest: extracted at least 10 states from transition block\n    ok 1 - extracted at least 10 states from transition block\n      ---\n      duration_ms: 0.444666\n      ...\n    # Subtest: state \"initialized\" has a corresponding phase file or known exception\n    ok 2 - state \"initialized\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.068958\n      ...\n    # Subtest: state \"feasibility\" has a corresponding phase file or known exception\n    ok 3 - state \"feasibility\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.042625\n      ...\n    # Subtest: state \"ambiguity-wait\" has a corresponding phase file or known exception\n    ok 4 - state \"ambiguity-wait\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.036875\n      ...\n    # Subtest: state \"lean-track-check\" has a corresponding phase file or known exception\n    ok 5 - state \"lean-track-check\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.036083\n      ...\n    # Subtest: state \"pipeline-failed\" has a corresponding phase file or known exception\n    ok 6 - state \"pipeline-failed\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.030166\n      ...\n    # Subtest: state \"lean-track-implementation\" has a corresponding phase file or known exception\n    ok 7 - state \"lean-track-implementation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.06875\n      ...\n    # Subtest: state \"design\" has a corresponding phase file or known exception\n    ok 8 - state \"design\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.033541\n      ...\n    # Subtest: state \"validation\" has a corresponding phase file or known exception\n    ok 9 - state \"validation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.11225\n      ...\n    # Subtest: state \"escalate-code\" has a corresponding phase file or known exception\n    ok 10 - state \"escalate-code\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.076791\n      ...\n    # Subtest: state \"design-review\" has a corresponding phase file or known exception\n    ok 11 - state \"design-review\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.042542\n      ...\n    # Subtest: state \"verification\" has a corresponding phase file or known exception\n    ok 12 - state \"verification\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.030792\n      ...\n    # Subtest: state \"test-strategy\" has a corresponding phase file or known exception\n    ok 13 - state \"test-strategy\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.339542\n      ...\n    # Subtest: state \"implementation\" has a corresponding phase file or known exception\n    ok 14 - state \"implementation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.033667\n      ...\n    # Subtest: state \"self-review\" has a corresponding phase file or known exception\n    ok 15 - state \"self-review\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.088209\n      ...\n    # Subtest: state \"code-review\" has a corresponding phase file or known exception\n    ok 16 - state \"code-review\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.030459\n      ...\n    # Subtest: state \"permissions-check\" has a corresponding phase file or known exception\n    ok 17 - state \"permissions-check\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.030125\n      ...\n    # Subtest: state \"pr-creation\" has a corresponding phase file or known exception\n    ok 18 - state \"pr-creation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.084792\n      ...\n    # Subtest: state \"escalate-validation\" has a corresponding phase file or known exception\n    ok 19 - state \"escalate-validation\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.060167\n      ...\n    # Subtest: state \"approval-wait\" has a corresponding phase file or known exception\n    ok 20 - state \"approval-wait\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.031042\n      ...\n    # Subtest: state \"completed\" has a corresponding phase file or known exception\n    ok 21 - state \"completed\" has a corresponding phase file or known exception\n      ---\n      duration_ms: 0.026459\n      ...\n    1..21\nok 1 - claude-md-consistency: state machine transitions match phase files\n  ---\n  duration_ms: 2.357375\n  type: 'suite'\n  ...\n# Subtest: claude-md-consistency: artifact table states are in transition block\n    # Subtest: extracted artifact table states\n    ok 1 - extracted artifact table states\n      ---\n      duration_ms: 0.065083\n      ...\n    # Subtest: artifact table state \"feasibility\" appears in transition block\n    ok 2 - artifact table state \"feasibility\" appears in transition block\n      ---\n      duration_ms: 0.021959\n      ...\n    # Subtest: artifact table state \"ambiguity-wait\" appears in transition block\n    ok 3 - artifact table state \"ambiguity-wait\" appears in transition block\n      ---\n      duration_ms: 0.01675\n      ...\n    # Subtest: artifact table state \"lean-track-check\" appears in transition block\n    ok 4 - artifact table state \"lean-track-check\" appears in transition block\n      ---\n      duration_ms: 0.016292\n      ...\n    # Subtest: artifact table state \"lean-track-implementation\" appears in transition block\n    ok 5 - artifact table state \"lean-track-implementation\" appears in transition block\n      ---\n      duration_ms: 0.015958\n      ...\n    # Subtest: artifact table state \"design\" appears in transition block\n    ok 6 - artifact table state \"design\" appears in transition block\n      ---\n      duration_ms: 0.019\n      ...\n    # Subtest: artifact table state \"design-review\" appears in transition block\n    ok 7 - artifact table state \"design-review\" appears in transition block\n      ---\n      duration_ms: 0.015916\n      ...\n    # Subtest: artifact table state \"verification\" appears in transition block\n    ok 8 - artifact table state \"verification\" appears in transition block\n      ---\n      duration_ms: 0.015167\n      ...\n    # Subtest: artifact table state \"test-strategy\" appears in transition block\n    ok 9 - artifact table state \"test-strategy\" appears in transition block\n      ---\n      duration_ms: 0.080917\n      ...\n    # Subtest: artifact table state \"implementation\" appears in transition block\n    ok 10 - artifact table state \"implementation\" appears in transition block\n      ---\n      duration_ms: 0.017334\n      ...\n    # Subtest: artifact table state \"self-review\" appears in transition block\n    ok 11 - artifact table state \"self-review\" appears in transition block\n      ---\n      duration_ms: 0.041833\n      ...\n    # Subtest: artifact table state \"code-review\" appears in transition block\n    ok 12 - artifact table state \"code-review\" appears in transition block\n      ---\n      duration_ms: 0.017708\n      ...\n    # Subtest: artifact table state \"permissions-check\" appears in transition block\n    ok 13 - artifact table state \"permissions-check\" appears in transition block\n      ---\n      duration_ms: 0.018875\n      ...\n    # Subtest: artifact table state \"validation\" appears in transition block\n    ok 14 - artifact table state \"validation\" appears in transition block\n      ---\n      duration_ms: 0.015416\n      ...\n    # Subtest: artifact table state \"pr-creation\" appears in transition block\n    ok 15 - artifact table state \"pr-creation\" appears in transition block\n      ---\n      duration_ms: 0.016\n      ...\n    # Subtest: artifact table state \"approval-wait\" appears in transition block\n    ok 16 - artifact table state \"approval-wait\" appears in transition block\n      ---\n      duration_ms: 0.016416\n      ...\n    # Subtest: artifact table state \"completed\" appears in transition block\n    ok 17 - artifact table state \"completed\" appears in transition block\n      ---\n      duration_ms: 0.105458\n      ...\n    # Subtest: artifact table state \"escalate-code\" appears in transition block\n    ok 18 - artifact table state \"escalate-code\" appears in transition block\n      ---\n      duration_ms: 0.016625\n      ...\n    # Subtest: artifact table state \"escalate-validation\" appears in transition block\n    ok 19 - artifact table state \"escalate-validation\" appears in transition block\n      ---\n      duration_ms: 0.015459\n      ...\n    # Subtest: artifact table state \"pipeline-failed\" appears in transition block\n    ok 20 - artifact table state \"pipeline-failed\" appears in transition block\n      ---\n      duration_ms: 0.016\n      ...\n    1..20\nok 2 - claude-md-consistency: artifact table states are in transition block\n  ---\n  duration_ms: 0.683625\n  type: 'suite'\n  ...\n# Subtest: claude-md-consistency: core mirror and deferred reference\n    # Subtest: CLAUDE.md references deferred hypervisor policy\n    ok 1 - CLAUDE.md references deferred hypervisor policy\n      ---\n      duration_ms: 0.071708\n      ...\n    # Subtest: CLAUDE.md contains cache boundary marker\n    ok 2 - CLAUDE.md contains cache boundary marker\n      ---\n      duration_ms: 0.021292\n      ...\n    # Subtest: deferred reference file exists\n    ok 3 - deferred reference file exists\n      ---\n      duration_ms: 0.024334\n      ...\n    # Subtest: AGENTS.md mirrors transition block from CLAUDE.md\n    ok 4 - AGENTS.md mirrors transition block from CLAUDE.md\n      ---\n      duration_ms: 0.11675\n      ...\n    # Subtest: core CLAUDE.md is smaller than full backup\n    ok 5 - core CLAUDE.md is smaller than full backup\n      ---\n      duration_ms: 0.142208\n      ...\n    1..5\nok 3 - claude-md-consistency: core mirror and deferred reference\n  ---\n  duration_ms: 0.428542\n  type: 'suite'\n  ...\n1..3\n# tests 46\n# suites 3\n# pass 46\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 66.932125\n"
+          }
+        ],
+        "fingerprint": "a0e8fe33009b493472530aa57c1acc8a666a971e4a73084a8b2ee9e9268211d5",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-goal-engine",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/goal-engine.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: goal engine edges\n    # Subtest: loads canonical outer edges + terminal + gates\n    ok 1 - loads canonical outer edges + terminal + gates\n      ---\n      duration_ms: 0.641458\n      ...\n    # Subtest: allows a valid edge and rejects an invalid one\n    ok 2 - allows a valid edge and rejects an invalid one\n      ---\n      duration_ms: 0.09525\n      ...\n    1..2\nok 1 - goal engine edges\n  ---\n  duration_ms: 1.208708\n  type: 'suite'\n  ...\n# Subtest: goal shape validation\n    # Subtest: accepts the template shape\n    ok 1 - accepts the template shape\n      ---\n      duration_ms: 1.5185\n      ...\n    # Subtest: rejects a goal missing required fields\n    ok 2 - rejects a goal missing required fields\n      ---\n      duration_ms: 0.048166\n      ...\n    1..2\nok 2 - goal shape validation\n  ---\n  duration_ms: 1.624625\n  type: 'suite'\n  ...\n# Subtest: goal transition apply\n    # Subtest: commits a legal transition and appends history\n    ok 1 - commits a legal transition and appends history\n      ---\n      duration_ms: 1.071084\n      ...\n    # Subtest: rejects an illegal transition without mutating goal.json\n    ok 2 - rejects an illegal transition without mutating goal.json\n      ---\n      duration_ms: 0.478333\n      ...\n    # Subtest: dry-run does not mutate goal.json\n    ok 3 - dry-run does not mutate goal.json\n      ---\n      duration_ms: 0.620625\n      ...\n    1..3\nok 3 - goal transition apply\n  ---\n  duration_ms: 2.296125\n  type: 'suite'\n  ...\n# Subtest: goal-engine CLI\n    # Subtest: init creates goal.json; illegal transition exits non-zero, legal exits zero\n    ok 1 - init creates goal.json; illegal transition exits non-zero, legal exits zero\n      ---\n      duration_ms: 149.589125\n      ...\n    1..1\nok 4 - goal-engine CLI\n  ---\n  duration_ms: 149.666458\n  type: 'suite'\n  ...\n1..4\n# tests 8\n# suites 4\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 214.979333\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/goal-engine.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: goal engine edges\n    # Subtest: loads canonical outer edges + terminal + gates\n    ok 1 - loads canonical outer edges + terminal + gates\n      ---\n      duration_ms: 0.744\n      ...\n    # Subtest: allows a valid edge and rejects an invalid one\n    ok 2 - allows a valid edge and rejects an invalid one\n      ---\n      duration_ms: 0.065166\n      ...\n    1..2\nok 1 - goal engine edges\n  ---\n  duration_ms: 1.251583\n  type: 'suite'\n  ...\n# Subtest: goal shape validation\n    # Subtest: accepts the template shape\n    ok 1 - accepts the template shape\n      ---\n      duration_ms: 1.598917\n      ...\n    # Subtest: rejects a goal missing required fields\n    ok 2 - rejects a goal missing required fields\n      ---\n      duration_ms: 0.052375\n      ...\n    1..2\nok 2 - goal shape validation\n  ---\n  duration_ms: 1.712334\n  type: 'suite'\n  ...\n# Subtest: goal transition apply\n    # Subtest: commits a legal transition and appends history\n    ok 1 - commits a legal transition and appends history\n      ---\n      duration_ms: 0.988625\n      ...\n    # Subtest: rejects an illegal transition without mutating goal.json\n    ok 2 - rejects an illegal transition without mutating goal.json\n      ---\n      duration_ms: 0.480084\n      ...\n    # Subtest: dry-run does not mutate goal.json\n    ok 3 - dry-run does not mutate goal.json\n      ---\n      duration_ms: 0.553\n      ...\n    1..3\nok 3 - goal transition apply\n  ---\n  duration_ms: 2.155375\n  type: 'suite'\n  ...\n# Subtest: goal-engine CLI\n    # Subtest: init creates goal.json; illegal transition exits non-zero, legal exits zero\n    ok 1 - init creates goal.json; illegal transition exits non-zero, legal exits zero\n      ---\n      duration_ms: 156.686125\n      ...\n    1..1\nok 4 - goal-engine CLI\n  ---\n  duration_ms: 156.753334\n  type: 'suite'\n  ...\n1..4\n# tests 8\n# suites 4\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 222.279292\n"
+          }
+        ],
+        "fingerprint": "768362663e48143a0257725b2380ba06532216a76835a84391a693eb1a6b8ac7",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-install-tree",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/install-tree.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: plugin layout: pipeline dirs at repository root\n    # Subtest: commands/ exists and is non-empty\n    ok 1 - commands/ exists and is non-empty\n      ---\n      duration_ms: 0.576\n      ...\n    # Subtest: phases/ exists and is non-empty\n    ok 2 - phases/ exists and is non-empty\n      ---\n      duration_ms: 0.141959\n      ...\n    # Subtest: agents/ exists and is non-empty\n    ok 3 - agents/ exists and is non-empty\n      ---\n      duration_ms: 0.095417\n      ...\n    # Subtest: templates/ exists and is non-empty\n    ok 4 - templates/ exists and is non-empty\n      ---\n      duration_ms: 0.112541\n      ...\n    # Subtest: references/ exists and is non-empty\n    ok 5 - references/ exists and is non-empty\n      ---\n      duration_ms: 0.126208\n      ...\n    # Subtest: agents/plugin-runtime/subagent-catalog exists and has markdown\n    ok 6 - agents/plugin-runtime/subagent-catalog exists and has markdown\n      ---\n      duration_ms: 0.184583\n      ...\n    # Subtest: state-machine.json exists at repo root\n    ok 7 - state-machine.json exists at repo root\n      ---\n      duration_ms: 0.158209\n      ...\n    # Subtest: .claude-plugin/plugin.json exists and names the plugin\n    ok 8 - .claude-plugin/plugin.json exists and names the plugin\n      ---\n      duration_ms: 0.090208\n      ...\n    # Subtest: hooks/hooks.json exists\n    ok 9 - hooks/hooks.json exists\n      ---\n      duration_ms: 0.093041\n      ...\n    # Subtest: plugin.json uses default commands/agents discovery (no directory overrides)\n    ok 10 - plugin.json uses default commands/agents discovery (no directory overrides)\n      ---\n      duration_ms: 0.1895\n      ...\n    1..10\nok 1 - plugin layout: pipeline dirs at repository root\n  ---\n  duration_ms: 2.706083\n  type: 'suite'\n  ...\n1..1\n# tests 10\n# suites 1\n# pass 10\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 60.276083\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/install-tree.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: plugin layout: pipeline dirs at repository root\n    # Subtest: commands/ exists and is non-empty\n    ok 1 - commands/ exists and is non-empty\n      ---\n      duration_ms: 0.515667\n      ...\n    # Subtest: phases/ exists and is non-empty\n    ok 2 - phases/ exists and is non-empty\n      ---\n      duration_ms: 0.183333\n      ...\n    # Subtest: agents/ exists and is non-empty\n    ok 3 - agents/ exists and is non-empty\n      ---\n      duration_ms: 0.170042\n      ...\n    # Subtest: templates/ exists and is non-empty\n    ok 4 - templates/ exists and is non-empty\n      ---\n      duration_ms: 0.146167\n      ...\n    # Subtest: references/ exists and is non-empty\n    ok 5 - references/ exists and is non-empty\n      ---\n      duration_ms: 0.190459\n      ...\n    # Subtest: agents/plugin-runtime/subagent-catalog exists and has markdown\n    ok 6 - agents/plugin-runtime/subagent-catalog exists and has markdown\n      ---\n      duration_ms: 0.249417\n      ...\n    # Subtest: state-machine.json exists at repo root\n    ok 7 - state-machine.json exists at repo root\n      ---\n      duration_ms: 0.161625\n      ...\n    # Subtest: .claude-plugin/plugin.json exists and names the plugin\n    ok 8 - .claude-plugin/plugin.json exists and names the plugin\n      ---\n      duration_ms: 0.138125\n      ...\n    # Subtest: hooks/hooks.json exists\n    ok 9 - hooks/hooks.json exists\n      ---\n      duration_ms: 0.10675\n      ...\n    # Subtest: plugin.json uses default commands/agents discovery (no directory overrides)\n    ok 10 - plugin.json uses default commands/agents discovery (no directory overrides)\n      ---\n      duration_ms: 0.269375\n      ...\n    1..10\nok 1 - plugin layout: pipeline dirs at repository root\n  ---\n  duration_ms: 3.095917\n  type: 'suite'\n  ...\n1..1\n# tests 10\n# suites 1\n# pass 10\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 67.910917\n"
+          }
+        ],
+        "fingerprint": "1d3ea07ead2fbc028af3f5e9cbf211fcb65c57891d222c6566145e94121b8b5c",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-memory-config",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/memory-config.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: memory config\n    # Subtest: default JSON validates against schema\n    ok 1 - default JSON validates against schema\n      ---\n      duration_ms: 22.734292\n      ...\n    # Subtest: loadMergedMemoryConfig returns defaults from pack\n    ok 2 - loadMergedMemoryConfig returns defaults from pack\n      ---\n      duration_ms: 0.264458\n      ...\n    # Subtest: sqlitePathForProject joins directory and file\n    ok 3 - sqlitePathForProject joins directory and file\n      ---\n      duration_ms: 0.181292\n      ...\n    1..3\nok 1 - memory config\n  ---\n  duration_ms: 23.66575\n  type: 'suite'\n  ...\n1..1\n# tests 3\n# suites 1\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 110.776375\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/memory-config.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: memory config\n    # Subtest: default JSON validates against schema\n    ok 1 - default JSON validates against schema\n      ---\n      duration_ms: 21.903417\n      ...\n    # Subtest: loadMergedMemoryConfig returns defaults from pack\n    ok 2 - loadMergedMemoryConfig returns defaults from pack\n      ---\n      duration_ms: 0.330792\n      ...\n    # Subtest: sqlitePathForProject joins directory and file\n    ok 3 - sqlitePathForProject joins directory and file\n      ---\n      duration_ms: 0.223292\n      ...\n    1..3\nok 1 - memory config\n  ---\n  duration_ms: 22.916\n  type: 'suite'\n  ...\n1..1\n# tests 3\n# suites 1\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 107.070958\n"
+          }
+        ],
+        "fingerprint": "42c006702b30ae6fa891c3cc29af809521bdbd6c757333fb042e95559170ebc0",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-owai",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/owai-conformance.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: OWAI conformance\n    # Subtest: L1 passes with valid state.json + required files\n    ok 1 - L1 passes with valid state.json + required files\n      ---\n      duration_ms: 15.933125\n      ...\n    # Subtest: L1 fails without state.json\n    ok 2 - L1 fails without state.json\n      ---\n      duration_ms: 0.462167\n      ...\n    # Subtest: L2 fails with empty history\n    ok 3 - L2 fails with empty history\n      ---\n      duration_ms: 7.787\n      ...\n    # Subtest: L3 detects inconsistent history chain\n    ok 4 - L3 detects inconsistent history chain\n      ---\n      duration_ms: 5.921292\n      ...\n    1..4\nok 1 - OWAI conformance\n  ---\n  duration_ms: 30.622083\n  type: 'suite'\n  ...\n1..1\n# tests 4\n# suites 1\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 114.247333\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/owai-conformance.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: OWAI conformance\n    # Subtest: L1 passes with valid state.json + required files\n    ok 1 - L1 passes with valid state.json + required files\n      ---\n      duration_ms: 15.058542\n      ...\n    # Subtest: L1 fails without state.json\n    ok 2 - L1 fails without state.json\n      ---\n      duration_ms: 0.47975\n      ...\n    # Subtest: L2 fails with empty history\n    ok 3 - L2 fails with empty history\n      ---\n      duration_ms: 7.361167\n      ...\n    # Subtest: L3 detects inconsistent history chain\n    ok 4 - L3 detects inconsistent history chain\n      ---\n      duration_ms: 6.207667\n      ...\n    1..4\nok 1 - OWAI conformance\n  ---\n  duration_ms: 29.574791\n  type: 'suite'\n  ...\n1..1\n# tests 4\n# suites 1\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 109.594083\n"
+          }
+        ],
+        "fingerprint": "e8ae8dae28b354d00a37f903d66e9bf5cb091c5dd965b59dea0ed4a9af9753fb",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-phase-anatomy",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/phase-anatomy.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: Phase anatomy lint\n    # Subtest: ambiguity-wait.md has required sections\n    ok 1 - ambiguity-wait.md has required sections\n      ---\n      duration_ms: 0.926875\n      ...\n    # Subtest: ambiguity-wait.md has a Rationalization table with at least one row\n    ok 2 - ambiguity-wait.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.175166\n      ...\n    # Subtest: ambiguity-wait.md has at least one Red Flag bullet\n    ok 3 - ambiguity-wait.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.139666\n      ...\n    # Subtest: approval-wait.md has required sections\n    ok 4 - approval-wait.md has required sections\n      ---\n      duration_ms: 0.123917\n      ...\n    # Subtest: approval-wait.md has a Rationalization table with at least one row\n    ok 5 - approval-wait.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.154583\n      ...\n    # Subtest: approval-wait.md has at least one Red Flag bullet\n    ok 6 - approval-wait.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.120666\n      ...\n    # Subtest: code-review.md has required sections\n    ok 7 - code-review.md has required sections\n      ---\n      duration_ms: 0.110625\n      ...\n    # Subtest: code-review.md has a Rationalization table with at least one row\n    ok 8 - code-review.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.100333\n      ...\n    # Subtest: code-review.md has at least one Red Flag bullet\n    ok 9 - code-review.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.152334\n      ...\n    # Subtest: design-review.md has required sections\n    ok 10 - design-review.md has required sections\n      ---\n      duration_ms: 0.147375\n      ...\n    # Subtest: design-review.md has a Rationalization table with at least one row\n    ok 11 - design-review.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.135291\n      ...\n    # Subtest: design-review.md has at least one Red Flag bullet\n    ok 12 - design-review.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.092584\n      ...\n    # Subtest: design.md has required sections\n    ok 13 - design.md has required sections\n      ---\n      duration_ms: 0.136542\n      ...\n    # Subtest: design.md has a Rationalization table with at least one row\n    ok 14 - design.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.100083\n      ...\n    # Subtest: design.md has at least one Red Flag bullet\n    ok 15 - design.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.151417\n      ...\n    # Subtest: escalate-code.md has required sections\n    ok 16 - escalate-code.md has required sections\n      ---\n      duration_ms: 0.128541\n      ...\n    # Subtest: escalate-code.md has a Rationalization table with at least one row\n    ok 17 - escalate-code.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.105083\n      ...\n    # Subtest: escalate-code.md has at least one Red Flag bullet\n    ok 18 - escalate-code.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.177208\n      ...\n    # Subtest: escalate-validation.md has required sections\n    ok 19 - escalate-validation.md has required sections\n      ---\n      duration_ms: 0.114583\n      ...\n    # Subtest: escalate-validation.md has a Rationalization table with at least one row\n    ok 20 - escalate-validation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.086625\n      ...\n    # Subtest: escalate-validation.md has at least one Red Flag bullet\n    ok 21 - escalate-validation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.111917\n      ...\n    # Subtest: feasibility.md has required sections\n    ok 22 - feasibility.md has required sections\n      ---\n      duration_ms: 0.095542\n      ...\n    # Subtest: feasibility.md has a Rationalization table with at least one row\n    ok 23 - feasibility.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.088958\n      ...\n    # Subtest: feasibility.md has at least one Red Flag bullet\n    ok 24 - feasibility.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.080625\n      ...\n    # Subtest: implementation.md has required sections\n    ok 25 - implementation.md has required sections\n      ---\n      duration_ms: 0.087083\n      ...\n    # Subtest: implementation.md has a Rationalization table with at least one row\n    ok 26 - implementation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.079792\n      ...\n    # Subtest: implementation.md has at least one Red Flag bullet\n    ok 27 - implementation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.088542\n      ...\n    # Subtest: initialized.md has required sections\n    ok 28 - initialized.md has required sections\n      ---\n      duration_ms: 0.10125\n      ...\n    # Subtest: initialized.md has a Rationalization table with at least one row\n    ok 29 - initialized.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.092875\n      ...\n    # Subtest: initialized.md has at least one Red Flag bullet\n    ok 30 - initialized.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.074709\n      ...\n    # Subtest: lean-track-check.md has required sections\n    ok 31 - lean-track-check.md has required sections\n      ---\n      duration_ms: 0.096041\n      ...\n    # Subtest: lean-track-check.md has a Rationalization table with at least one row\n    ok 32 - lean-track-check.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.138792\n      ...\n    # Subtest: lean-track-check.md has at least one Red Flag bullet\n    ok 33 - lean-track-check.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.088542\n      ...\n    # Subtest: lean-track-implementation.md has required sections\n    ok 34 - lean-track-implementation.md has required sections\n      ---\n      duration_ms: 0.316\n      ...\n    # Subtest: lean-track-implementation.md has a Rationalization table with at least one row\n    ok 35 - lean-track-implementation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.136209\n      ...\n    # Subtest: lean-track-implementation.md has at least one Red Flag bullet\n    ok 36 - lean-track-implementation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.176709\n      ...\n    # Subtest: merge-completion.md has required sections\n    ok 37 - merge-completion.md has required sections\n      ---\n      duration_ms: 0.084\n      ...\n    # Subtest: merge-completion.md has a Rationalization table with at least one row\n    ok 38 - merge-completion.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.082958\n      ...\n    # Subtest: merge-completion.md has at least one Red Flag bullet\n    ok 39 - merge-completion.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.076417\n      ...\n    # Subtest: permissions-check.md has required sections\n    ok 40 - permissions-check.md has required sections\n      ---\n      duration_ms: 0.075916\n      ...\n    # Subtest: permissions-check.md has a Rationalization table with at least one row\n    ok 41 - permissions-check.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.073083\n      ...\n    # Subtest: permissions-check.md has at least one Red Flag bullet\n    ok 42 - permissions-check.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.074583\n      ...\n    # Subtest: pipeline-failed.md has required sections\n    ok 43 - pipeline-failed.md has required sections\n      ---\n      duration_ms: 0.072334\n      ...\n    # Subtest: pipeline-failed.md has a Rationalization table with at least one row\n    ok 44 - pipeline-failed.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.078791\n      ...\n    # Subtest: pipeline-failed.md has at least one Red Flag bullet\n    ok 45 - pipeline-failed.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.075125\n      ...\n    # Subtest: pr-creation.md has required sections\n    ok 46 - pr-creation.md has required sections\n      ---\n      duration_ms: 0.078542\n      ...\n    # Subtest: pr-creation.md has a Rationalization table with at least one row\n    ok 47 - pr-creation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.086209\n      ...\n    # Subtest: pr-creation.md has at least one Red Flag bullet\n    ok 48 - pr-creation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.077666\n      ...\n    # Subtest: self-review.md has required sections\n    ok 49 - self-review.md has required sections\n      ---\n      duration_ms: 0.132209\n      ...\n    # Subtest: self-review.md has a Rationalization table with at least one row\n    ok 50 - self-review.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.069791\n      ...\n    # Subtest: self-review.md has at least one Red Flag bullet\n    ok 51 - self-review.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.076417\n      ...\n    # Subtest: test-strategy.md has required sections\n    ok 52 - test-strategy.md has required sections\n      ---\n      duration_ms: 0.149958\n      ...\n    # Subtest: test-strategy.md has a Rationalization table with at least one row\n    ok 53 - test-strategy.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.072834\n      ...\n    # Subtest: test-strategy.md has at least one Red Flag bullet\n    ok 54 - test-strategy.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.070541\n      ...\n    # Subtest: validation.md has required sections\n    ok 55 - validation.md has required sections\n      ---\n      duration_ms: 0.128542\n      ...\n    # Subtest: validation.md has a Rationalization table with at least one row\n    ok 56 - validation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.089125\n      ...\n    # Subtest: validation.md has at least one Red Flag bullet\n    ok 57 - validation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.076583\n      ...\n    # Subtest: verification.md has required sections\n    ok 58 - verification.md has required sections\n      ---\n      duration_ms: 0.072208\n      ...\n    # Subtest: verification.md has a Rationalization table with at least one row\n    ok 59 - verification.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.066625\n      ...\n    # Subtest: verification.md has at least one Red Flag bullet\n    ok 60 - verification.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.065541\n      ...\n    1..60\nok 1 - Phase anatomy lint\n  ---\n  duration_ms: 8.425042\n  type: 'suite'\n  ...\n1..1\n# tests 60\n# suites 1\n# pass 60\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 77.76\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/phase-anatomy.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: Phase anatomy lint\n    # Subtest: ambiguity-wait.md has required sections\n    ok 1 - ambiguity-wait.md has required sections\n      ---\n      duration_ms: 1.000167\n      ...\n    # Subtest: ambiguity-wait.md has a Rationalization table with at least one row\n    ok 2 - ambiguity-wait.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.155459\n      ...\n    # Subtest: ambiguity-wait.md has at least one Red Flag bullet\n    ok 3 - ambiguity-wait.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.125958\n      ...\n    # Subtest: approval-wait.md has required sections\n    ok 4 - approval-wait.md has required sections\n      ---\n      duration_ms: 0.106958\n      ...\n    # Subtest: approval-wait.md has a Rationalization table with at least one row\n    ok 5 - approval-wait.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.118458\n      ...\n    # Subtest: approval-wait.md has at least one Red Flag bullet\n    ok 6 - approval-wait.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.106291\n      ...\n    # Subtest: code-review.md has required sections\n    ok 7 - code-review.md has required sections\n      ---\n      duration_ms: 0.102875\n      ...\n    # Subtest: code-review.md has a Rationalization table with at least one row\n    ok 8 - code-review.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.100083\n      ...\n    # Subtest: code-review.md has at least one Red Flag bullet\n    ok 9 - code-review.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.148416\n      ...\n    # Subtest: design-review.md has required sections\n    ok 10 - design-review.md has required sections\n      ---\n      duration_ms: 0.145375\n      ...\n    # Subtest: design-review.md has a Rationalization table with at least one row\n    ok 11 - design-review.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.148458\n      ...\n    # Subtest: design-review.md has at least one Red Flag bullet\n    ok 12 - design-review.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.097708\n      ...\n    # Subtest: design.md has required sections\n    ok 13 - design.md has required sections\n      ---\n      duration_ms: 0.127\n      ...\n    # Subtest: design.md has a Rationalization table with at least one row\n    ok 14 - design.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.08975\n      ...\n    # Subtest: design.md has at least one Red Flag bullet\n    ok 15 - design.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.130125\n      ...\n    # Subtest: escalate-code.md has required sections\n    ok 16 - escalate-code.md has required sections\n      ---\n      duration_ms: 0.0885\n      ...\n    # Subtest: escalate-code.md has a Rationalization table with at least one row\n    ok 17 - escalate-code.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.130667\n      ...\n    # Subtest: escalate-code.md has at least one Red Flag bullet\n    ok 18 - escalate-code.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.197833\n      ...\n    # Subtest: escalate-validation.md has required sections\n    ok 19 - escalate-validation.md has required sections\n      ---\n      duration_ms: 0.121125\n      ...\n    # Subtest: escalate-validation.md has a Rationalization table with at least one row\n    ok 20 - escalate-validation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.087584\n      ...\n    # Subtest: escalate-validation.md has at least one Red Flag bullet\n    ok 21 - escalate-validation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.112084\n      ...\n    # Subtest: feasibility.md has required sections\n    ok 22 - feasibility.md has required sections\n      ---\n      duration_ms: 0.096042\n      ...\n    # Subtest: feasibility.md has a Rationalization table with at least one row\n    ok 23 - feasibility.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.083917\n      ...\n    # Subtest: feasibility.md has at least one Red Flag bullet\n    ok 24 - feasibility.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.082\n      ...\n    # Subtest: implementation.md has required sections\n    ok 25 - implementation.md has required sections\n      ---\n      duration_ms: 0.087\n      ...\n    # Subtest: implementation.md has a Rationalization table with at least one row\n    ok 26 - implementation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.083625\n      ...\n    # Subtest: implementation.md has at least one Red Flag bullet\n    ok 27 - implementation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.081417\n      ...\n    # Subtest: initialized.md has required sections\n    ok 28 - initialized.md has required sections\n      ---\n      duration_ms: 0.078125\n      ...\n    # Subtest: initialized.md has a Rationalization table with at least one row\n    ok 29 - initialized.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.069375\n      ...\n    # Subtest: initialized.md has at least one Red Flag bullet\n    ok 30 - initialized.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.076208\n      ...\n    # Subtest: lean-track-check.md has required sections\n    ok 31 - lean-track-check.md has required sections\n      ---\n      duration_ms: 0.074292\n      ...\n    # Subtest: lean-track-check.md has a Rationalization table with at least one row\n    ok 32 - lean-track-check.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.111917\n      ...\n    # Subtest: lean-track-check.md has at least one Red Flag bullet\n    ok 33 - lean-track-check.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.07975\n      ...\n    # Subtest: lean-track-implementation.md has required sections\n    ok 34 - lean-track-implementation.md has required sections\n      ---\n      duration_ms: 0.095709\n      ...\n    # Subtest: lean-track-implementation.md has a Rationalization table with at least one row\n    ok 35 - lean-track-implementation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.383416\n      ...\n    # Subtest: lean-track-implementation.md has at least one Red Flag bullet\n    ok 36 - lean-track-implementation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.184875\n      ...\n    # Subtest: merge-completion.md has required sections\n    ok 37 - merge-completion.md has required sections\n      ---\n      duration_ms: 0.089667\n      ...\n    # Subtest: merge-completion.md has a Rationalization table with at least one row\n    ok 38 - merge-completion.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.090083\n      ...\n    # Subtest: merge-completion.md has at least one Red Flag bullet\n    ok 39 - merge-completion.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.078416\n      ...\n    # Subtest: permissions-check.md has required sections\n    ok 40 - permissions-check.md has required sections\n      ---\n      duration_ms: 0.079792\n      ...\n    # Subtest: permissions-check.md has a Rationalization table with at least one row\n    ok 41 - permissions-check.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.079791\n      ...\n    # Subtest: permissions-check.md has at least one Red Flag bullet\n    ok 42 - permissions-check.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.074834\n      ...\n    # Subtest: pipeline-failed.md has required sections\n    ok 43 - pipeline-failed.md has required sections\n      ---\n      duration_ms: 0.076375\n      ...\n    # Subtest: pipeline-failed.md has a Rationalization table with at least one row\n    ok 44 - pipeline-failed.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.070958\n      ...\n    # Subtest: pipeline-failed.md has at least one Red Flag bullet\n    ok 45 - pipeline-failed.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.068792\n      ...\n    # Subtest: pr-creation.md has required sections\n    ok 46 - pr-creation.md has required sections\n      ---\n      duration_ms: 0.075708\n      ...\n    # Subtest: pr-creation.md has a Rationalization table with at least one row\n    ok 47 - pr-creation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.088833\n      ...\n    # Subtest: pr-creation.md has at least one Red Flag bullet\n    ok 48 - pr-creation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.075459\n      ...\n    # Subtest: self-review.md has required sections\n    ok 49 - self-review.md has required sections\n      ---\n      duration_ms: 0.124792\n      ...\n    # Subtest: self-review.md has a Rationalization table with at least one row\n    ok 50 - self-review.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.071125\n      ...\n    # Subtest: self-review.md has at least one Red Flag bullet\n    ok 51 - self-review.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.070833\n      ...\n    # Subtest: test-strategy.md has required sections\n    ok 52 - test-strategy.md has required sections\n      ---\n      duration_ms: 0.088084\n      ...\n    # Subtest: test-strategy.md has a Rationalization table with at least one row\n    ok 53 - test-strategy.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.076459\n      ...\n    # Subtest: test-strategy.md has at least one Red Flag bullet\n    ok 54 - test-strategy.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.092\n      ...\n    # Subtest: validation.md has required sections\n    ok 55 - validation.md has required sections\n      ---\n      duration_ms: 0.102042\n      ...\n    # Subtest: validation.md has a Rationalization table with at least one row\n    ok 56 - validation.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.076208\n      ...\n    # Subtest: validation.md has at least one Red Flag bullet\n    ok 57 - validation.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.082125\n      ...\n    # Subtest: verification.md has required sections\n    ok 58 - verification.md has required sections\n      ---\n      duration_ms: 0.084375\n      ...\n    # Subtest: verification.md has a Rationalization table with at least one row\n    ok 59 - verification.md has a Rationalization table with at least one row\n      ---\n      duration_ms: 0.071209\n      ...\n    # Subtest: verification.md has at least one Red Flag bullet\n    ok 60 - verification.md has at least one Red Flag bullet\n      ---\n      duration_ms: 0.077833\n      ...\n    1..60\nok 1 - Phase anatomy lint\n  ---\n  duration_ms: 8.182416\n  type: 'suite'\n  ...\n1..1\n# tests 60\n# suites 1\n# pass 60\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 80.397917\n"
+          }
+        ],
+        "fingerprint": "373e257a02e83099accaeaa33036398c3c28c51f1402c3822c7d86d78e36783f",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-readme-badge",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/readme-version-badge.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: README version badge matches package.json version\nok 1 - README version badge matches package.json version\n  ---\n  duration_ms: 0.705833\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 58.837708\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/readme-version-badge.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: README version badge matches package.json version\nok 1 - README version badge matches package.json version\n  ---\n  duration_ms: 0.790334\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 58.436625\n"
+          }
+        ],
+        "fingerprint": "855bdd429e4a61070eb55698333b6ca4df417072cfdc2a2485d3c3fb0aedb7a7",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-references",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/references-integrity.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: references-integrity: reference files exist and are non-empty\n    # Subtest: has at least one reference file\n    ok 1 - has at least one reference file\n      ---\n      duration_ms: 0.447125\n      ...\n    # Subtest: references/adaptive-track-router.md is non-empty\n    ok 2 - references/adaptive-track-router.md is non-empty\n      ---\n      duration_ms: 0.125791\n      ...\n    # Subtest: references/authoring-pipeline-capabilities.md is non-empty\n    ok 3 - references/authoring-pipeline-capabilities.md is non-empty\n      ---\n      duration_ms: 0.165\n      ...\n    # Subtest: references/codex-tools.md is non-empty\n    ok 4 - references/codex-tools.md is non-empty\n      ---\n      duration_ms: 0.091292\n      ...\n    # Subtest: references/condition-based-waiting.md is non-empty\n    ok 5 - references/condition-based-waiting.md is non-empty\n      ---\n      duration_ms: 0.074334\n      ...\n    # Subtest: references/context-engineering.md is non-empty\n    ok 6 - references/context-engineering.md is non-empty\n      ---\n      duration_ms: 0.103292\n      ...\n    # Subtest: references/copilot-tools.md is non-empty\n    ok 7 - references/copilot-tools.md is non-empty\n      ---\n      duration_ms: 0.382709\n      ...\n    # Subtest: references/cross-model-escalation.md is non-empty\n    ok 8 - references/cross-model-escalation.md is non-empty\n      ---\n      duration_ms: 0.105125\n      ...\n    # Subtest: references/cross-repo-coordination.md is non-empty\n    ok 9 - references/cross-repo-coordination.md is non-empty\n      ---\n      duration_ms: 0.125625\n      ...\n    # Subtest: references/debugging-playbook.md is non-empty\n    ok 10 - references/debugging-playbook.md is non-empty\n      ---\n      duration_ms: 0.101208\n      ...\n    # Subtest: references/defense-in-depth.md is non-empty\n    ok 11 - references/defense-in-depth.md is non-empty\n      ---\n      duration_ms: 0.156541\n      ...\n    # Subtest: references/deprecation-and-migration.md is non-empty\n    ok 12 - references/deprecation-and-migration.md is non-empty\n      ---\n      duration_ms: 0.098625\n      ...\n    # Subtest: references/design-approaches-format.md is non-empty\n    ok 13 - references/design-approaches-format.md is non-empty\n      ---\n      duration_ms: 0.11575\n      ...\n    # Subtest: references/doubt-driven-verification.md is non-empty\n    ok 14 - references/doubt-driven-verification.md is non-empty\n      ---\n      duration_ms: 0.089125\n      ...\n    # Subtest: references/frontend-aesthetics.md is non-empty\n    ok 15 - references/frontend-aesthetics.md is non-empty\n      ---\n      duration_ms: 0.139209\n      ...\n    # Subtest: references/gemini-tools.md is non-empty\n    ok 16 - references/gemini-tools.md is non-empty\n      ---\n      duration_ms: 0.068042\n      ...\n    # Subtest: references/github-workflow.md is non-empty\n    ok 17 - references/github-workflow.md is non-empty\n      ---\n      duration_ms: 0.079875\n      ...\n    # Subtest: references/implicit-routing.md is non-empty\n    ok 18 - references/implicit-routing.md is non-empty\n      ---\n      duration_ms: 0.157166\n      ...\n    # Subtest: references/lessons-feedback-loop.md is non-empty\n    ok 19 - references/lessons-feedback-loop.md is non-empty\n      ---\n      duration_ms: 0.096208\n      ...\n    # Subtest: references/opencode-tools.md is non-empty\n    ok 20 - references/opencode-tools.md is non-empty\n      ---\n      duration_ms: 0.077875\n      ...\n    # Subtest: references/parallel-dispatch.md is non-empty\n    ok 21 - references/parallel-dispatch.md is non-empty\n      ---\n      duration_ms: 0.069417\n      ...\n    # Subtest: references/plan-quality-bar.md is non-empty\n    ok 22 - references/plan-quality-bar.md is non-empty\n      ---\n      duration_ms: 0.066333\n      ...\n    # Subtest: references/policy-as-code.md is non-empty\n    ok 23 - references/policy-as-code.md is non-empty\n      ---\n      duration_ms: 0.059208\n      ...\n    # Subtest: references/root-cause-tracing.md is non-empty\n    ok 24 - references/root-cause-tracing.md is non-empty\n      ---\n      duration_ms: 0.06325\n      ...\n    # Subtest: references/session-routing-hint.md is non-empty\n    ok 25 - references/session-routing-hint.md is non-empty\n      ---\n      duration_ms: 0.051459\n      ...\n    # Subtest: references/slicing-strategies.md is non-empty\n    ok 26 - references/slicing-strategies.md is non-empty\n      ---\n      duration_ms: 0.061833\n      ...\n    # Subtest: references/source-driven-development.md is non-empty\n    ok 27 - references/source-driven-development.md is non-empty\n      ---\n      duration_ms: 0.054417\n      ...\n    # Subtest: references/task-decomposition-guide.md is non-empty\n    ok 28 - references/task-decomposition-guide.md is non-empty\n      ---\n      duration_ms: 0.064875\n      ...\n    # Subtest: references/tdd-discipline.md is non-empty\n    ok 29 - references/tdd-discipline.md is non-empty\n      ---\n      duration_ms: 0.165375\n      ...\n    # Subtest: references/tdd-examples.md is non-empty\n    ok 30 - references/tdd-examples.md is non-empty\n      ---\n      duration_ms: 0.079042\n      ...\n    # Subtest: references/testing-anti-patterns.md is non-empty\n    ok 31 - references/testing-anti-patterns.md is non-empty\n      ---\n      duration_ms: 0.081167\n      ...\n    # Subtest: references/tooling-expectations.md is non-empty\n    ok 32 - references/tooling-expectations.md is non-empty\n      ---\n      duration_ms: 0.119584\n      ...\n    # Subtest: references/verification-standard.md is non-empty\n    ok 33 - references/verification-standard.md is non-empty\n      ---\n      duration_ms: 0.077458\n      ...\n    1..33\nok 1 - references-integrity: reference files exist and are non-empty\n  ---\n  duration_ms: 4.6605\n  type: 'suite'\n  ...\n# Subtest: references-integrity: template files exist and are non-empty\n    # Subtest: has at least one template file\n    ok 1 - has at least one template file\n      ---\n      duration_ms: 0.519166\n      ...\n    # Subtest: templates/artifact-format.md is non-empty\n    ok 2 - templates/artifact-format.md is non-empty\n      ---\n      duration_ms: 0.076167\n      ...\n    # Subtest: templates/audit.log is non-empty\n    ok 3 - templates/audit.log is non-empty\n      ---\n      duration_ms: 0.0875\n      ...\n    # Subtest: templates/capability-gaps-section.md is non-empty\n    ok 4 - templates/capability-gaps-section.md is non-empty\n      ---\n      duration_ms: 0.075917\n      ...\n    # Subtest: templates/context-pack.md is non-empty\n    ok 5 - templates/context-pack.md is non-empty\n      ---\n      duration_ms: 0.056417\n      ...\n    # Subtest: templates/cursor-rules-stub.md is non-empty\n    ok 6 - templates/cursor-rules-stub.md is non-empty\n      ---\n      duration_ms: 0.074375\n      ...\n    # Subtest: templates/evaluation-rubric.md is non-empty\n    ok 7 - templates/evaluation-rubric.md is non-empty\n      ---\n      duration_ms: 0.059083\n      ...\n    # Subtest: templates/evidence-standard.md is non-empty\n    ok 8 - templates/evidence-standard.md is non-empty\n      ---\n      duration_ms: 0.059208\n      ...\n    # Subtest: templates/goal.json is non-empty\n    ok 9 - templates/goal.json is non-empty\n      ---\n      duration_ms: 0.054292\n      ...\n    # Subtest: templates/metrics-summary.md is non-empty\n    ok 10 - templates/metrics-summary.md is non-empty\n      ---\n      duration_ms: 0.05725\n      ...\n    # Subtest: templates/new-phase-stub.md is non-empty\n    ok 11 - templates/new-phase-stub.md is non-empty\n      ---\n      duration_ms: 0.053708\n      ...\n    # Subtest: templates/nudge-event.md is non-empty\n    ok 12 - templates/nudge-event.md is non-empty\n      ---\n      duration_ms: 0.0645\n      ...\n    # Subtest: templates/phase-checklist.md is non-empty\n    ok 13 - templates/phase-checklist.md is non-empty\n      ---\n      duration_ms: 0.060333\n      ...\n    # Subtest: templates/playbook-entry.md is non-empty\n    ok 14 - templates/playbook-entry.md is non-empty\n      ---\n      duration_ms: 0.058667\n      ...\n    # Subtest: templates/progress.md is non-empty\n    ok 15 - templates/progress.md is non-empty\n      ---\n      duration_ms: 0.082709\n      ...\n    # Subtest: templates/prompts/ contains non-empty .md files\n    ok 16 - templates/prompts/ contains non-empty .md files\n      ---\n      duration_ms: 0.336792\n      ...\n    # Subtest: templates/repo-knowledge-stub.md is non-empty\n    ok 17 - templates/repo-knowledge-stub.md is non-empty\n      ---\n      duration_ms: 0.056208\n      ...\n    # Subtest: templates/spec-self-review-checklist.md is non-empty\n    ok 18 - templates/spec-self-review-checklist.md is non-empty\n      ---\n      duration_ms: 0.078209\n      ...\n    # Subtest: templates/state.json is non-empty\n    ok 19 - templates/state.json is non-empty\n      ---\n      duration_ms: 0.063042\n      ...\n    1..19\nok 2 - references-integrity: template files exist and are non-empty\n  ---\n  duration_ms: 2.16025\n  type: 'suite'\n  ...\n# Subtest: references-integrity: phase files cross-reference valid paths\n    # Subtest: phases/ambiguity-wait.md references resolve to existing files\n    ok 1 - phases/ambiguity-wait.md references resolve to existing files\n      ---\n      duration_ms: 0.193\n      ...\n    # Subtest: phases/approval-wait.md references resolve to existing files\n    ok 2 - phases/approval-wait.md references resolve to existing files\n      ---\n      duration_ms: 0.059083\n      ...\n    # Subtest: phases/code-review.md references resolve to existing files\n    ok 3 - phases/code-review.md references resolve to existing files\n      ---\n      duration_ms: 0.101375\n      ...\n    # Subtest: phases/design-review.md references resolve to existing files\n    ok 4 - phases/design-review.md references resolve to existing files\n      ---\n      duration_ms: 0.067125\n      ...\n    # Subtest: phases/design.md references resolve to existing files\n    ok 5 - phases/design.md references resolve to existing files\n      ---\n      duration_ms: 0.083584\n      ...\n    # Subtest: phases/escalate-code.md references resolve to existing files\n    ok 6 - phases/escalate-code.md references resolve to existing files\n      ---\n      duration_ms: 0.064917\n      ...\n    # Subtest: phases/escalate-validation.md references resolve to existing files\n    ok 7 - phases/escalate-validation.md references resolve to existing files\n      ---\n      duration_ms: 0.063667\n      ...\n    # Subtest: phases/feasibility.md references resolve to existing files\n    ok 8 - phases/feasibility.md references resolve to existing files\n      ---\n      duration_ms: 0.065041\n      ...\n    # Subtest: phases/implementation.md references resolve to existing files\n    ok 9 - phases/implementation.md references resolve to existing files\n      ---\n      duration_ms: 0.107583\n      ...\n    # Subtest: phases/initialized.md references resolve to existing files\n    ok 10 - phases/initialized.md references resolve to existing files\n      ---\n      duration_ms: 0.064041\n      ...\n    # Subtest: phases/lean-track-check.md references resolve to existing files\n    ok 11 - phases/lean-track-check.md references resolve to existing files\n      ---\n      duration_ms: 0.064\n      ...\n    # Subtest: phases/lean-track-implementation.md references resolve to existing files\n    ok 12 - phases/lean-track-implementation.md references resolve to existing files\n      ---\n      duration_ms: 0.075708\n      ...\n    # Subtest: phases/merge-completion.md references resolve to existing files\n    ok 13 - phases/merge-completion.md references resolve to existing files\n      ---\n      duration_ms: 0.068917\n      ...\n    # Subtest: phases/permissions-check.md references resolve to existing files\n    ok 14 - phases/permissions-check.md references resolve to existing files\n      ---\n      duration_ms: 0.074791\n      ...\n    # Subtest: phases/pipeline-failed.md references resolve to existing files\n    ok 15 - phases/pipeline-failed.md references resolve to existing files\n      ---\n      duration_ms: 0.073167\n      ...\n    # Subtest: phases/pr-creation.md references resolve to existing files\n    ok 16 - phases/pr-creation.md references resolve to existing files\n      ---\n      duration_ms: 0.083625\n      ...\n    # Subtest: phases/self-review.md references resolve to existing files\n    ok 17 - phases/self-review.md references resolve to existing files\n      ---\n      duration_ms: 0.065292\n      ...\n    # Subtest: phases/subagent-selection.md references resolve to existing files\n    ok 18 - phases/subagent-selection.md references resolve to existing files\n      ---\n      duration_ms: 0.068208\n      ...\n    # Subtest: phases/test-strategy.md references resolve to existing files\n    ok 19 - phases/test-strategy.md references resolve to existing files\n      ---\n      duration_ms: 0.066875\n      ...\n    # Subtest: phases/validation.md references resolve to existing files\n    ok 20 - phases/validation.md references resolve to existing files\n      ---\n      duration_ms: 0.113542\n      ...\n    # Subtest: phases/verification.md references resolve to existing files\n    ok 21 - phases/verification.md references resolve to existing files\n      ---\n      duration_ms: 0.067417\n      ...\n    1..21\nok 3 - references-integrity: phase files cross-reference valid paths\n  ---\n  duration_ms: 1.849291\n  type: 'suite'\n  ...\n1..3\n# tests 73\n# suites 3\n# pass 73\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 78.142542\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/references-integrity.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: references-integrity: reference files exist and are non-empty\n    # Subtest: has at least one reference file\n    ok 1 - has at least one reference file\n      ---\n      duration_ms: 0.427334\n      ...\n    # Subtest: references/adaptive-track-router.md is non-empty\n    ok 2 - references/adaptive-track-router.md is non-empty\n      ---\n      duration_ms: 0.14075\n      ...\n    # Subtest: references/authoring-pipeline-capabilities.md is non-empty\n    ok 3 - references/authoring-pipeline-capabilities.md is non-empty\n      ---\n      duration_ms: 0.130208\n      ...\n    # Subtest: references/codex-tools.md is non-empty\n    ok 4 - references/codex-tools.md is non-empty\n      ---\n      duration_ms: 0.096458\n      ...\n    # Subtest: references/condition-based-waiting.md is non-empty\n    ok 5 - references/condition-based-waiting.md is non-empty\n      ---\n      duration_ms: 0.118792\n      ...\n    # Subtest: references/context-engineering.md is non-empty\n    ok 6 - references/context-engineering.md is non-empty\n      ---\n      duration_ms: 0.085166\n      ...\n    # Subtest: references/copilot-tools.md is non-empty\n    ok 7 - references/copilot-tools.md is non-empty\n      ---\n      duration_ms: 0.404667\n      ...\n    # Subtest: references/cross-model-escalation.md is non-empty\n    ok 8 - references/cross-model-escalation.md is non-empty\n      ---\n      duration_ms: 0.079542\n      ...\n    # Subtest: references/cross-repo-coordination.md is non-empty\n    ok 9 - references/cross-repo-coordination.md is non-empty\n      ---\n      duration_ms: 0.111083\n      ...\n    # Subtest: references/debugging-playbook.md is non-empty\n    ok 10 - references/debugging-playbook.md is non-empty\n      ---\n      duration_ms: 0.087042\n      ...\n    # Subtest: references/defense-in-depth.md is non-empty\n    ok 11 - references/defense-in-depth.md is non-empty\n      ---\n      duration_ms: 0.120791\n      ...\n    # Subtest: references/deprecation-and-migration.md is non-empty\n    ok 12 - references/deprecation-and-migration.md is non-empty\n      ---\n      duration_ms: 0.082708\n      ...\n    # Subtest: references/design-approaches-format.md is non-empty\n    ok 13 - references/design-approaches-format.md is non-empty\n      ---\n      duration_ms: 0.107542\n      ...\n    # Subtest: references/doubt-driven-verification.md is non-empty\n    ok 14 - references/doubt-driven-verification.md is non-empty\n      ---\n      duration_ms: 0.081375\n      ...\n    # Subtest: references/frontend-aesthetics.md is non-empty\n    ok 15 - references/frontend-aesthetics.md is non-empty\n      ---\n      duration_ms: 0.132958\n      ...\n    # Subtest: references/gemini-tools.md is non-empty\n    ok 16 - references/gemini-tools.md is non-empty\n      ---\n      duration_ms: 0.073792\n      ...\n    # Subtest: references/github-workflow.md is non-empty\n    ok 17 - references/github-workflow.md is non-empty\n      ---\n      duration_ms: 0.065833\n      ...\n    # Subtest: references/implicit-routing.md is non-empty\n    ok 18 - references/implicit-routing.md is non-empty\n      ---\n      duration_ms: 0.148625\n      ...\n    # Subtest: references/lessons-feedback-loop.md is non-empty\n    ok 19 - references/lessons-feedback-loop.md is non-empty\n      ---\n      duration_ms: 0.091167\n      ...\n    # Subtest: references/opencode-tools.md is non-empty\n    ok 20 - references/opencode-tools.md is non-empty\n      ---\n      duration_ms: 0.059583\n      ...\n    # Subtest: references/parallel-dispatch.md is non-empty\n    ok 21 - references/parallel-dispatch.md is non-empty\n      ---\n      duration_ms: 0.063083\n      ...\n    # Subtest: references/plan-quality-bar.md is non-empty\n    ok 22 - references/plan-quality-bar.md is non-empty\n      ---\n      duration_ms: 0.070291\n      ...\n    # Subtest: references/policy-as-code.md is non-empty\n    ok 23 - references/policy-as-code.md is non-empty\n      ---\n      duration_ms: 0.058959\n      ...\n    # Subtest: references/root-cause-tracing.md is non-empty\n    ok 24 - references/root-cause-tracing.md is non-empty\n      ---\n      duration_ms: 0.0585\n      ...\n    # Subtest: references/session-routing-hint.md is non-empty\n    ok 25 - references/session-routing-hint.md is non-empty\n      ---\n      duration_ms: 0.057125\n      ...\n    # Subtest: references/slicing-strategies.md is non-empty\n    ok 26 - references/slicing-strategies.md is non-empty\n      ---\n      duration_ms: 0.08475\n      ...\n    # Subtest: references/source-driven-development.md is non-empty\n    ok 27 - references/source-driven-development.md is non-empty\n      ---\n      duration_ms: 0.086875\n      ...\n    # Subtest: references/task-decomposition-guide.md is non-empty\n    ok 28 - references/task-decomposition-guide.md is non-empty\n      ---\n      duration_ms: 0.098125\n      ...\n    # Subtest: references/tdd-discipline.md is non-empty\n    ok 29 - references/tdd-discipline.md is non-empty\n      ---\n      duration_ms: 0.173875\n      ...\n    # Subtest: references/tdd-examples.md is non-empty\n    ok 30 - references/tdd-examples.md is non-empty\n      ---\n      duration_ms: 0.067208\n      ...\n    # Subtest: references/testing-anti-patterns.md is non-empty\n    ok 31 - references/testing-anti-patterns.md is non-empty\n      ---\n      duration_ms: 0.072916\n      ...\n    # Subtest: references/tooling-expectations.md is non-empty\n    ok 32 - references/tooling-expectations.md is non-empty\n      ---\n      duration_ms: 0.120083\n      ...\n    # Subtest: references/verification-standard.md is non-empty\n    ok 33 - references/verification-standard.md is non-empty\n      ---\n      duration_ms: 0.069209\n      ...\n    1..33\nok 1 - references-integrity: reference files exist and are non-empty\n  ---\n  duration_ms: 4.51675\n  type: 'suite'\n  ...\n# Subtest: references-integrity: template files exist and are non-empty\n    # Subtest: has at least one template file\n    ok 1 - has at least one template file\n      ---\n      duration_ms: 0.378833\n      ...\n    # Subtest: templates/artifact-format.md is non-empty\n    ok 2 - templates/artifact-format.md is non-empty\n      ---\n      duration_ms: 0.083375\n      ...\n    # Subtest: templates/audit.log is non-empty\n    ok 3 - templates/audit.log is non-empty\n      ---\n      duration_ms: 0.087041\n      ...\n    # Subtest: templates/capability-gaps-section.md is non-empty\n    ok 4 - templates/capability-gaps-section.md is non-empty\n      ---\n      duration_ms: 0.092334\n      ...\n    # Subtest: templates/context-pack.md is non-empty\n    ok 5 - templates/context-pack.md is non-empty\n      ---\n      duration_ms: 0.088417\n      ...\n    # Subtest: templates/cursor-rules-stub.md is non-empty\n    ok 6 - templates/cursor-rules-stub.md is non-empty\n      ---\n      duration_ms: 0.094167\n      ...\n    # Subtest: templates/evaluation-rubric.md is non-empty\n    ok 7 - templates/evaluation-rubric.md is non-empty\n      ---\n      duration_ms: 0.088333\n      ...\n    # Subtest: templates/evidence-standard.md is non-empty\n    ok 8 - templates/evidence-standard.md is non-empty\n      ---\n      duration_ms: 0.073208\n      ...\n    # Subtest: templates/goal.json is non-empty\n    ok 9 - templates/goal.json is non-empty\n      ---\n      duration_ms: 0.058291\n      ...\n    # Subtest: templates/metrics-summary.md is non-empty\n    ok 10 - templates/metrics-summary.md is non-empty\n      ---\n      duration_ms: 0.068584\n      ...\n    # Subtest: templates/new-phase-stub.md is non-empty\n    ok 11 - templates/new-phase-stub.md is non-empty\n      ---\n      duration_ms: 0.065167\n      ...\n    # Subtest: templates/nudge-event.md is non-empty\n    ok 12 - templates/nudge-event.md is non-empty\n      ---\n      duration_ms: 0.070375\n      ...\n    # Subtest: templates/phase-checklist.md is non-empty\n    ok 13 - templates/phase-checklist.md is non-empty\n      ---\n      duration_ms: 0.066208\n      ...\n    # Subtest: templates/playbook-entry.md is non-empty\n    ok 14 - templates/playbook-entry.md is non-empty\n      ---\n      duration_ms: 0.077875\n      ...\n    # Subtest: templates/progress.md is non-empty\n    ok 15 - templates/progress.md is non-empty\n      ---\n      duration_ms: 0.093916\n      ...\n    # Subtest: templates/prompts/ contains non-empty .md files\n    ok 16 - templates/prompts/ contains non-empty .md files\n      ---\n      duration_ms: 0.331208\n      ...\n    # Subtest: templates/repo-knowledge-stub.md is non-empty\n    ok 17 - templates/repo-knowledge-stub.md is non-empty\n      ---\n      duration_ms: 0.062042\n      ...\n    # Subtest: templates/spec-self-review-checklist.md is non-empty\n    ok 18 - templates/spec-self-review-checklist.md is non-empty\n      ---\n      duration_ms: 0.054417\n      ...\n    # Subtest: templates/state.json is non-empty\n    ok 19 - templates/state.json is non-empty\n      ---\n      duration_ms: 0.055042\n      ...\n    1..19\nok 2 - references-integrity: template files exist and are non-empty\n  ---\n  duration_ms: 2.191417\n  type: 'suite'\n  ...\n# Subtest: references-integrity: phase files cross-reference valid paths\n    # Subtest: phases/ambiguity-wait.md references resolve to existing files\n    ok 1 - phases/ambiguity-wait.md references resolve to existing files\n      ---\n      duration_ms: 0.194125\n      ...\n    # Subtest: phases/approval-wait.md references resolve to existing files\n    ok 2 - phases/approval-wait.md references resolve to existing files\n      ---\n      duration_ms: 0.074542\n      ...\n    # Subtest: phases/code-review.md references resolve to existing files\n    ok 3 - phases/code-review.md references resolve to existing files\n      ---\n      duration_ms: 0.112042\n      ...\n    # Subtest: phases/design-review.md references resolve to existing files\n    ok 4 - phases/design-review.md references resolve to existing files\n      ---\n      duration_ms: 0.087\n      ...\n    # Subtest: phases/design.md references resolve to existing files\n    ok 5 - phases/design.md references resolve to existing files\n      ---\n      duration_ms: 0.0985\n      ...\n    # Subtest: phases/escalate-code.md references resolve to existing files\n    ok 6 - phases/escalate-code.md references resolve to existing files\n      ---\n      duration_ms: 0.07425\n      ...\n    # Subtest: phases/escalate-validation.md references resolve to existing files\n    ok 7 - phases/escalate-validation.md references resolve to existing files\n      ---\n      duration_ms: 0.063333\n      ...\n    # Subtest: phases/feasibility.md references resolve to existing files\n    ok 8 - phases/feasibility.md references resolve to existing files\n      ---\n      duration_ms: 0.073708\n      ...\n    # Subtest: phases/implementation.md references resolve to existing files\n    ok 9 - phases/implementation.md references resolve to existing files\n      ---\n      duration_ms: 0.128916\n      ...\n    # Subtest: phases/initialized.md references resolve to existing files\n    ok 10 - phases/initialized.md references resolve to existing files\n      ---\n      duration_ms: 0.084125\n      ...\n    # Subtest: phases/lean-track-check.md references resolve to existing files\n    ok 11 - phases/lean-track-check.md references resolve to existing files\n      ---\n      duration_ms: 0.073166\n      ...\n    # Subtest: phases/lean-track-implementation.md references resolve to existing files\n    ok 12 - phases/lean-track-implementation.md references resolve to existing files\n      ---\n      duration_ms: 0.10575\n      ...\n    # Subtest: phases/merge-completion.md references resolve to existing files\n    ok 13 - phases/merge-completion.md references resolve to existing files\n      ---\n      duration_ms: 0.074791\n      ...\n    # Subtest: phases/permissions-check.md references resolve to existing files\n    ok 14 - phases/permissions-check.md references resolve to existing files\n      ---\n      duration_ms: 0.081916\n      ...\n    # Subtest: phases/pipeline-failed.md references resolve to existing files\n    ok 15 - phases/pipeline-failed.md references resolve to existing files\n      ---\n      duration_ms: 0.049584\n      ...\n    # Subtest: phases/pr-creation.md references resolve to existing files\n    ok 16 - phases/pr-creation.md references resolve to existing files\n      ---\n      duration_ms: 0.063\n      ...\n    # Subtest: phases/self-review.md references resolve to existing files\n    ok 17 - phases/self-review.md references resolve to existing files\n      ---\n      duration_ms: 0.065583\n      ...\n    # Subtest: phases/subagent-selection.md references resolve to existing files\n    ok 18 - phases/subagent-selection.md references resolve to existing files\n      ---\n      duration_ms: 0.063042\n      ...\n    # Subtest: phases/test-strategy.md references resolve to existing files\n    ok 19 - phases/test-strategy.md references resolve to existing files\n      ---\n      duration_ms: 0.060292\n      ...\n    # Subtest: phases/validation.md references resolve to existing files\n    ok 20 - phases/validation.md references resolve to existing files\n      ---\n      duration_ms: 0.062208\n      ...\n    # Subtest: phases/verification.md references resolve to existing files\n    ok 21 - phases/verification.md references resolve to existing files\n      ---\n      duration_ms: 0.062083\n      ...\n    1..21\nok 3 - references-integrity: phase files cross-reference valid paths\n  ---\n  duration_ms: 1.915416\n  type: 'suite'\n  ...\n1..3\n# tests 73\n# suites 3\n# pass 73\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 75.44375\n"
+          }
+        ],
+        "fingerprint": "981ed16906e42da96457a7c1c1dc816a8ea9c79bfebaa00ccc6df22c2ca7d565",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-state-machine",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/state-machine-json.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: state-machine.json matches CLAUDE.md transition block\n    # Subtest: edge sets are identical\n    ok 1 - edge sets are identical\n      ---\n      duration_ms: 0.761208\n      ...\n    1..1\nok 1 - state-machine.json matches CLAUDE.md transition block\n  ---\n  duration_ms: 1.119166\n  type: 'suite'\n  ...\n1..1\n# tests 1\n# suites 1\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 56.105667\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/state-machine-json.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: state-machine.json matches CLAUDE.md transition block\n    # Subtest: edge sets are identical\n    ok 1 - edge sets are identical\n      ---\n      duration_ms: 0.778292\n      ...\n    1..1\nok 1 - state-machine.json matches CLAUDE.md transition block\n  ---\n  duration_ms: 1.126583\n  type: 'suite'\n  ...\n1..1\n# tests 1\n# suites 1\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 64.479792\n"
+          }
+        ],
+        "fingerprint": "da42383cb2650b85cdfe615a6937c5e86dc071fdb19f8408c87fd82e0c28babf",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-verify-sanity",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node scripts/verify-sanity.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "verify-sanity: OK (21 phases, 23 commands)\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node scripts/verify-sanity.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "verify-sanity: OK (21 phases, 23 commands)\n"
+          }
+        ],
+        "fingerprint": "8e7d4eb2ba9be51e36f1102de5e245c2f2154e5a8b79f40cc4bf1069f6f22d21",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-version-check",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "bash scripts/bump-version.sh check",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "Canonical version (package.json): 3.3.0\n\n  OK:      package.json (3.3.0)\n  OK:      .claude-plugin/plugin.json (3.3.0)\n  OK:      .claude-plugin/marketplace.json (3.3.0)\n  OK:      .cursor-plugin/plugin.json (3.3.0)\n  OK:      gemini-extension.json (3.3.0)\n\nAll versions in sync.\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "bash scripts/bump-version.sh check",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "Canonical version (package.json): 3.3.0\n\n  OK:      package.json (3.3.0)\n  OK:      .claude-plugin/plugin.json (3.3.0)\n  OK:      .claude-plugin/marketplace.json (3.3.0)\n  OK:      .cursor-plugin/plugin.json (3.3.0)\n  OK:      gemini-extension.json (3.3.0)\n\nAll versions in sync.\n"
+          }
+        ],
+        "fingerprint": "361b932b62434827886eaa74a0d5988b18b557901effddf7006a52b12988f1d1",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "oracle-work-engine-schema",
+      "l0_hit": true,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 0,
+      "descent": {
+        "ok": true,
+        "escalate": false,
+        "tier": "L0",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/work-engine-schema.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: work-item JSON Schema\n    # Subtest: validates templates/state.json\n    ok 1 - validates templates/state.json\n      ---\n      duration_ms: 35.962292\n      ...\n    # Subtest: rejects missing budget keys\n    ok 2 - rejects missing budget keys\n      ---\n      duration_ms: 11.832375\n      ...\n    # Subtest: rejects history object without from/to or timestamp\n    ok 3 - rejects history object without from/to or timestamp\n      ---\n      duration_ms: 7.846958\n      ...\n    1..3\nok 1 - work-item JSON Schema\n  ---\n  duration_ms: 56.153292\n  type: 'suite'\n  ...\n1..1\n# tests 3\n# suites 1\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 118.644917\n"
+          },
+          {
+            "phase": "verify",
+            "action": {
+              "type": "RUN",
+              "command": "node --test test/work-engine-schema.test.js",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe"
+            },
+            "ok": true,
+            "output": "TAP version 13\n# Subtest: work-item JSON Schema\n    # Subtest: validates templates/state.json\n    ok 1 - validates templates/state.json\n      ---\n      duration_ms: 35.0405\n      ...\n    # Subtest: rejects missing budget keys\n    ok 2 - rejects missing budget keys\n      ---\n      duration_ms: 11.506375\n      ...\n    # Subtest: rejects history object without from/to or timestamp\n    ok 3 - rejects history object without from/to or timestamp\n      ---\n      duration_ms: 7.818042\n      ...\n    1..3\nok 1 - work-item JSON Schema\n  ---\n  duration_ms: 54.991083\n  type: 'suite'\n  ...\n1..1\n# tests 3\n# suites 1\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 110.601834\n"
+          }
+        ],
+        "fingerprint": "a92758cfccf7e3c2b8328b98810e1f40ea47aceb24fad894f3f505123c64eb91",
+        "frontier_tokens": 0,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "ritual-version-sync-a",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "escalate": true,
+        "tier": "L2",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "bash check-sync.sh",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/ritual-version-sync-a/repo"
+            },
+            "ok": false,
+            "output": "",
+            "error": "exit 1"
+          }
+        ],
+        "reason": "action failed",
+        "fingerprint": "b06db75fc1dabdad9474885e59dbeedf91785b6d6061285a54d7673d6712619d",
+        "frontier_tokens": null,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "ritual-version-sync-b",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "escalate": true,
+        "tier": "L2",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "bash check-sync.sh",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/ritual-version-sync-b/repo"
+            },
+            "ok": false,
+            "output": "",
+            "error": "exit 1"
+          }
+        ],
+        "reason": "action failed",
+        "fingerprint": "c0084e4308df7505cadd2ada36784ebcdbfaedae85264b8b1a922292bc99efd6",
+        "frontier_tokens": null,
+        "procedure_tier": "L0"
+      }
+    },
+    {
+      "id": "ritual-version-sync-c",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "escalate": true,
+        "tier": "L2",
+        "steps": [
+          {
+            "phase": "action",
+            "action": {
+              "type": "RUN",
+              "command": "bash check-sync.sh",
+              "cwd": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/corpus/ritual-version-sync-c/repo"
+            },
+            "ok": false,
+            "output": "",
+            "error": "exit 1"
+          }
+        ],
+        "reason": "action failed",
+        "fingerprint": "b80caa472fefa358dbaffb231ebdd767ab0f7dd926527fac398b3d27bd0addc1",
+        "frontier_tokens": null,
+        "procedure_tier": "L0"
+      }
+    }
+  ],
+  "summary": {
+    "total": 22,
+    "delivered": 18,
+    "l0_hits": 18,
+    "l0_hit_rate": 0.8181818181818182,
+    "l0_hit_rate_delivered": 1,
+    "frontier_tokens_total": 0,
+    "frontier_tokens_cold_estimate": 4400000,
+    "portfolio_multiplier": 0,
+    "median_frontier_per_delivered": 0
+  }
+}

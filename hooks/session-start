@@ -33,6 +33,18 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   PROJECT_ROOT="$(pwd)"
 fi
 
+if [[ "${AGENTIC_SWE_GIT_WARM:-}" != "0" ]]; then
+  set +e
+  node "$REPO_ROOT/scripts/session-git-warm.cjs" --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" >/dev/null 2>&1
+  set -e
+fi
+
+if [[ "${AGENTIC_SWE_CHAT_WARM:-}" != "0" ]]; then
+  set +e
+  node "$REPO_ROOT/scripts/session-chat-warm.cjs" --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" >/dev/null 2>&1
+  set -e
+fi
+
 MEM_PRIME_BLOCK=""
 RUN_MEM_PRIME=1
 case "${AGENTIC_SWE_MEMORY_PRIME:-}" in
@@ -48,6 +60,7 @@ if [[ "$RUN_MEM_PRIME" = "1" ]]; then
   if [[ -n "${AGENTIC_SWE_MEMORY_PRIME_QUERY:-}" ]]; then
     MP_ARGS+=(--query "$AGENTIC_SWE_MEMORY_PRIME_QUERY")
   fi
+  # When no explicit query env is set, memory-prime derives query from active work item task text.
   set +e
   MEM_PRIME_BLOCK=$(node "$REPO_ROOT/scripts/memory-prime.cjs" "${MP_ARGS[@]}" 2>/dev/null)
   _MP_EXIT=$?
@@ -64,10 +77,43 @@ if [[ "${AGENTIC_SWE_MODEL_TIER_HINT:-}" != "0" ]]; then
   set -e
 fi
 
+DESCENT_HINT_BLOCK=""
+if [[ "${AGENTIC_SWE_DESCENT_HINT:-}" != "0" ]]; then
+  set +e
+  DESCENT_HINT_BLOCK=$(node "$REPO_ROOT/scripts/session-descent-hint.cjs" --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" 2>/dev/null)
+  set -e
+fi
+
+SKILL_ROUTE_BLOCK=""
+if [[ "${AGENTIC_SWE_SKILL_ROUTE_HINT:-}" != "0" ]]; then
+  set +e
+  SKILL_ROUTE_BLOCK=$(node "$REPO_ROOT/scripts/session-skill-route-hint.cjs" --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" 2>/dev/null)
+  set -e
+fi
+
+CONTEXT_PACK_BLOCK=""
+if [[ "${AGENTIC_SWE_CONTEXT_PACK_HINT:-}" != "0" ]]; then
+  set +e
+  CONTEXT_PACK_BLOCK=$(node "$REPO_ROOT/scripts/session-context-pack-hint.cjs" --project-root "$PROJECT_ROOT" 2>/dev/null)
+  set -e
+fi
+
 FULL_CTX="${BASE}"$'\n\n'"${ROUTING}"
 
 if [[ -n "$MODEL_TIER_BLOCK" ]]; then
   FULL_CTX="${FULL_CTX}"$'\n\n'"${MODEL_TIER_BLOCK}"
+fi
+
+if [[ -n "$DESCENT_HINT_BLOCK" ]]; then
+  FULL_CTX="${FULL_CTX}"$'\n\n'"${DESCENT_HINT_BLOCK}"
+fi
+
+if [[ -n "$SKILL_ROUTE_BLOCK" ]]; then
+  FULL_CTX="${FULL_CTX}"$'\n\n'"${SKILL_ROUTE_BLOCK}"
+fi
+
+if [[ -n "$CONTEXT_PACK_BLOCK" ]]; then
+  FULL_CTX="${FULL_CTX}"$'\n\n'"${CONTEXT_PACK_BLOCK}"
 fi
 
 if [[ -n "$MEM_PRIME_BLOCK" ]]; then

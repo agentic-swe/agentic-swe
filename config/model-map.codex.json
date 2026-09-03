@@ -1,0 +1,14 @@
+{
+  "host": "codex",
+  "tiers": {
+    "fast": "gpt-5.4-mini-medium",
+    "balanced": "gpt-5.4-medium",
+    "heavy": "gpt-5.6-sol-medium",
+    "frontier": "gpt-5.6-sol-medium"
+  },
+  "legacy_map": {
+    "haiku": "fast",
+    "sonnet": "balanced",
+    "opus": "heavy"
+  }
+}

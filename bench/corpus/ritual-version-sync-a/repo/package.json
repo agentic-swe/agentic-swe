@@ -1,0 +1,120 @@
+{
+  "name": "@agentic-swe/agentic-swe",
+  "version": "9.9.9",
+  "description": "Autonomous SWE pipeline (Claude Code–first; Cursor, Codex, OpenCode, and compatible hosts) — install as a plugin (marketplace or --plugin-dir). Per-work state uses .worklogs/ in your project.",
+  "license": "MIT",
+  "author": "Suraj Gupta",
+  "homepage": "https://agentic-swe.github.io/agentic-swe-site/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agentic-swe/agentic-swe.git"
+  },
+  "bugs": {
+    "url": "https://github.com/agentic-swe/agentic-swe/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "agent",
+    "swe",
+    "pipeline",
+    "orchestration"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "agentic-swe": "bin/agentic-swe.cjs"
+  },
+  "files": [
+    "bin",
+    "CHANGELOG.md",
+    "docs/PUBLISHING.md",
+    "scripts",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "GEMINI.md",
+    "commands",
+    "phases",
+    "agents",
+    "!agents/plugin-runtime/brainstorm-server/node_modules",
+    "templates",
+    "references",
+    "state-machine.json",
+    "schemas",
+    "config",
+    ".claude-plugin/",
+    ".cursor-plugin/",
+    ".codex/",
+    ".opencode/",
+    "hooks/",
+    "skills/",
+    "gemini-extension.json",
+    "mcp-servers.json",
+    ".version-bump.json",
+    "bench"
+  ],
+  "devDependencies": {
+    "ws": "^8.18.0"
+  },
+  "scripts": {
+    "prepack": "node -e \"const fs=require('fs');const p=require('path');const r=p.join('phases');if(!fs.existsSync(r))process.exit(1)\"",
+    "prepublishOnly": "npm run version:check && npm run verify",
+    "test": "node scripts/run-node-tests.js",
+    "test:smoke": "bash test/smoke/run-smoke.sh",
+    "test:llm": "node test/llm/run-llm-tests.cjs",
+    "ci": "npm run verify && npm run version:check && npm test",
+    "verify": "node scripts/verify-sanity.js && node scripts/catalog-lint.cjs && node scripts/skill-lint.cjs && node scripts/generate-skills.cjs --check && node scripts/skill-eval.cjs run --all-skills && node scripts/model-conformance.cjs && node scripts/render-catalog-counts.cjs --check",
+    "catalog:lint": "node scripts/catalog-lint.cjs",
+    "catalog:counts": "node scripts/render-catalog-counts.cjs",
+    "catalog:route": "node scripts/catalog-route.cjs",
+    "catalog:index": "node scripts/catalog-index.cjs",
+    "summarize-work": "node scripts/summarize-work.js",
+    "swe-dashboard": "node scripts/swe-dashboard-server.cjs",
+    "seed-dashboard-demo": "node scripts/seed-dashboard-demo.cjs",
+    "work-engine": "node scripts/work-engine.cjs",
+    "goal-engine": "node scripts/goal-engine.cjs",
+    "memory-index": "node scripts/memory-index.cjs",
+    "memory-prime": "node scripts/memory-prime.cjs",
+    "memory-compact": "node scripts/memory-compact.cjs",
+    "memory-import": "node scripts/memory-import.cjs",
+    "memory-sliding-summary": "node scripts/memory-sliding-summary.cjs",
+    "memory-reflect": "node scripts/memory-reflect.cjs",
+    "memory-search": "node scripts/memory-search.cjs",
+    "ingest-sessions": "node scripts/ingest-sessions.cjs",
+    "repo-map": "node scripts/repo-map.cjs",
+    "generate-skills": "node scripts/generate-skills.cjs",
+    "skill-lint": "node scripts/skill-lint.cjs",
+    "cold-start-warm": "node scripts/cold-start-warm.cjs",
+    "seed-memory-corpus": "node scripts/seed-memory-corpus.cjs",
+    "sync:memory": "node scripts/sync/git-sync.cjs push",
+    "bench": "node scripts/bench/run.cjs",
+    "bench:validate": "node scripts/bench/run.cjs validate --all",
+    "bench:corpus": "node scripts/bench/build-corpus.cjs && node scripts/bench/run.cjs validate --corpus",
+    "bench:run": "node scripts/bench/run.cjs run --all && node scripts/bench/run.cjs run --corpus --out bench/results/baseline-$(date +%Y-%m-%d).json",
+    "bench:compare": "node scripts/bench/compare.cjs",
+    "bench:token-scorecard": "node scripts/bench/token-scorecard.cjs",
+    "bench:warm-cold": "node scripts/bench/warm-cold.cjs",
+    "bench:descent-holdout": "node scripts/bench/run-descent-holdout.cjs",
+    "bench:descent-learning-curve": "node scripts/bench/run-descent-learning-curve.cjs",
+    "bench:portfolio": "node scripts/bench/run-portfolio.cjs",
+    "bench:accumulate-holdout": "node scripts/bench/accumulate-holdout-procedures.cjs",
+    "bench:production-sim": "node scripts/bench/run-production-sim.cjs",
+    "bench:suite": "node scripts/bench/run-bench-suite.cjs",
+    "mine-session-procedures": "node scripts/mine-session-procedures.cjs",
+    "skill-eval": "node scripts/skill-eval.cjs",
+    "skill-route": "node scripts/skill-route.cjs",
+    "descent": "node scripts/descent.cjs",
+    "model-conformance": "node scripts/model-conformance.cjs",
+    "version:check": "bash scripts/bump-version.sh check",
+    "version:bump": "bash scripts/bump-version.sh bump"
+  },
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "minimatch": "^9.0.5",
+    "sql.js": "^1.11.0"
+  }
+}

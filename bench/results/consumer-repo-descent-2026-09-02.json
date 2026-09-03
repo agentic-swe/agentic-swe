@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-09-02T12:39:52.822Z",
+  "ok": true,
+  "measurement_contract": "Isolated git consumer repo (tmp); plugin from pack path. Organic capture + evolve-cycle + skip_llm. Not fleet /work or pack-root live .worklogs.",
+  "consumer_root": "/var/folders/h_/g9121w0j51v3gmsbf_nf8fq00000gq/T/consumer-repo-Alb7pz",
+  "plugin_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe",
+  "isolated_from_pack": true,
+  "captured": 1,
+  "fleet_onboard": {
+    "ok": true,
+    "consumer_mode": true,
+    "organic_capture": 1,
+    "doctor_fleet_ready": false
+  },
+  "evolve": {
+    "ok": true,
+    "procedures_mined": 4,
+    "team_events_ingested": 4,
+    "organic_memory_items": 1,
+    "scaffold_created": 1
+  },
+  "project_skill_scaffolded": true,
+  "project_skill_evaluated": true,
+  "ritual_promote": {
+    "promoted": 1,
+    "total": 1,
+    "ok": true
+  },
+  "memory_sqlite": true,
+  "consumer_procedures": true,
+  "skip_llm_exploration": true,
+  "overlap_source": "organic-worklog",
+  "tier": "L0",
+  "tier_totals_recorded": true,
+  "delivered_tokens": 0,
+  "cold_l3_tokens": 200000,
+  "multiplier": 0,
+  "target_multiplier": 0.02,
+  "target_met": true
+}

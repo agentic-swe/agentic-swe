@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-08-29T09:55:06.387Z",
+  "tasks_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/tasks",
+  "kind": "tasks",
+  "tasks": [
+    {
+      "id": "01-off-by-one",
+      "path": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/tasks/01-off-by-one",
+      "acceptance": {
+        "ok": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "delivered": false,
+      "scores": {
+        "task_pass": 0,
+        "total": 0.6000000000000001,
+        "acceptance_pass": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "02-add-retry",
+      "path": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/tasks/02-add-retry",
+      "acceptance": {
+        "ok": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "delivered": false,
+      "scores": {
+        "task_pass": 0,
+        "total": 0.6000000000000001,
+        "acceptance_pass": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "03-rate-limiter",
+      "path": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/bench/tasks/03-rate-limiter",
+      "acceptance": {
+        "ok": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "delivered": false,
+      "scores": {
+        "task_pass": 0,
+        "total": 0.6000000000000001,
+        "acceptance_pass": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "delivered": 0,
+    "pass_rate": 0
+  }
+}

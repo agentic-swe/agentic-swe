@@ -1,0 +1,10 @@
+{
+  "id": "oracle-catalog-counts",
+  "title": "Catalog counts in sync",
+  "description": "Catalog counts in sync",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node scripts/render-catalog-counts.cjs --check"
+  ],
+  "corpus_class": "oracle"
+}

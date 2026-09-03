@@ -1,0 +1,14 @@
+{
+  "host": "opencode",
+  "tiers": {
+    "fast": "fast",
+    "balanced": "balanced",
+    "heavy": "heavy",
+    "frontier": "frontier"
+  },
+  "legacy_map": {
+    "haiku": "fast",
+    "sonnet": "balanced",
+    "opus": "heavy"
+  }
+}

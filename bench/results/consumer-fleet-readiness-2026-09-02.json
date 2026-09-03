@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-09-02T12:43:59.410Z",
+  "ok": true,
+  "measurement_contract": "Isolated tmp consumer repo with 3 synthetic organic /work items. Proves fleet submission gate mechanics — not independent team fleet traffic. goal_complete stays false.",
+  "consumer_root": "/var/folders/h_/g9121w0j51v3gmsbf_nf8fq00000gq/T/consumer-fleet-mL6jP6",
+  "plugin_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe",
+  "isolated_from_pack": true,
+  "organic_live": 3,
+  "tier_totals_work_items": 3,
+  "portfolio_multiplier": 0.008425613866153106,
+  "target_multiplier": 0.02,
+  "target_met": true,
+  "fleet_submission_ready": true,
+  "blockers": [],
+  "captured": 3,
+  "fleet_onboard_ok": true
+}

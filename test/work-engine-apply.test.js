@@ -200,7 +200,7 @@ describe('lean track end-to-end happy path (source-artifact semantics)', () => {
           writeFile(path.join(wd, art), `# ${art}\n`);
         }
 
-        const opts = { workDir: wd, pluginRoot, to: tc.to, actor: 'e2e-test' };
+        const opts = { workDir: wd, pluginRoot, to: tc.to, actor: 'e2e-test', skipMuscleMemory: true };
         if (tc.setPipelineTrack) opts.setPipelineTrack = tc.setPipelineTrack;
 
         const r = applyTransition(opts);

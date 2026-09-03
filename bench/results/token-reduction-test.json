@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-09-03T17:45:39.884Z",
+  "measurement_contract": {
+    "headline_metric": "median frontier-tier (L3) tokens per delivered unit on corpus (cold vs warm)",
+    "fixed_overhead_metric": "session-start policy tokens (CLAUDE.md core)",
+    "honesty": "1-2% warm-portfolio target is ladder tokens vs L3 estimates. Organic session_usd_multiplier is billed verify-replay vs historical cost_used — not a new-feature session."
+  },
+  "fixed_overhead": {
+    "tokens_before": 7700,
+    "tokens_after": 1750,
+    "reduction_ratio": 0.7727,
+    "claude_md_bytes_before": 30890,
+    "claude_md_bytes_after": 7026
+  },
+  "corpus": {
+    "delivered": 16,
+    "total": 20,
+    "pass_rate": 0.8,
+    "ref": "bench/results/baseline-corpus-2026-08-29.json"
+  },
+  "skills": {
+    "evaluated": 183,
+    "unevaluated": 0,
+    "total": 183,
+    "golden_eval_passed": 46,
+    "golden_eval_total": 46
+  },
+  "descent_ladder": {
+    "procedure_tiers": {
+      "L0": 32,
+      "L1": 47,
+      "L2": 0,
+      "L3": 0,
+      "total": 79
+    },
+    "L0_mechanisms": [
+      "repo-map query",
+      "recorded procedure replay",
+      "engine transition",
+      "lint/test oracle"
+    ],
+    "corpus_measured": null,
+    "holdout_measured": null,
+    "learning_curve": null,
+    "corpus_circular_benchmark": null
+  },
+  "warm_portfolio_projection": {
+    "status": "framework_ready",
+    "current_estimated_multiplier": 0.22727272727272727,
+    "l0_hit_rate_delivered": null,
+    "combined_per_task": null,
+    "claim_status": "not_proven_at_scale",
+    "production_tier_totals": {
+      "work_items": 8,
+      "tier_totals": {
+        "L0": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        },
+        "L1": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        },
+        "L2": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        },
+        "L3": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      "frontier_tokens": 0,
+      "tiers_present": [],
+      "sources": {
+        "live": 5,
+        "fixtures": 3,
+        "dogfood": 3,
+        "organic": 3,
+        "organic_live": 3,
+        "organic_fixtures": 1
+      }
+    },
+    "organic_portfolio": {
+      "items": 3,
+      "captured": 2,
+      "capture_failed": 1,
+      "ladder_hits": 2,
+      "live_captured": 2,
+      "live_ladder_hits": 2,
+      "fixture_captured": 0,
+      "cold_per_task_tokens": 198866.5,
+      "warm_per_task_tokens": 3250,
+      "portfolio_multiplier": 0.01634262180910309,
+      "session_usd_multiplier": 0.0004873456819897979,
+      "session_items_with_cost": 1,
+      "target_multiplier": 0.02,
+      "token_target_met": true,
+      "usd_target_met": true,
+      "target_met": true
+    },
+    "note": "Additional reduction requires L0/L1 hit-rate accumulation; publish curve in bench/results as data accrues"
+  }
+}

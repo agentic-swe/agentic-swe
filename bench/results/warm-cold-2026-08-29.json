@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-08-29T10:28:56.311Z",
+  "measurement_contract": "Modeled tokens per corpus-delivered unit; L0/L1 hit rates from procedure store + telemetry",
+  "cold": {
+    "policy_tokens": 7700,
+    "modeled_per_task_tokens": 212700,
+    "l0_hit_rate": 0,
+    "l1_hit_rate": 0
+  },
+  "warm": {
+    "policy_tokens": 1750,
+    "modeled_per_task_tokens": 1750,
+    "l0_procedures": {
+      "L0": 23,
+      "L1": 38,
+      "L2": 0,
+      "L3": 0,
+      "total": 61
+    },
+    "tier_telemetry": {
+      "L0": 1,
+      "L1": 0,
+      "L2": 0,
+      "L3": 0,
+      "raw": {
+        "hits": {
+          "L0": 705,
+          "L1": 0,
+          "L2": 0,
+          "L3": 0
+        },
+        "attempts": {
+          "L0": 705,
+          "L1": 0,
+          "L2": 109,
+          "L3": 164
+        },
+        "updated_at": "2026-08-29T10:28:53.684Z"
+      }
+    },
+    "descent_measured": {
+      "total": 22,
+      "delivered": 18,
+      "l0_hits": 18,
+      "l0_hit_rate": 0.8181818181818182,
+      "l0_hit_rate_delivered": 1,
+      "frontier_tokens_total": 0,
+      "frontier_tokens_cold_estimate": 4400000,
+      "portfolio_multiplier": 0,
+      "median_frontier_per_delivered": 0
+    },
+    "holdout_measured": {
+      "holdout_total": 7,
+      "delivered": 3,
+      "l0_hits": 0,
+      "l0_hit_rate": 0,
+      "l0_hit_rate_delivered": 0,
+      "frontier_tokens_total": 600000,
+      "frontier_tokens_cold_estimate": 1400000,
+      "portfolio_multiplier": 0.42857142857142855,
+      "corpus_circular_benchmark": false
+    }
+  },
+  "reduction": {
+    "portfolio_multiplier": 0,
+    "percent_of_cold": 0,
+    "target_multiplier": 0.02,
+    "corpus_circular_benchmark": true,
+    "target_met": false,
+    "honesty": "Corpus oracle replay: L0 procedures seeded from bench/corpus achieve 0 frontier tokens on delivered tasks — circular benchmark only; production SWE 1-2% target not yet proven"
+  }
+}

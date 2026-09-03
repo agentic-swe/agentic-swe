@@ -1,0 +1,10 @@
+{
+  "id": "oracle-version-check",
+  "title": "Version manifest sync",
+  "description": "Version manifest sync",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "bash scripts/bump-version.sh check"
+  ],
+  "corpus_class": "oracle"
+}

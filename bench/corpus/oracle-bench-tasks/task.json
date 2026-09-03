@@ -1,0 +1,10 @@
+{
+  "id": "oracle-bench-tasks",
+  "title": "Bench tasks validate",
+  "description": "Bench tasks validate",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/bench-tasks.test.js"
+  ],
+  "corpus_class": "oracle"
+}

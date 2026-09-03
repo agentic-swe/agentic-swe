@@ -1,0 +1,140 @@
+{
+  "generated_at": "2026-08-29T10:28:56.259Z",
+  "ok": true,
+  "measurement_contract": "Oracle seed + simulated validation capture on delivered holdout tasks",
+  "before": {
+    "tasks": [
+      {
+        "id": "mined-check-pass",
+        "delivered": true,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "mined-smoke-pass",
+        "delivered": true,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "mined-trivial-fail",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "mined-trivial-pass",
+        "delivered": true,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "ritual-version-sync-a",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "ritual-version-sync-b",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "ritual-version-sync-c",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      }
+    ],
+    "summary": {
+      "delivered": 3,
+      "ladder_hits": 0,
+      "delivered_tokens_total": 600000
+    }
+  },
+  "captures": [
+    {
+      "task": "mined-check-pass",
+      "method": "simulated_validation_capture",
+      "fingerprint": "f24cf82a97acfc5c"
+    },
+    {
+      "task": "mined-smoke-pass",
+      "method": "simulated_validation_capture",
+      "fingerprint": "c743897c3555e03c"
+    },
+    {
+      "task": "mined-trivial-pass",
+      "method": "simulated_validation_capture",
+      "fingerprint": "504f8ceacdc90f66"
+    },
+    {
+      "task": "sim-holdout",
+      "method": "capture-procedure",
+      "ok": true,
+      "fingerprint": "ed2e8b8216748c348019339177e006e22819f9d21253d563ded59f26634287d5",
+      "verifyCommand": "npm test",
+      "tier": "L1",
+      "success_count": 1,
+      "files": [
+        "src/example.js"
+      ]
+    }
+  ],
+  "after": {
+    "tasks": [
+      {
+        "id": "mined-check-pass",
+        "delivered": true,
+        "ladder_hit": true,
+        "tier": "L0"
+      },
+      {
+        "id": "mined-smoke-pass",
+        "delivered": true,
+        "ladder_hit": true,
+        "tier": "L0"
+      },
+      {
+        "id": "mined-trivial-fail",
+        "delivered": false,
+        "ladder_hit": true,
+        "tier": "L0"
+      },
+      {
+        "id": "mined-trivial-pass",
+        "delivered": true,
+        "ladder_hit": true,
+        "tier": "L0"
+      },
+      {
+        "id": "ritual-version-sync-a",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "ritual-version-sync-b",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      },
+      {
+        "id": "ritual-version-sync-c",
+        "delivered": false,
+        "ladder_hit": false,
+        "tier": "L3"
+      }
+    ],
+    "summary": {
+      "delivered": 3,
+      "ladder_hits": 3,
+      "delivered_tokens_total": 0
+    }
+  },
+  "improvement": {
+    "ladder_hits_delta": 3,
+    "tokens_delta": -600000
+  }
+}

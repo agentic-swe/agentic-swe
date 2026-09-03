@@ -1,0 +1,10 @@
+{
+  "id": "mined-check-pass",
+  "title": "Environment check passing",
+  "description": "Environment check passing",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node test/check.test.js"
+  ],
+  "corpus_class": "mined"
+}

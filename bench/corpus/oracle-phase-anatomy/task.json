@@ -1,0 +1,10 @@
+{
+  "id": "oracle-phase-anatomy",
+  "title": "Phase anatomy lint",
+  "description": "Phase anatomy lint",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/phase-anatomy.test.js"
+  ],
+  "corpus_class": "oracle"
+}

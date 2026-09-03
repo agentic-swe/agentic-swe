@@ -1,0 +1,14 @@
+{
+  "host": "claude-code",
+  "tiers": {
+    "fast": "haiku",
+    "balanced": "sonnet",
+    "heavy": "opus",
+    "frontier": "opus"
+  },
+  "legacy_map": {
+    "haiku": "fast",
+    "sonnet": "balanced",
+    "opus": "heavy"
+  }
+}

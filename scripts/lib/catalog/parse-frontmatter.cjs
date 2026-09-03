@@ -37,10 +37,22 @@ function parseSimpleFields(block) {
   return out;
 }
 
-const ALLOWED_MODELS = new Set(['sonnet', 'opus', 'haiku']);
+const ALLOWED_MODELS = new Set(['fast', 'balanced', 'heavy', 'frontier']);
+const LEGACY_MODELS = new Set(['sonnet', 'opus', 'haiku']);
+
+/** @param {string} model */
+function normalizeModelTier(model) {
+  const m = String(model || '').trim();
+  if (ALLOWED_MODELS.has(m)) return m;
+  const legacy = { haiku: 'fast', sonnet: 'balanced', opus: 'heavy' };
+  if (legacy[m]) return legacy[m];
+  return m;
+}
 
 module.exports = {
   extractFrontmatter,
   parseSimpleFields,
   ALLOWED_MODELS,
+  LEGACY_MODELS,
+  normalizeModelTier,
 };
