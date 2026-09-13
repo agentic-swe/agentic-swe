@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T17:45:39.884Z",
+  "generated_at": "2026-09-13T19:04:05.189Z",
   "measurement_contract": {
     "headline_metric": "median frontier-tier (L3) tokens per delivered unit on corpus (cold vs warm)",
     "fixed_overhead_metric": "session-start policy tokens (CLAUDE.md core)",
