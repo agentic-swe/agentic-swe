@@ -1,7 +1,7 @@
 ---
 name: git-operations-agent
 description: "Repository git specialist for branches, remote sync, and conflict resolution via the Agent tool."
-model: sonnet
+model: balanced
 ---
 
 # Git Operations Agent

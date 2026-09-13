@@ -1,0 +1,120 @@
+{
+  "generated_at": "2026-08-29T10:27:51.465Z",
+  "ok": true,
+  "measurement_contract": "Seed L0 from oracle-* corpus tasks only; evaluate ritual-* and mined-* holdout without circular seeding",
+  "seed": {
+    "tasks": 15,
+    "store": "/var/folders/h_/g9121w0j51v3gmsbf_nf8fq00000gq/T/descent-holdout-AvlCfG/.agentic-swe/procedures.json"
+  },
+  "holdout": [
+    {
+      "id": "mined-check-pass",
+      "l0_hit": false,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    },
+    {
+      "id": "mined-smoke-pass",
+      "l0_hit": false,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    },
+    {
+      "id": "mined-trivial-fail",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    },
+    {
+      "id": "mined-trivial-pass",
+      "l0_hit": false,
+      "acceptance_ok": true,
+      "delivered": true,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    },
+    {
+      "id": "ritual-version-sync-a",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    },
+    {
+      "id": "ritual-version-sync-b",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    },
+    {
+      "id": "ritual-version-sync-c",
+      "l0_hit": false,
+      "acceptance_ok": false,
+      "delivered": false,
+      "frontier_tokens": 200000,
+      "descent": {
+        "ok": false,
+        "tier": "L3",
+        "escalate": true,
+        "reason": "no L0 procedure match",
+        "frontier_tokens": null
+      }
+    }
+  ],
+  "summary": {
+    "holdout_total": 7,
+    "delivered": 3,
+    "l0_hits": 0,
+    "l0_hit_rate": 0,
+    "l0_hit_rate_delivered": 0,
+    "frontier_tokens_total": 600000,
+    "frontier_tokens_cold_estimate": 1400000,
+    "portfolio_multiplier": 0.42857142857142855,
+    "corpus_circular_benchmark": false
+  }
+}

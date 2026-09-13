@@ -4,6 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { usdForUsage } = require('./pricing.cjs');
 const { withWriteLockSync } = require('./state-lock.cjs');
+const {
+  ladderTierForModel,
+  emptyTierTotals,
+  addUsageToTierTotals,
+  mergeTierTotals,
+} = require('../bench/tier-totals.cjs');
 
 /**
  * @param {object} line parsed JSON line from Claude Code transcript
@@ -58,6 +64,7 @@ function scanTranscriptIncremental(transcriptPath, lineCursor) {
   let newUsd = 0;
   let counted = 0;
   const usageDelta = emptyUsageTotals();
+  const tierDelta = emptyTierTotals();
   for (let i = lineCursor; i < lines.length; i++) {
     const t = lines[i].trim();
     if (!t) continue;
@@ -71,9 +78,10 @@ function scanTranscriptIncremental(transcriptPath, lineCursor) {
     if (!ex) continue;
     newUsd += usdForUsage(ex.usage, ex.model);
     addUsageIntoTotals(usageDelta, ex.usage);
+    addUsageToTierTotals(tierDelta, ladderTierForModel(ex.model), ex.usage);
     counted += 1;
   }
-  return { newUsd, endLine: lines.length, usageRows: counted, usageDelta };
+  return { newUsd, endLine: lines.length, usageRows: counted, usageDelta, tierDelta };
 }
 
 /**
@@ -99,7 +107,7 @@ function syncCostFromTranscript(opts) {
     if (ledger.transcript_path === transcriptPath && typeof ledger.line_cursor === 'number') {
       lineCursor = ledger.line_cursor;
     }
-    const { newUsd, endLine, usageRows, usageDelta } = scanTranscriptIncremental(transcriptPath, lineCursor);
+    const { newUsd, endLine, usageRows, usageDelta, tierDelta } = scanTranscriptIncremental(transcriptPath, lineCursor);
     const prev = typeof state.budget.cost_used === 'number' ? state.budget.cost_used : 0;
     const next = prev + newUsd;
     state.budget.cost_used = Number(next.toFixed(6));
@@ -112,6 +120,7 @@ function syncCostFromTranscript(opts) {
       baseTotals[k] = Number((Number(baseTotals[k] || 0) + add).toFixed(0));
     }
     state.budget.usage_totals = baseTotals;
+    state.budget.tier_totals = mergeTierTotals(state.budget.tier_totals, tierDelta);
     state.budget.cost_ledger = {
       transcript_path: transcriptPath,
       line_cursor: endLine,

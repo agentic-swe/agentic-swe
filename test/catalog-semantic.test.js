@@ -23,7 +23,7 @@ describe('catalog semantic index + route', () => {
 name: ${base}
 description: "Use when you need ${words}."
 tools: Read
-model: sonnet
+model: balanced
 ---
 x`
       );

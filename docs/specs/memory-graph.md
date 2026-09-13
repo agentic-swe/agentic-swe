@@ -49,6 +49,7 @@ This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAU
 ## S3 — Memory prime
 
 - **CLI:** `npm run memory-prime --` or `node scripts/memory-prime.cjs [--query "…"] [--work-id <id>]` — env **`AGENTIC_SWE_MEMORY_PRIME_QUERY`** when `--query` omitted.
+- **Muscle memory digest:** evaluated L0/L1 procedures from `.agentic-swe/procedures.json` are appended to prime (advisory). Unevaluated procedures are omitted.
 - **Output:** bounded markdown: graph digest (counts, high-degree nodes, embedding row count) + optional chunk hits with path:line citations. Capped by `prime.max_chars_out` / `prime.max_fts_hits` (name kept for config compatibility).
 - **Retrieval:** `prime.retrieval_mode` — **`auto`** (default): use **`hybrid`** when embedding rows exist and a backend is configured, otherwise **`lexical`**; or set **`lexical`** / **`semantic`** / **`hybrid`** explicitly.
 - **Implementation:** [`scripts/lib/memory/memory-prime.cjs`](../../scripts/lib/memory/memory-prime.cjs), entry [`scripts/memory-prime.cjs`](../../scripts/memory-prime.cjs).
@@ -78,9 +79,20 @@ This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAU
 - **Optional LLM:** **`--llm`** or **`sliding.llm_enabled`** — summarizes the “older” block via OpenAI (**`OPENAI_API_KEY`** / **`AGENTIC_SWE_OPENAI_API_KEY`**; model **`sliding.llm_model`** or **`AGENTIC_SWE_SLIDING_SUMMARY_MODEL`**). On failure, falls back to deterministic bullets.
 - **Implementation:** [`scripts/lib/memory/transcript-sliding.cjs`](../../scripts/lib/memory/transcript-sliding.cjs), [`scripts/memory-sliding-summary.cjs`](../../scripts/memory-sliding-summary.cjs).
 
+## S8 — Personal + team scopes
+
+- **Personal store:** `~/.agentic-swe/memory.sqlite` (override **`AGENTIC_SWE_PERSONAL_ROOT`**). Style-profile constraints are ingested as `work_id=personal` chunks.
+- **Team events:** `.agentic-swe/sync/events/*.json` from [`git-sync.cjs`](../../scripts/lib/sync/git-sync.cjs) are ingested as `work_id=team` chunks into the **project** sqlite. **`evolve-cycle`** appends an event after each mine and immediately calls **`ingestTeamEvents`**; **`session-chat-warm`** re-ingests pending events at session start (after repo index / git warm).
+- **Git history:** `ingestGitTeamHistory` adds recent non-merge commits (subject + paths, no diffs) as `work_id=team` chunks — VCS signal for how the repo is changed, distinct from `/work` organic items. `mineGitProcedures` turns test files that co-changed with code into fingerprint-scoped L1 procedures (isolated `node --test` only; evaluated at mine time when that command exits 0). `evolve-cycle` runs this with session/repo/transcript mining, then **captures organic `/work` procedures** (declared files + isolated tests) and `ingestOrganicWorklogs`. Memory prime lists recent team chunks.
+- **Muscle replay:** `ingestMuscleReplayWorklogs` distills `descent-replay.md` + `context-pack.json` muscle_memory for any `.worklogs/<id>` (including dogfood).
+- **Organic worklogs:** non-dogfood `.worklogs/<id>` items that reached implementation/validation/PR/completed are distilled into project chunks (`ingestOrganicWorklogs`), including replay artifacts when present.
+- **CLI:** `npm run ingest-memory-scopes` (repo → personal → sessions → team events → git history → organic worklogs → muscle replay). `npm run memory-search -- --scope session|personal|team`.
+- **Implementation:** [`scripts/lib/memory/scopes.cjs`](../../scripts/lib/memory/scopes.cjs), [`scripts/lib/memory/ingest-scopes.cjs`](../../scripts/lib/memory/ingest-scopes.cjs).
+
 ## Session-start hook (memory prime default on)
 
-- By default, [`hooks/session-start`](../../hooks/session-start) appends the same markdown as **`memory-prime`** after the routing hint (best-effort; failures are ignored). **Opt out:** set **`AGENTIC_SWE_MEMORY_PRIME=0`** (or **`false`**, **`no`**, **`off`**). Uses **`AGENTIC_SWE_PROJECT_ROOT`**, else hook JSON **`cwd`** (when `jq` is available), else `pwd`. Optional **`AGENTIC_SWE_WORK_DIR`** → **`--work-id`** (basename). Optional **`AGENTIC_SWE_MEMORY_PRIME_QUERY`** → **`--query`**.
+- By default, [`hooks/session-start`](../../hooks/session-start) runs [`session-git-warm.cjs`](../../scripts/session-git-warm.cjs) (git team chunks; **`AGENTIC_SWE_GIT_WARM=0`** to skip), then [`session-chat-warm.cjs`](../../scripts/session-chat-warm.cjs) (recent host transcripts + session/transcript procedure mine + team sync event ingest + **organic `/work` distill**; **`AGENTIC_SWE_CHAT_WARM=0`** to skip), then appends **`memory-prime`**. **Opt out of prime:** **`AGENTIC_SWE_MEMORY_PRIME=0`**. Uses **`AGENTIC_SWE_PROJECT_ROOT`**, else hook JSON **`cwd`** (when `jq` is available), else `pwd`. Optional **`AGENTIC_SWE_WORK_DIR`** → **`--work-id`**. Optional **`AGENTIC_SWE_MEMORY_PRIME_QUERY`** → **`--query`**.
+- Stop hook [`session-capture.cjs`](../../scripts/session-capture.cjs) runs `evolve-cycle` (git mining + **organic `/work` capture** + organic memory ingest + **team event ingest** + **skill-eval promote/scaffold suggestions**) even when the transcript added no new chunks, unless **`--no-evolve`** or **`AGENTIC_SWE_EVOLVE_ON_STOP=0`**. Opt-in **`AGENTIC_SWE_EVOLVE_SKILLS=1`** (or **`dry-run`**) runs scaffold + promote + memory ingest on stop; or use **`AGENTIC_SWE_PROMOTE_RITUALS`** / **`AGENTIC_SWE_SCAFFOLD_RITUALS`** individually. Scaffold writes **`.agentic-swe/skill-golden-eval.suggestions.json`** for isolated test rituals.
 
 ## Governance
 

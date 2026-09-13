@@ -1,0 +1,33 @@
+{
+  "name": "agentic-swe-catalog",
+  "owner": {
+    "name": "Suraj Gupta",
+    "email": "10187486+surajSFDC@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Claude Code marketplace catalog for the agentic-swe SWE pipeline (Hypervisor policy, phases, agents, slash commands)."
+  },
+  "plugins": [
+    {
+      "name": "agentic-swe",
+      "source": "./",
+      "description": "Autonomous SWE pipeline: structured phases, human gates, three tracks (lean / standard / rigorous), catalog CI and routing, 135+ specialist agents.",
+      "version": "3.3.0",
+      "author": {
+        "name": "Suraj Gupta"
+      },
+      "homepage": "https://agentic-swe.github.io/agentic-swe-site/",
+      "repository": "https://github.com/agentic-swe/agentic-swe",
+      "license": "MIT",
+      "keywords": [
+        "claude-code",
+        "cursor",
+        "swe",
+        "pipeline",
+        "hypervisor",
+        "code-review",
+        "tdd"
+      ]
+    }
+  ]
+}

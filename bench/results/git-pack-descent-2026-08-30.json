@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-08-30T00:15:21.637Z",
+  "ok": true,
+  "measurement_contract": "Real pack git history mined into an isolated store; design verify is npm test; skip_llm uses overlapping isolated node --test. Does not mutate pack procedures.json. Not fleet /work.",
+  "mined": {
+    "procedures": 2,
+    "mined": 1
+  },
+  "declared_file": "bin/agentic-swe.cjs",
+  "skip_llm_exploration": true,
+  "overlap_source": "git-history",
+  "tier": "L1",
+  "delivered_tokens": 1500,
+  "cold_l3_tokens": 200000,
+  "multiplier": 0.0075,
+  "target_multiplier": 0.02,
+  "target_met": true
+}

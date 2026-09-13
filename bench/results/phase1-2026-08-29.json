@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-08-29T00:00:00.000Z",
+  "phase": "phase1-progressive-disclosure",
+  "baseline_ref": "bench/results/baseline-corpus-2026-08-29.json",
+  "claude_md_bytes_before": 30890,
+  "claude_md_bytes_after": 7026,
+  "claude_md_reduction_ratio": 0.773,
+  "estimated_tokens_before": 7700,
+  "estimated_tokens_after": 1750,
+  "deferred_reference_bytes": 24462,
+  "repo_map": {
+    "file_count_sample": "scripts/repo-map.cjs --json",
+    "query_modes": ["--symbol", "--imports-of", "--tests-for"]
+  },
+  "memory_prime": {
+    "query_default": "active work item task text via resolvePrimeQuery"
+  },
+  "notes": "Core policy split + repo-map + query-aware memory prime. Token estimates use bytes/4 heuristic."
+}

@@ -11,6 +11,8 @@ const {
   extractFrontmatter,
   parseSimpleFields,
   ALLOWED_MODELS,
+  LEGACY_MODELS,
+  normalizeModelTier,
 } = require('./lib/catalog/parse-frontmatter.cjs');
 const { listAgentMarkdownFiles } = require('./lib/catalog/walk-subagents.cjs');
 
@@ -99,8 +101,11 @@ function lint() {
     const model = fm.model && String(fm.model).trim();
     if (!model) {
       errors.push(`${rel}: missing model:`);
-    } else if (!ALLOWED_MODELS.has(model)) {
-      errors.push(`${rel}: model must be one of ${[...ALLOWED_MODELS].join(', ')}; got "${model}"`);
+    } else {
+      const tier = normalizeModelTier(model);
+      if (!ALLOWED_MODELS.has(tier)) {
+        errors.push(`${rel}: model must be fast|balanced|heavy|frontier; got "${model}"`);
+      }
     }
     if (!Object.prototype.hasOwnProperty.call(fm, 'tools')) {
       errors.push(`${rel}: missing tools: (expected tool list for I/O expectations)`);

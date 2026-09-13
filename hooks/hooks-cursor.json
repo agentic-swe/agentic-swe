@@ -4,6 +4,11 @@
       "event": "sessionStart",
       "command": "./hooks/session-start",
       "description": "Load agentic-swe orchestration policy on session start"
+    },
+    {
+      "event": "stop",
+      "command": "./hooks/session-stop",
+      "description": "Capture session transcript tail and evolve muscle-memory procedures"
     }
   ]
 }

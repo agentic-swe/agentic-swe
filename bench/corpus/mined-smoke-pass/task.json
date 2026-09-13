@@ -1,0 +1,10 @@
+{
+  "id": "mined-smoke-pass",
+  "title": "Smoke check passing",
+  "description": "Smoke check passing",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node test/smoke.test.js"
+  ],
+  "corpus_class": "mined"
+}

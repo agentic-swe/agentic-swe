@@ -25,7 +25,7 @@ describe('catalog-lint', () => {
 name: dup-agent
 description: "Use when you need duplicate-name test one."
 tools: Read
-model: sonnet
+model: balanced
 ---
 `;
     for (const c of ['c1', 'c2']) {

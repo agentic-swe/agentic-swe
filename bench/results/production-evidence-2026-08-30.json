@@ -1,0 +1,80 @@
+{
+  "generated_at": "2026-08-30T00:15:11.889Z",
+  "ok": true,
+  "measurement_contract": "Work-engine E2E: descent-try tier_totals recording + validation→pr-creation descent-capture on delivered holdout tasks",
+  "runs": [
+    {
+      "task": "mined-check-pass",
+      "verify": "node test/check.test.js",
+      "descent_ok": true,
+      "descent_tier": "L0",
+      "transition_ok": true,
+      "delivered_tokens": 0
+    },
+    {
+      "task": "mined-smoke-pass",
+      "verify": "node test/smoke.test.js",
+      "descent_ok": true,
+      "descent_tier": "L0",
+      "transition_ok": true,
+      "delivered_tokens": 0
+    },
+    {
+      "task": "mined-trivial-pass",
+      "verify": "npm test",
+      "descent_ok": true,
+      "descent_tier": "L0",
+      "transition_ok": true,
+      "delivered_tokens": 0
+    }
+  ],
+  "production_tier_totals": {
+    "work_items": 3,
+    "tier_totals": {
+      "L0": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "L1": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "L2": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "L3": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    "frontier_tokens": 0,
+    "tiers_present": [],
+    "sources": {
+      "live": 3,
+      "fixtures": 0,
+      "dogfood": 0,
+      "organic": 3,
+      "organic_live": 3,
+      "organic_fixtures": 0
+    }
+  },
+  "portfolio": {
+    "cold_per_task_tokens": 207700,
+    "warm_per_task_tokens": 1750,
+    "portfolio_multiplier": 0.008425613866153106,
+    "frontier_tokens_per_item": 0
+  },
+  "verified": true,
+  "target_multiplier": 0.02,
+  "honesty": "Production E2E path verified on holdout tasks; persist fixtures with --persist-fixtures for CI aggregation",
+  "fixture_path": "bench/fixtures/production-worklogs"
+}

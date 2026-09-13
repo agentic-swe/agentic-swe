@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-09-02T12:01:21.204Z",
+  "ok": true,
+  "measurement_contract": "Prior organic /work isolated node --test overlapping a new design’s declared files; design verify may be npm test. Not a full SWE session USD claim.",
+  "captured": {
+    "captured": 1,
+    "verify": "node --test test/retry.test.js"
+  },
+  "skip_llm_exploration": true,
+  "overlap_source": "organic-worklog",
+  "tier": "L1",
+  "delivered_tokens": 1500,
+  "cold_l3_tokens": 200000,
+  "multiplier": 0.0075,
+  "target_multiplier": 0.02,
+  "target_met": true
+}

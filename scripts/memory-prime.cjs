@@ -11,6 +11,7 @@
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { buildPrimeMarkdown } = require('./lib/memory/memory-prime.cjs');
+const { resolvePrimeQuery } = require('./lib/memory/resolve-prime-query.cjs');
 
 function parseArgs(argv) {
   const out = {};
@@ -29,13 +30,18 @@ async function main() {
   const args = parseArgs(process.argv);
   const projectRoot = args.projectRoot || process.cwd();
   const pluginRoot = args.pluginRoot || getDefaultPluginRoot();
-  const query = args.query != null ? args.query : process.env.AGENTIC_SWE_MEMORY_PRIME_QUERY || null;
+  const resolved = resolvePrimeQuery({
+    projectRoot,
+    query: args.query != null ? args.query : null,
+    workId: args.workId || null,
+  });
 
   const md = await buildPrimeMarkdown({
     projectRoot,
     pluginRoot,
-    query,
-    workId: args.workId || null,
+    query: resolved.query,
+    workId: resolved.workId,
+    querySource: resolved.source,
   });
 
   if (args.json) {

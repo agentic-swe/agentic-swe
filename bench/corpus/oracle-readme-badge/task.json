@@ -1,0 +1,10 @@
+{
+  "id": "oracle-readme-badge",
+  "title": "README version badge",
+  "description": "README version badge",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/readme-version-badge.test.js"
+  ],
+  "corpus_class": "oracle"
+}

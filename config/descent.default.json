@@ -1,0 +1,9 @@
+{
+  "tier_token_estimates": {
+    "L0": 0,
+    "L1": 1500,
+    "L2": 8000,
+    "L3": 200000
+  },
+  "measurement_contract": "Estimated delivered tokens per tier when replay/verify succeeds; L0=recorded procedure, L1=verify-only recall, L2=memory/repo-map assisted verify, L3=frontier"
+}

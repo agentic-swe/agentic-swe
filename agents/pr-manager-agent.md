@@ -1,7 +1,7 @@
 ---
 name: pr-manager-agent
 description: "Pull request workflow specialist for PR creation and lifecycle via the Agent tool."
-model: sonnet
+model: balanced
 ---
 
 # PR Manager

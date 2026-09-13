@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-08-29T18:49:38.403Z",
+  "ok": true,
+  "measurement_contract": "Isolated temp .worklogs via applyTransition; not pack-root live usage; does not by itself prove proven_at_scale",
+  "isolated_project": "/var/folders/h_/g9121w0j51v3gmsbf_nf8fq00000gq/T/live-path-Zxhv0T",
+  "runs": [
+    {
+      "work_id": "live-mined-check-pass",
+      "task": "mined-check-pass",
+      "descent_tier": "L0",
+      "descent_hit": true,
+      "transition_ok": true,
+      "capture_ok": true
+    },
+    {
+      "work_id": "live-mined-smoke-pass",
+      "task": "mined-smoke-pass",
+      "descent_tier": "L0",
+      "descent_hit": true,
+      "transition_ok": true,
+      "capture_ok": true
+    },
+    {
+      "work_id": "live-mined-trivial-pass",
+      "task": "mined-trivial-pass",
+      "descent_tier": "L0",
+      "descent_hit": true,
+      "transition_ok": true,
+      "capture_ok": true
+    }
+  ],
+  "live_work_items": 3,
+  "live_production_verified": true,
+  "production_portfolio_multiplier": 0.008425613866153106,
+  "claim_status": "proven_at_scale"
+}

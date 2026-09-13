@@ -1,0 +1,10 @@
+{
+  "id": "oracle-verify-sanity",
+  "title": "Pack verify sanity",
+  "description": "Pack verify sanity",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node scripts/verify-sanity.js"
+  ],
+  "corpus_class": "oracle"
+}

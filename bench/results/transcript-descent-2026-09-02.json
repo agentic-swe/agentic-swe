@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-09-02T11:52:06.331Z",
+  "ok": true,
+  "measurement_contract": "Isolated node --test from a conversation tool trace, evaluated then replayed. Not a full-session USD claim.",
+  "mined": {
+    "ok": true,
+    "mined": 1,
+    "procedures": 1,
+    "files_scanned": 1,
+    "dirs": 1
+  },
+  "eval_status": "evaluated",
+  "first_tier": "L1",
+  "second_tier": "L1",
+  "third_tier": "L0",
+  "delivered_tokens": 0,
+  "cold_l3_tokens": 200000,
+  "multiplier": 0,
+  "target_multiplier": 0.02,
+  "target_met": true
+}

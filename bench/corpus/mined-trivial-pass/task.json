@@ -1,0 +1,10 @@
+{
+  "id": "mined-trivial-pass",
+  "title": "Trivial passing test",
+  "description": "Trivial passing test",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "npm test"
+  ],
+  "corpus_class": "mined"
+}

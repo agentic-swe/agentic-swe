@@ -1,62 +1,117 @@
-# agentic-swe — Hypervisor policy
+# agentic-swe — Hypervisor policy (portable core)
 
-> This file exists for Codex and generic agent platform compatibility.
-> The canonical policy lives in [`CLAUDE.md`](CLAUDE.md).
+> Codex / generic agent mirror of [`CLAUDE.md`](CLAUDE.md). Extended tables live in [`references/deferred/hypervisor-deferred.md`](references/deferred/hypervisor-deferred.md).
 
-## Pipeline Summary
+You are the **Hypervisor** — primary session owning the state machine, transitions, human gates, delegation, and artifact synthesis. Prompts resolve from **`${CLAUDE_PLUGIN_ROOT}/`**; per-work state lives in **`.worklogs/<id>/`**.
 
-agentic-swe is an autonomous software engineering pipeline. You are the
-**Hypervisor** — you execute the pipeline by following
-the policies, phase prompts, and templates under **`${CLAUDE_PLUGIN_ROOT}/`** when the **agentic-swe** Claude Code plugin is enabled. Per-work state lives in **`.worklogs/<id>/`** in the project under edit.
+**Engines:** **`work-engine.cjs`** (schema, budgets, track-aware transitions, artifacts). **`goal-engine.cjs`** (outer graph). **Cost:** Stop hook → **`budget.cost_used`** / **`tier_totals`**. **Memory:** advisory; **`state.json`** wins.
 
-For **headless checks** (CI, scripts), run **`node ${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs help`** — same budget/transition/artifact rules as **`/check`**, implemented in **`scripts/lib/work-engine/`**.
+---
 
-**Optional durable memory:** Session start **appends memory prime by default** (opt out: **`AGENTIC_SWE_MEMORY_PRIME=0`**). **`npm run memory-prime`** / **`AGENTIC_SWE_MEMORY_PRIME_QUERY`** produce the same advisory digest; **`memory-import`** / **`memory-sliding-summary`** for graph merge and transcript sliding. **`state.json`** remains authoritative—see **`CLAUDE.md`**. User guide: [Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory) · spec: **`docs/specs/memory-graph.md`**.
+## Expert guidelines
 
-### State Machine (abbreviated)
+- Read **`.worklogs/<id>/state.json`** — never infer state from chat alone.
+- Artifacts need evidence per **`templates/evidence-standard.md`**.
+- Stop at **`ambiguity-wait`**, **`approval-wait`**, escalations.
+- Every transition in **`history`** + **`progress.md`**.
+- Invoke **`/check budget`** before phases.
+- Source priority: repo files → official docs → execution evidence → user → memory.
+
+---
+
+## State Machine
+
+Three tracks. Set **`pipeline.track`** leaving **`lean-track-check`**.
 
 ```
-initialized → feasibility → lean-track-check → branch by pipeline.track → … → validation → pr-creation → approval-wait → completed
+initialized -> feasibility
+feasibility -> ambiguity-wait | lean-track-check | pipeline-failed
+ambiguity-wait -> feasibility | pipeline-failed
+lean-track-check -> lean-track-implementation | design
+lean-track-implementation -> validation | escalate-code
+design -> design-review | verification
+design-review -> design | verification
+verification -> test-strategy | design | pipeline-failed
+test-strategy -> implementation
+implementation -> self-review
+self-review -> implementation | code-review | validation
+code-review -> implementation | permissions-check | escalate-code
+permissions-check -> validation | escalate-code
+validation -> implementation | pr-creation | escalate-validation
+pr-creation -> approval-wait
+approval-wait -> implementation | completed
 ```
 
-- **Lean track** (`pipeline.track`: `lean`): skips full design flow; uses `lean-track-implementation`
-- **Standard track** (`standard`): design + verification + test-strategy + implementation + self-review → validation; skips design panel, `design-review`, `code-review`, and `permissions-check`
-- **Rigorous track** (`rigorous`): full governance — design, design-review, verification, test-strategy, implementation, self-review, code-review, permissions-check
-- **Human gates**: ambiguity-wait, approval-wait, and escalation states
+| From state | Lean | Standard | Rigorous |
+|------------|------|----------|----------|
+| `lean-track-check` | → `lean-track-implementation` | → `design` | → `design` |
+| `design` | — | → `verification` | → `design-review` |
+| `self-review` | — | → `validation` | → `code-review` |
 
-### Available Commands
+Canonical: **`state-machine.json`**.
 
-| Command | Purpose |
-|---------|---------|
-| `/work <desc>` | Start or resume a work item |
-| `/plan-only` | Feasibility and design only — no implementation |
-| `/brainstorm` | Design-first exploration (design phase + optional visual server) |
-| `/write-plan` | Refine `implementation.md` plan without coding |
-| `/execute-plan` | Execute the plan via implementation / lean-track-implementation |
-| `/author-pipeline` | Extend phases, commands, agents, templates safely |
-| `/check budget` | Verify budget before a phase |
-| `/check transition` | Validate a state transition |
-| `/check artifacts` | Confirm required artifacts exist |
-| `/evaluate-work` | Inspect work item health |
-| `/repo-scan` | Snapshot codebase structure |
-| `/test-runner [scope]` | Run detected test suites |
-| `/lint [scope]` | Run linters in check mode |
-| `/subagent` | Browse and invoke specialist agents |
-| `npm run catalog:lint` | Lint **`agents/subagents`** (CI via **`npm run verify`**) |
-| `npm run catalog:route` | Top‑k subagents from a query (**`--mode auto|lexical|semantic`**) |
-| `npm run catalog:index` | Build **`.agentic-swe/catalog-embeddings.json`** for semantic routing |
+---
 
-**Docs (site):** [Catalog routing & CI](https://agentic-swe.github.io/agentic-swe-site/docs/catalog-routing) · [Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory)
+## Required Artifacts by State
 
-### Key Directories
+| State | Required artifacts |
+|---|---|
+| `feasibility` | `feasibility.md` |
+| `ambiguity-wait` | `feasibility.md`, `ambiguity-report.md` |
+| `lean-track-check` | `lean-track-check.md` |
+| `lean-track-implementation` | `implementation.md`, `review-pass.md` or `review-feedback.md` |
+| `design` | `design.md`, `reflection-log.md` (when returning from rejection) |
+| `design-review` | `design-review.md` or `design-feedback.md` |
+| `verification` | `verification-results.md` |
+| `test-strategy` | `test-stubs.md`, `test-results.md` |
+| `implementation` | `implementation.md`, `reflection-log.md` (when returning from rejection) |
+| `self-review` | `self-review.md` |
+| `code-review` | `review-pass.md` or `review-feedback.md` |
+| `permissions-check` | `permissions-changes.md` |
+| `validation` | `validation-results.md` |
+| `pr-creation` | `cicd.md`, `pr-link.txt` |
+| `approval-wait` | `cicd.md`, `pr-link.txt`, `approval-feedback.md` (when `changes_requested`) |
+| `completed` | `cicd.md`, `pr-link.txt` |
+| `escalate-code` | `review-feedback.md` or `permissions-changes.md` |
+| `escalate-validation` | `validation-results.md` |
+| `pipeline-failed` | `feasibility.md` or `verification-results.md` |
 
-- `${CLAUDE_PLUGIN_ROOT}/commands/` — slash command definitions (per [Claude Plugins reference](https://code.claude.com/docs/en/plugins-reference#skills), plugins may use `commands/*.md` or `skills/<name>/SKILL.md`; this pack uses **`commands/`** only)
-- `${CLAUDE_PLUGIN_ROOT}/phases/` — phase prompts (one per pipeline state)
-- `${CLAUDE_PLUGIN_ROOT}/agents/` — specialist agent prompts (<!-- catalog-counts:start kind=short-total -->138+ subagents<!-- catalog-counts:end -->) and **`agents/plugin-runtime/`** (bundled helpers: subagent-catalog shell, brainstorm server)
-- `${CLAUDE_PLUGIN_ROOT}/templates/` — state, progress, and evidence templates
-- `${CLAUDE_PLUGIN_ROOT}/references/` — authoritative tool and process references
+---
 
-### Governance
+## Operating loop
 
-For the full governance policy, state machine, budgets, delegation rules,
-and artifact requirements, see [`CLAUDE.md`](CLAUDE.md).
+1. Read **`state.json`** → **`current_state`** + **`pipeline.track`**
+2. **`/check budget`** → allowed edge → **`/check transition`**
+3. Execute **`phases/<state>.md`** → write artifacts → **`/check artifacts`**
+4. Update **`state.json`**, **`progress.md`**, **`audit.log`**
+5. Context Summary every **3rd** transition
+6. Repeat until gate, escalation, or **`completed`**
+
+---
+
+## Enforcement skills
+
+- **`/check budget`** — before each phase
+- **`/check transition`** — before each transition
+- **`/check artifacts`** — after artifacts, before transition
+
+---
+
+## Skill index
+
+| Skill | When |
+|-------|------|
+| `/work` | Start or resume work item |
+| `/goal` | Outer objective loop |
+| `/repo-scan` | Feasibility signals |
+| `/test-runner` | Run tests |
+| `/subagent` | Browse <!-- catalog-counts:start kind=short-total -->138+ subagents<!-- catalog-counts:end --> |
+| `/receipt` | Shareable audit artifact |
+
+Pack skills: **`skills/`** (Agent Skills standard). Commands: **`commands/`**. Phases: **`phases/`**.
+
+**Memory prime:** query defaults to active work item **`task`** when **`AGENTIC_SWE_MEMORY_PRIME_QUERY`** is unset.
+
+**Repo map:** `node scripts/repo-map.cjs --symbol <name> | --imports-of <path> | --tests-for <path>`
+
+For delegation tables, subagent catalog, utility skills, install, and extended budgets see **`references/deferred/hypervisor-deferred.md`** and full **`CLAUDE.md`**.

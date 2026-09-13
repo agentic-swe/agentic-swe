@@ -1,0 +1,10 @@
+{
+  "id": "oracle-install-tree",
+  "title": "Install tree test",
+  "description": "Install tree test",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/install-tree.test.js"
+  ],
+  "corpus_class": "oracle"
+}

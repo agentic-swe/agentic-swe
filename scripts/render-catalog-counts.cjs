@@ -31,7 +31,7 @@ const SUBAGENTS_ROOT = path.join(REPO_ROOT, 'agents', 'subagents');
 
 const DEFAULT_TARGETS = [
   'README.md',
-  'CLAUDE.md',
+  'references/deferred/hypervisor-deferred.md',
   'AGENTS.md',
   'commands/subagent.md',
 ];

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Cursor stop / Claude-compatible session capture (best-effort; never fail the turn).
+set +e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+INPUT=$(cat || true)
+# Bill transcript usage into the active work item before muscle-memory capture (parity with hooks/hooks.json Stop).
+printf '%s' "$INPUT" | node "$REPO_ROOT/scripts/lib/work-engine/hook-record-cost.cjs" >/dev/null 2>&1
+printf '%s' "$INPUT" | node "$REPO_ROOT/scripts/session-capture.cjs" >/dev/null 2>&1
+exit 0

@@ -19,7 +19,7 @@ function main() {
   }
   try {
     const hook = JSON.parse(stdin || '{}');
-    const transcriptPath = hook.transcript_path;
+    const transcriptPath = hook.transcript_path || hook.transcriptPath;
     const cwd = hook.cwd || process.cwd();
     if (!transcriptPath || typeof transcriptPath !== 'string') process.exit(0);
 

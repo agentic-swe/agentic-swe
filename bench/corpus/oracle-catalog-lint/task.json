@@ -1,0 +1,10 @@
+{
+  "id": "oracle-catalog-lint",
+  "title": "Catalog lint clean",
+  "description": "Catalog lint clean",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node scripts/catalog-lint.cjs"
+  ],
+  "corpus_class": "oracle"
+}

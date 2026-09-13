@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "goal_id": "<goal-id>",
+  "objective": "<goal statement>",
+  "current_state": "goal-initialized",
+  "created_at": "<ISO-8601 timestamp>",
+  "updated_at": "<ISO-8601 timestamp>",
+  "owner": "hypervisor",
+  "completion_criteria": {
+    "type": "checklist",
+    "command": null,
+    "checklist": [],
+    "assertion": null,
+    "verified": false
+  },
+  "budget": {
+    "max_child_items": 5,
+    "child_items_used": 0,
+    "max_loop_turns": 12,
+    "loop_turns_used": 0,
+    "cost_budget_usd": 15.0,
+    "cost_used": 0.0
+  },
+  "convergence": {
+    "last_failure_category": null,
+    "consecutive_same_category": 0
+  },
+  "discovery": {
+    "sources": ["explicit", "failing-tests", "todo-scan"],
+    "queue": []
+  },
+  "children": [],
+  "gates": {
+    "goal_approved": false,
+    "pending_gate": null
+  },
+  "history": []
+}

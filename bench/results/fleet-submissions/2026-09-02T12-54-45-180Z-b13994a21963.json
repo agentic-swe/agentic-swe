@@ -1,0 +1,455 @@
+{
+  "submitted_at": "2026-09-02T12:54:45.180Z",
+  "goal_complete": false,
+  "fleet_evidence_class": "maintainer_dogfood",
+  "measurement_contract": "Consumer fleet submission (maintainer_dogfood) — archived for maintainer review but excluded from fleet-scale-independent counts.",
+  "project_root": "/Users/surajg/hobby-projects/salesforce-agentic-swe",
+  "plugin_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe",
+  "git": {
+    "origin": "https://github.com/surajSFDC/salesforce-agentic-swe.git",
+    "head": "7bc267580dbd39b54abad0d17987221217c70a6d"
+  },
+  "fleet_submission_ready": true,
+  "blockers": [],
+  "evidence": {
+    "generated_at": "2026-09-02T12:54:45.179Z",
+    "goal_complete": false,
+    "measurement_contract": "Fleet evidence bundle for maintainer review. Does not satisfy product goal_complete without independent team organic /work at scale.",
+    "project_root": "/Users/surajg/hobby-projects/salesforce-agentic-swe",
+    "plugin_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe",
+    "consumer_mode": true,
+    "muscle_memory": {
+      "ok": true,
+      "consumer_mode": true,
+      "memory_sqlite_path": "/Users/surajg/hobby-projects/salesforce-agentic-swe/.agentic-swe/memory.sqlite",
+      "procedures": {
+        "evaluated": 3,
+        "unevaluated": 0,
+        "ritual_skills": []
+      },
+      "skill_eval": {
+        "promote_candidates": [],
+        "scaffold_candidates": [],
+        "evaluate_procedure_first": []
+      },
+      "checks": [
+        {
+          "id": "memory_store_writable",
+          "ok": true
+        },
+        {
+          "id": "memory_sqlite_configured",
+          "ok": true
+        },
+        {
+          "id": "cursor_stop_cost_sync",
+          "ok": true
+        },
+        {
+          "id": "claude_stop_cost_sync",
+          "ok": true
+        },
+        {
+          "id": "worklogs_root",
+          "ok": true,
+          "exists": true,
+          "hint": "Set AGENTIC_SWE_PROJECT_ROOT to this repo when using the plugin from another cwd"
+        }
+      ],
+      "fleet_evidence": {
+        "organic_live": 3,
+        "tier_totals_work_items": 3,
+        "organic_with_tier_totals": 3,
+        "organic_missing_tier_totals": [],
+        "portfolio_multiplier": 0.008425613866153106,
+        "portfolio_target_met": true,
+        "fleet_submission_ready": true,
+        "blockers": [],
+        "next_command": "npm run fleet-evidence-bundle -- --project-root <repo> --out fleet-evidence.json"
+      }
+    },
+    "procedures": {
+      "evaluated": 3,
+      "unevaluated": 0,
+      "ritual_skills": []
+    },
+    "skill_eval": {
+      "store_root": "/Users/surajg/hobby-projects/salesforce-agentic-swe",
+      "ritual_skills": 0,
+      "suggestions": [],
+      "promote_candidates": [],
+      "scaffold_candidates": []
+    },
+    "production": {
+      "sources": {
+        "live": 3,
+        "fixtures": 0,
+        "dogfood": 0,
+        "organic": 3,
+        "organic_live": 3,
+        "organic_fixtures": 0
+      },
+      "portfolio_multiplier": 0.008425613866153106,
+      "target_met": true
+    },
+    "organic_session_usd": {
+      "organic_items": 0,
+      "billed_sessions": 0,
+      "session_usd_multiplier": null,
+      "target_multiplier": 0.02,
+      "usd_target_met": null
+    },
+    "submission_readiness": {
+      "fleet_submission_ready": true,
+      "blockers": [],
+      "organic_live": 3,
+      "tier_totals_work_items": 3,
+      "organic_with_tier_totals": 3,
+      "organic_missing_tier_totals": [],
+      "portfolio_multiplier": 0.008425613866153106,
+      "portfolio_target_met": true
+    },
+    "bench_artifacts": {
+      "objective_evidence": {
+        "generated_at": "2026-09-02T12:54:28.319Z",
+        "claim_status": "proven_at_scale",
+        "skills": {
+          "total": 182,
+          "unevaluated": 0
+        },
+        "production_tier_totals": {
+          "live": 5,
+          "fixtures": 3,
+          "dogfood": 3,
+          "organic": 3,
+          "organic_live": 3,
+          "organic_fixtures": 1
+        },
+        "live_path": {
+          "ok": true,
+          "live_work_items": 3,
+          "live_production_verified": true,
+          "measurement_contract": "Isolated temp .worklogs via applyTransition; not pack-root live usage; does not by itself prove proven_at_scale"
+        },
+        "requirements": [
+          {
+            "id": "installable-plugin",
+            "requirement": "Single installable plugin/tool",
+            "evidence": [
+              ".claude-plugin/plugin.json",
+              "package.json"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "versioned-evaluated-skills",
+            "requirement": "Every SWE operation is a versioned, evaluated skill",
+            "evidence": [
+              "182 skills, 0 unevaluated"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "eval-harness",
+            "requirement": "Eval harness gating every skill (fail-closed, flags unevaluated/unknown)",
+            "evidence": [
+              "scripts/lib/skills/eval-gate.cjs",
+              "scripts/skill-eval.cjs"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "session-memory-graph",
+            "requirement": "Conversations chunked into sessions and distilled into memory graph (personal + team/repo)",
+            "evidence": [
+              "scripts/lib/memory/ingest-scopes.cjs",
+              "scripts/lib/memory/discover-transcripts.cjs",
+              "scripts/ingest-memory-scopes.cjs",
+              "scripts/session-capture.cjs",
+              "scripts/session-chat-warm.cjs",
+              "ingestOrganicWorklogs",
+              "ingestProjectSkills",
+              "mine-transcript-procedures (tool_use Read/Shell)"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "runtime-skill-discovery",
+            "requirement": "Discovers/selects skills at runtime and flags unevaluated",
+            "evidence": [
+              "scripts/lib/skills/skill-router.cjs",
+              "scripts/session-skill-route-hint.cjs",
+              "scripts/lib/skills/skill-eval-suggestions.cjs",
+              "routeSkillsWithMemory (graph + procedure boost)"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "self-evolving-skill-eval",
+            "requirement": "Self-evolution: mined procedure rituals suggest and optionally promote skill-eval candidates",
+            "evidence": [
+              "scripts/lib/skills/skill-eval-suggestions.cjs",
+              "scripts/lib/skills/project-skills.cjs (.agentic-swe/skills scaffold)",
+              "scripts/skill-eval.cjs suggest|promote-rituals|scaffold-rituals",
+              "scripts/session-skill-route-hint.cjs (promote section)",
+              "AGENTIC_SWE_PROMOTE_RITUALS on session-capture evolve-cycle",
+              "scripts/fleet-evidence-bundle.cjs",
+              "scripts/fleet-onboard.cjs",
+              "scripts/fleet-submit.cjs"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "model-agnostic",
+            "requirement": "Survives model churn (capability tiers, host maps)",
+            "evidence": [
+              "config/model-map.claude-code.json",
+              "config/model-map.cursor.json",
+              "config/model-map.codex.json",
+              "config/model-map.gemini.json",
+              "config/model-map.opencode.json",
+              "scripts/model-conformance.cjs"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "architecture-research",
+            "requirement": "Deep research + validated architecture plan",
+            "evidence": [
+              "docs/research/muscle-memory-sota.md",
+              "docs/specs/muscle-memory-orchestrator.md",
+              "docs/specs/memory-graph.md"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "token-reduction-benchmarks",
+            "requirement": "Benchmarks proving per-task tokens toward 1–2% of cold",
+            "evidence": [
+              "proven_at_scale",
+              "portfolio_multiplier=0.008425613866153106"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "live-path-reproducible",
+            "requirement": "Isolated work-engine live-path bench (tmp .worklogs; not pack-root proven_at_scale)",
+            "evidence": [
+              "live-path ok=true items=3 verified=true"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "live-production-learning",
+            "requirement": "Pack-root live .worklogs with tier_totals (includes CI/maintainer dogfood applyTransition)",
+            "evidence": [
+              "pack_live_work_items=5",
+              "dogfood=3"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "organic-team-learning",
+            "requirement": "Learns from non-dogfood /work (organic pipeline worklogs in pack-root .worklogs, not bench fixtures)",
+            "evidence": [
+              "organic_live=3",
+              "organic_fixtures=1"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "organic-token-reduction",
+            "requirement": "Organic /work verify commands replayed on the descent ladder toward 1–2% of historical/L3 cold",
+            "evidence": [
+              "hits=2/2 live_hits=2 token_mult=0.01634262180910309 usd_mult=0.0004873456819897979"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "live-session-usd-telemetry",
+            "requirement": "Live pack-root organic /work reports billed session USD multiplier (verify-replay vs cost_used; not new-feature sessions)",
+            "evidence": [
+              "billed=2 mult=0.0014240985589312831"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "conversation-tool-descent",
+            "requirement": "Conversation tool traces (Read + isolated verify) evaluate and replay on the ladder toward 1–2% of L3 for that unit",
+            "evidence": [
+              "eval=evaluated L1→L1→L0 mult=0"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "git-history-descent",
+            "requirement": "Git history (test co-changed with code) evaluates and skips LLM at implementation when design files overlap, toward 1–2% of L3 for that unit",
+            "evidence": [
+              "overlap=git-history skip=true tier=L1 mult=0.0075"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "git-pack-history-descent",
+            "requirement": "This pack’s own git history mines isolated tests into an isolated store and skip_llm at implementation (not mutating committed procedures.json)",
+            "evidence": [
+              "declared=bin/agentic-swe.cjs overlap=git-history skip=true mult=0.0075"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "organic-worklog-descent",
+            "requirement": "Organic /work (declared files + isolated verify) skips LLM at implementation on a follow-up item with overlapping files, toward 1–2% of L3 for that unit",
+            "evidence": [
+              "overlap=organic-worklog skip=true tier=L1 mult=0.0075"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "session-chunk-descent",
+            "requirement": "Session chunks (declared repo paths + isolated verify) evaluate and skip LLM at implementation toward 1–2% of L3 for that unit",
+            "evidence": [
+              "overlap=session-mine skip=true tier=L1 mult=0.0075"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "implementation-skip-llm",
+            "requirement": "Implementation entry skip_llm_exploration on fingerprint L0/L1 (not verify-only), measured vs L3",
+            "evidence": [
+              "skip=true tier=L0 mult=0"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "consumer-repo-learning",
+            "requirement": "Isolated consumer repo (projectRoot ≠ pack) learns organic /work, evolve-cycle memory, and skip_llm — not pack fixtures",
+            "evidence": [
+              "scripts/bench/run-consumer-repo-descent.cjs",
+              "scripts/fleet-onboard.cjs",
+              "scripts/fleet-submit.cjs",
+              "memory=true skip=true evaluated=true mult=0"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "consumer-fleet-submission-gate",
+            "requirement": "Consumer repo submission gate passes with ≥3 organic_live /work items and portfolio ≤2% (isolated tmp — not fleet traffic)",
+            "evidence": [
+              "scripts/bench/run-consumer-fleet-readiness.cjs",
+              "organic_live=3 ready=true mult=0.008425613866153106"
+            ],
+            "status": "met"
+          },
+          {
+            "id": "fleet-scale-independent",
+            "requirement": "Independent fleet /work from consumer repos archived via fleet-submit → fleet-ingest-submission (not tmp benches)",
+            "evidence": [
+              "scripts/fleet-submit.cjs",
+              "scripts/ingest-fleet-submission.cjs",
+              "archived_independent=0",
+              "archived_total=0",
+              "distinct_independent_consumers=0"
+            ],
+            "status": "incomplete"
+          }
+        ],
+        "unmet": [
+          "fleet-scale-independent"
+        ],
+        "scorecard_local_met": true,
+        "scorecard_all_met": false,
+        "fleet_submissions": {
+          "archived": 0,
+          "archived_independent": 0,
+          "distinct_consumers": 0,
+          "distinct_independent_consumers": 0,
+          "consumer_roots": [],
+          "independent_consumer_roots": [],
+          "fleet_scale": {
+            "archived": 0,
+            "archived_independent": 0,
+            "distinct_consumers": 0,
+            "distinct_independent_consumers": 0,
+            "consumer_roots": [],
+            "independent_consumer_roots": []
+          }
+        },
+        "goal_complete": false,
+        "honesty": "goal_complete is always false here: the product objective is fleet-scale muscle memory. scorecard_local_met covers implementable matrix rows; scorecard_all_met additionally requires ≥3 distinct archived consumer fleet submissions. Fixture organic counts must not pad organic_live."
+      },
+      "consumer_repo_descent": {
+        "generated_at": "2026-09-02T12:39:52.822Z",
+        "ok": true,
+        "measurement_contract": "Isolated git consumer repo (tmp); plugin from pack path. Organic capture + evolve-cycle + skip_llm. Not fleet /work or pack-root live .worklogs.",
+        "consumer_root": "/var/folders/h_/g9121w0j51v3gmsbf_nf8fq00000gq/T/consumer-repo-Alb7pz",
+        "plugin_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe",
+        "isolated_from_pack": true,
+        "captured": 1,
+        "fleet_onboard": {
+          "ok": true,
+          "consumer_mode": true,
+          "organic_capture": 1,
+          "doctor_fleet_ready": false
+        },
+        "evolve": {
+          "ok": true,
+          "procedures_mined": 4,
+          "team_events_ingested": 4,
+          "organic_memory_items": 1,
+          "scaffold_created": 1
+        },
+        "project_skill_scaffolded": true,
+        "project_skill_evaluated": true,
+        "ritual_promote": {
+          "promoted": 1,
+          "total": 1,
+          "ok": true
+        },
+        "memory_sqlite": true,
+        "consumer_procedures": true,
+        "skip_llm_exploration": true,
+        "overlap_source": "organic-worklog",
+        "tier": "L0",
+        "tier_totals_recorded": true,
+        "delivered_tokens": 0,
+        "cold_l3_tokens": 200000,
+        "multiplier": 0,
+        "target_multiplier": 0.02,
+        "target_met": true
+      },
+      "consumer_fleet_readiness": {
+        "generated_at": "2026-09-02T12:43:59.410Z",
+        "ok": true,
+        "measurement_contract": "Isolated tmp consumer repo with 3 synthetic organic /work items. Proves fleet submission gate mechanics — not independent team fleet traffic. goal_complete stays false.",
+        "consumer_root": "/var/folders/h_/g9121w0j51v3gmsbf_nf8fq00000gq/T/consumer-fleet-mL6jP6",
+        "plugin_root": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe",
+        "isolated_from_pack": true,
+        "organic_live": 3,
+        "tier_totals_work_items": 3,
+        "portfolio_multiplier": 0.008425613866153106,
+        "target_multiplier": 0.02,
+        "target_met": true,
+        "fleet_submission_ready": true,
+        "blockers": [],
+        "captured": 3,
+        "fleet_onboard_ok": true
+      },
+      "fleet_submissions": {
+        "archived": 0,
+        "archived_independent": 0,
+        "distinct_consumers": 0,
+        "distinct_independent_consumers": 0,
+        "consumer_roots": [],
+        "independent_consumer_roots": []
+      }
+    },
+    "submission_checklist": [
+      "Set AGENTIC_SWE_PROJECT_ROOT to the consumer repo",
+      "Run /work to completion with organic tier_totals in .worklogs",
+      "npm run work-engine -- doctor --project-root <repo> --json",
+      "npm run fleet-evidence-bundle -- --project-root <repo> --out fleet-evidence.json",
+      "npm run fleet-submit -- --project-root <repo> --out fleet-submission.json"
+    ]
+  }
+}

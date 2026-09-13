@@ -23,11 +23,18 @@ function usage() {
   process.stderr.write(`  agentic-swe path | pack-path   Print absolute pack root (for --plugin-dir / Cursor AGENTIC_SWE_PACK_ROOT)\n`);
   process.stderr.write(`  agentic-swe version             Print ${pkg.name}@${pkg.version}\n`);
   process.stderr.write(`  agentic-swe receipt [args]      Render a receipt for a worklog (passes args to scripts/render-receipt.cjs)\n`);
+  process.stderr.write(`  agentic-swe goal [args]         Run the goal-loop engine (passes args to scripts/goal-engine.cjs)\n`);
   process.stderr.write(`  agentic-swe help                Show this message\n`);
 }
 
 if (cmd === 'receipt') {
   const script = path.join(root, 'scripts', 'render-receipt.cjs');
+  const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
+if (cmd === 'goal') {
+  const script = path.join(root, 'scripts', 'goal-engine.cjs');
   const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
   process.exit(res.status == null ? 1 : res.status);
 }

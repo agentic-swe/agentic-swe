@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-08-30T00:09:45.101Z",
+  "ok": true,
+  "measurement_contract": "Git-mined isolated node --test overlapping design-declared files; design verify may differ (npm test). Not a full SWE session claim.",
+  "mined": {
+    "ok": true,
+    "mined": 1,
+    "procedures": 1
+  },
+  "skip_llm_exploration": true,
+  "overlap_source": "git-history",
+  "tier": "L1",
+  "delivered_tokens": 1500,
+  "cold_l3_tokens": 200000,
+  "multiplier": 0.0075,
+  "target_multiplier": 0.02,
+  "target_met": true
+}

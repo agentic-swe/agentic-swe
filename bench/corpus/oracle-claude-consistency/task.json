@@ -1,0 +1,10 @@
+{
+  "id": "oracle-claude-consistency",
+  "title": "CLAUDE.md consistency",
+  "description": "CLAUDE.md consistency",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/claude-md-consistency.test.js"
+  ],
+  "corpus_class": "oracle"
+}

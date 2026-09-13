@@ -78,6 +78,17 @@
             "cache_creation_input_tokens": { "type": "number" }
           },
           "additionalProperties": true
+        },
+        "tier_totals": {
+          "type": "object",
+          "description": "Token counts attributed to execution ladder tiers L0-L3.",
+          "properties": {
+            "L0": { "type": "object", "additionalProperties": true },
+            "L1": { "type": "object", "additionalProperties": true },
+            "L2": { "type": "object", "additionalProperties": true },
+            "L3": { "type": "object", "additionalProperties": true }
+          },
+          "additionalProperties": true
         }
       },
       "additionalProperties": true

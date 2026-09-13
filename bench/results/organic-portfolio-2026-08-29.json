@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-08-29T19:06:06.962Z",
+  "ok": true,
+  "measurement_contract": "Organic /work: capture validation verify commands, then L0–L3 ladder. Historical usage is cold baseline when present; not mixed into proven_at_scale dogfood multiplier.",
+  "capture": {
+    "ok": true,
+    "captured": 2,
+    "skipped": 1,
+    "captures": [
+      {
+        "work_id": "phase-2-durable-memory",
+        "work_dir": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/.worklogs/phase-2-durable-memory",
+        "ok": false,
+        "reason": "validation-results.md missing"
+      },
+      {
+        "work_id": "phase-3-orchestration",
+        "work_dir": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/.worklogs/phase-3-orchestration",
+        "ok": true,
+        "fingerprint": "aa3a2b7d30b160b30515a2683fef6fdc942c317b33c31ab7a4c975aea3c2efe9",
+        "verifyCommand": "npm test",
+        "tier": "L0",
+        "success_count": 2,
+        "files": [
+          "config/model-routing.default.json",
+          "scripts/catalog-lint.cjs",
+          "scripts/catalog-route.cjs",
+          "test/catalog-lint.test.js"
+        ]
+      },
+      {
+        "work_id": "tui-mascot-sf-agents",
+        "work_dir": "/Users/surajg/hobby-projects/agentic-labs/agentic-swe/.worklogs/tui-mascot-sf-agents",
+        "ok": true,
+        "fingerprint": "df40e0908f6f4c88ab11e2baf66f816f928557f0df8e4c7af0efcb2d2ac454a7",
+        "verifyCommand": "npm test",
+        "tier": "L0",
+        "success_count": 4,
+        "files": [
+          "tui-mascot-sf-agents"
+        ]
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "work_id": "phase-2-durable-memory",
+      "capture_ok": false,
+      "reason": "validation-results.md missing",
+      "tier": "L3"
+    },
+    {
+      "work_id": "phase-3-orchestration",
+      "capture_ok": true,
+      "verifyCommand": "npm test",
+      "tier": "L0",
+      "hit": true,
+      "delivered_tokens": 0,
+      "historical_tokens": 200000,
+      "warm_vs_historical": 0.008425613866153106
+    },
+    {
+      "work_id": "tui-mascot-sf-agents",
+      "capture_ok": true,
+      "verifyCommand": "npm test",
+      "tier": "L0",
+      "hit": true,
+      "delivered_tokens": 0,
+      "historical_tokens": 182333,
+      "warm_vs_historical": 0.00920892687059616
+    }
+  ],
+  "summary": {
+    "items": 3,
+    "captured": 2,
+    "capture_failed": 1,
+    "ladder_hits": 2,
+    "cold_per_task_tokens": 198866.5,
+    "warm_per_task_tokens": 1750,
+    "portfolio_multiplier": 0.008799873281824742,
+    "target_multiplier": 0.02,
+    "target_met": true
+  }
+}

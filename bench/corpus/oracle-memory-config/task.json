@@ -1,0 +1,10 @@
+{
+  "id": "oracle-memory-config",
+  "title": "Memory config schema",
+  "description": "Memory config schema",
+  "expected_track": "lean",
+  "acceptance_tests": [
+    "node --test test/memory-config.test.js"
+  ],
+  "corpus_class": "oracle"
+}
