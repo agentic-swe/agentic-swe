@@ -104,7 +104,8 @@
     "tdd_mode": false,
     "worktree_path": null,
     "pair_mode": false,
-    "track_recommendation": null
+    "track_recommendation": null,
+    "jev_track": null
   },
   "linked_repos": [],
   "convergence": {

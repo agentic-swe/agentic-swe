@@ -13,6 +13,7 @@ const { resolvePrimeQuery } = require('./lib/memory/resolve-prime-query.cjs');
 const { suggestSkillEvalFromProcedures } = require('./lib/skills/skill-eval-suggestions.cjs');
 const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
 const { appendFleetConsumerHints } = require('./lib/fleet/session-fleet-hints.cjs');
+const { adviseSkillNouls, appendJevSkillLines } = require('./lib/jev/rerank.cjs');
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -62,6 +63,20 @@ async function main() {
   if (!query.trim()) return;
 
   const r = await routeSkillsWithMemory({ pluginRoot, projectRoot, query, k: 4 });
+  let skillJev = null;
+  try {
+    const advised = await adviseSkillNouls({
+      pluginRoot,
+      projectRoot,
+      query,
+      results: r.results,
+      workDir,
+      env: process.env,
+    });
+    skillJev = advised.jev;
+  } catch {
+    skillJev = { skipped: 'http_error', applied: false, fallback: 'lexical' };
+  }
 
   let muscle = [];
   try {
@@ -121,6 +136,7 @@ async function main() {
         `- ⚠ **${r.unevaluated_in_top_k}** unevaluated skill(s) in top-${r.results.length} — use \`work-engine skill-check --skill <name>\` before autonomous invocation.`
       );
     }
+    appendJevSkillLines(lines, skillJev);
   }
 
   if (muscle.length) {
