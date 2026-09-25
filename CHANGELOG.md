@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`agentic-swe setup` only configures a git repository root.** It refuses a parent folder or a subdirectory, prints the target and planned changes, and asks before writing. `--yes` confirms for scripts, and `--allow-non-git` is the explicit override. It also refuses to replace a Cursor plugin directory that is a git checkout.
+
 ## [3.3.1] - 2026-09-26
 
 ### Added

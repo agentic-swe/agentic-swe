@@ -28,21 +28,26 @@ Options:
                Without this flag, installed hosts are detected.
   --target     Project repository to configure (default: current directory).
   --dry-run    Print the planned changes without writing files.
+  --yes        Write the changes without asking. Required when there is no terminal.
+  --allow-non-git
+               Configure a directory that is not a git repository.
   --no-gitignore
                Do not add .worklogs/ to the target .gitignore.
-  --yes        Accepted for scripts; setup is already non-interactive.
 `);
 }
 
 function parseArgs(argv) {
-  const opts = { hosts: [], target: process.cwd(), dryRun: false, gitignore: true };
+  const opts = {
+    hosts: [], target: process.cwd(), dryRun: false, gitignore: true, yes: false, allowNonGit: false,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--host' && argv[i + 1]) opts.hosts.push(argv[++i]);
     else if (arg === '--target' && argv[i + 1]) opts.target = path.resolve(argv[++i]);
     else if (arg === '--dry-run') opts.dryRun = true;
     else if (arg === '--no-gitignore') opts.gitignore = false;
-    else if (arg === '--yes') continue;
+    else if (arg === '--yes') opts.yes = true;
+    else if (arg === '--allow-non-git') opts.allowNonGit = true;
     else if (arg === '--help' || arg === '-h') opts.help = true;
     else throw new Error(`unknown option: ${arg}`);
   }
@@ -98,9 +103,58 @@ function installRuntimeDependencies(destination, dryRun) {
   if (result.status !== 0) throw new Error(`failed to install runtime dependencies in ${destination}`);
 }
 
+function gitRoot(directory) {
+  const result = spawnSync('git', ['-C', directory, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+  if (result.error && result.error.code === 'ENOENT') {
+    throw new Error('git is required so setup can verify the target is one repository');
+  }
+  if (result.status !== 0) return null;
+  return result.stdout.trim();
+}
+
+function sameDirectory(left, right) {
+  try {
+    return fs.realpathSync(left) === fs.realpathSync(right);
+  } catch {
+    return path.resolve(left) === path.resolve(right);
+  }
+}
+
+function assertTargetRepository(target, options) {
+  const root = gitRoot(target);
+  if (!root) {
+    if (options.allowNonGit) return;
+    throw new Error(
+      `${target} is not a git repository. Setup configures one repository at a time. ` +
+      'Change to the repository you want, or pass --allow-non-git for this directory.',
+    );
+  }
+  if (!sameDirectory(root, target)) {
+    throw new Error(
+      `${target} is inside ${root}, not at its root. Run setup from ${root}, or pass --target ${root}.`,
+    );
+  }
+}
+
+function cursorPluginDestination(home) {
+  return path.join(home, '.cursor', 'plugins', 'local', 'agentic-swe');
+}
+
+function assertCursorDestination(home, hosts) {
+  if (!hosts.includes('cursor')) return;
+  const destination = cursorPluginDestination(home);
+  if (fs.existsSync(path.join(destination, '.git'))) {
+    throw new Error(
+      `${destination} is a git checkout. Refusing to replace it. ` +
+      'Move it aside yourself if you want setup to install a copy there.',
+    );
+  }
+}
+
 function installCursor(packRoot, home, dryRun) {
-  const destination = path.join(home, '.cursor', 'plugins', 'local', 'agentic-swe');
+  const destination = cursorPluginDestination(home);
   if (dryRun) return destination;
+  assertCursorDestination(home, ['cursor']);
   fs.rmSync(destination, { recursive: true, force: true });
   fs.mkdirSync(destination, { recursive: true });
   for (const entry of PORTABLE_ENTRIES.concat(['.cursor-plugin', '.claude-plugin', 'package.json'])) {
@@ -158,10 +212,12 @@ function setup(options, context = {}) {
   if (!fs.existsSync(target) || !fs.statSync(target).isDirectory()) {
     throw new Error(`target is not a directory: ${target}`);
   }
+  assertTargetRepository(target, options);
   const hosts = options.hosts.length ? options.hosts : detectHosts(home);
   if (!hosts.length) {
     throw new Error(`no supported host detected; pass --host ${SUPPORTED_HOSTS[0]} (or another host)`);
   }
+  if (!options.dryRun) assertCursorDestination(home, hosts);
 
   const changes = [];
   const would = (past, future) => (options.dryRun ? `Would ${future}` : past);
@@ -205,12 +261,48 @@ function setup(options, context = {}) {
   return { hosts, target, changes };
 }
 
-function main() {
+function prompt(question) {
+  const readline = require('readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
+
+async function confirmChanges(preview, ask) {
+  const lines = [
+    `This will configure ${preview.target}`,
+    `Hosts: ${preview.hosts.join(', ')}`,
+    ...preview.changes.map((change) => `- ${change}`),
+  ];
+  const answer = await ask(lines);
+  return /^y(es)?$/i.test(String(answer).trim());
+}
+
+async function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (options.help) {
       usage();
       return;
+    }
+    if (!options.dryRun && !options.yes) {
+      const preview = setup({ ...options, dryRun: true });
+      const accepted = await confirmChanges(preview, async (lines) => {
+        if (!process.stdin.isTTY) {
+          throw new Error('refusing to write without a terminal. Re-run with --yes to confirm, or --dry-run to preview.');
+        }
+        for (const line of lines) console.log(line);
+        return prompt('Write these changes? [y/N] ');
+      });
+      if (!accepted) {
+        console.error('Cancelled. Nothing was written.');
+        process.exitCode = 1;
+        return;
+      }
     }
     const result = setup(options);
     const heading = options.dryRun ? 'Dry run, nothing written. Would configure' : 'Agentic SWE configured for';
@@ -228,8 +320,10 @@ else module.exports = {
   SUPPORTED_HOSTS,
   parseArgs,
   detectHosts,
+  assertTargetRepository,
   installPortablePack,
   installRuntimeDependencies,
   configureOpenCode,
+  confirmChanges,
   setup,
 };
