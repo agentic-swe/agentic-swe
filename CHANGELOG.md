@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-09-26
+
+### Added
+
+- **Cross-host setup tool** — `agentic-swe setup` detects installed hosts or accepts `--host` for Claude Code, Cursor, VS Code, Codex, OpenCode, and Antigravity. It merges project policy, installs host-specific files, and supports `--dry-run`.
+- **GitHub installers** — `install.sh` and `install.ps1` install a durable `agentic-swe` command without requiring an npm account.
+- **`agentic-swe doctor`** — verifies the local runtime, pack, host detection, and project configuration.
+
+### Changed
+
+- **Installation docs** now use the published setup CLI instead of host-specific clone and symlink recipes for the default path.
+
 ## [3.3.0] - 2026-05-18
 
 ### Added
