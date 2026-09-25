@@ -11,6 +11,8 @@ const { listAgentMarkdownFiles } = require('./lib/catalog/walk-subagents.cjs');
 const { rankLexical, agentSearchBlob } = require('./lib/catalog/lexical-rank.cjs');
 const { rankByEmbedding } = require('./lib/catalog/embed-rank.cjs');
 const { loadMergedCatalogConfig, resolveCatalogIndexPath } = require('./lib/catalog/catalog-config.cjs');
+const { discoverActiveWorkDir } = require('./lib/work-engine/discover-workdir.cjs');
+const { adviseSubagentChoice, catalogJevSuffix } = require('./lib/jev/rerank.cjs');
 
 const root = path.join(__dirname, '..');
 const subagentsDirDefault = path.join(root, 'agents', 'subagents');
@@ -105,7 +107,42 @@ async function main() {
   }
 
   const top = ranked.slice(0, k);
-  const out = { query, k, mode: used, results: top };
+  const byId = new Map(agents.map((agent) => [agent.id, agent.text]));
+  let jev = {
+    skipped: null,
+    applied: false,
+    order: top.map((row) => row.id),
+    fallback: 'retrieval',
+  };
+  if (top.length) {
+    let workDir = '';
+    try {
+      workDir = process.env.AGENTIC_SWE_WORK_DIR
+        ? path.resolve(process.env.AGENTIC_SWE_WORK_DIR)
+        : discoverActiveWorkDir(projectRoot) || '';
+    } catch {
+      workDir = '';
+    }
+    try {
+      const advised = await adviseSubagentChoice({
+        pluginRoot,
+        projectRoot,
+        query,
+        candidates: top.map((row) => ({ id: row.id, text: byId.get(row.id) || row.id })),
+        workDir,
+        env: process.env,
+      });
+      jev = advised.jev;
+    } catch {
+      jev = {
+        skipped: 'http_error',
+        applied: false,
+        order: top.map((row) => row.id),
+        fallback: 'retrieval',
+      };
+    }
+  }
+  const out = { query, k, mode: used, results: top, jev };
   if (json) {
     console.log(JSON.stringify(out, null, 2));
   } else {
@@ -113,6 +150,7 @@ async function main() {
     for (const r of top) {
       console.log(`${r.score.toFixed(used === 'semantic' ? 4 : 0)}\t${r.id}`);
     }
+    for (const line of catalogJevSuffix(jev)) console.log(line);
   }
 }
 

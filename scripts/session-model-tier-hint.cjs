@@ -9,6 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { discoverActiveWorkDir } = require('./lib/work-engine/discover-workdir.cjs');
 const { loadModelRouting, tierForPhase } = require('./lib/catalog/model-routing.cjs');
+const { adviseModelTier, renderModelTierHint } = require('./lib/jev/tier.cjs');
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -27,13 +28,7 @@ function parseArgs(argv) {
   return { projectRoot, pluginRoot };
 }
 
-const TIER_HINT = {
-  fast: 'Prefer a fast/cheap model for shallow work (e.g. haiku-class).',
-  balanced: 'A mid-tier model is appropriate (e.g. sonnet-class).',
-  heavy: 'Reserve a capable model for deep reasoning or sensitive review (e.g. opus-class).',
-};
-
-function main() {
+async function main() {
   const v = process.env.AGENTIC_SWE_MODEL_TIER_HINT;
   if (v === '0' || v === 'false' || v === 'off') return;
 
@@ -53,17 +48,30 @@ function main() {
   const phase = state.current_state || 'unknown';
   const routing = loadModelRouting(pluginRoot, projectRoot);
   const tier = tierForPhase(routing, phase) || 'balanced';
-  const explain = TIER_HINT[tier] || TIER_HINT.balanced;
   const wid = path.basename(workDir);
-  const block = [
-    '### Model routing (Phase 3 policy)',
-    '',
-    `- **Work item:** \`${wid}\` — **phase:** \`${phase}\` → **tier:** \`${tier}\``,
-    `- ${explain}`,
-    '',
-    'Override tiers in `.agentic-swe/model-routing.json` (merge). This hint is advisory; hosts may not enforce model choice.',
-  ].join('\n');
+  let advice = null;
+  const task = typeof state.task === 'string' ? state.task : '';
+  if (task.trim()) {
+    try {
+      advice = await adviseModelTier({
+        pluginRoot,
+        projectRoot,
+        workDir,
+        phase,
+        phaseTier: tier,
+        task,
+        env: process.env,
+      });
+    } catch {
+      advice = null;
+    }
+  }
+  const block = renderModelTierHint({ wid, phase, phaseTier: tier, advice });
   process.stdout.write(block + '\n');
 }
 
-main();
+if (require.main === module) {
+  main().catch(() => process.exit(0));
+}
+
+module.exports = { parseArgs, main };

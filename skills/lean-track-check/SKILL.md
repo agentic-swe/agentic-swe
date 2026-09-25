@@ -33,7 +33,13 @@ Principal engineer protecting the pipeline from false shortcuts — default towa
 3. Check for hidden complexity:
    - undocumented contracts, distributed state
    - non-local side effects, migrations or config coupling
-4. Choose **one** verdict (see below) with evidence.
+4. Run the advisory Jev track hint. It writes `pipeline.jev_track` and leaves `pipeline.track` unchanged. See `${CLAUDE_PLUGIN_ROOT}/references/jev.md`.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/jev-track-hint.cjs --project-root <repo> --plugin-root ${CLAUDE_PLUGIN_ROOT}
+```
+
+5. Choose **one** verdict (see below) with evidence. Read `pipeline.jev_track` beside the Adaptive Track Router field `pipeline.track_recommendation`. When `jev_track.skipped` is set (`disabled`, `missing_key`, `timeout`, `http_error`, `invalid_response`, or `low_confidence`), choose the track from this phase heuristic and ATR. When Jev, ATR, and the heuristic disagree, record the disagreement and any `caution` in `lean-track-check.md`.
 
 ### Verdicts and tracks
 
@@ -79,6 +85,7 @@ Apply `${CLAUDE_PLUGIN_ROOT}/templates/evidence-standard.md` throughout.
 - Verdict is "simple" but the task touches more than 3 modules or requires database schema changes.
 - No complexity score or rationale provided — just a bare verdict.
 - ATR recommendation disagrees with the heuristic and the disagreement is not documented.
+- `pipeline.jev_track.caution` is set, or Jev disagrees with ATR or the heuristic, and `lean-track-check.md` does not record it.
 - Track set to lean for a task in a security-sensitive directory when policy rules require rigorous.
 
 ## Failure Protocol
