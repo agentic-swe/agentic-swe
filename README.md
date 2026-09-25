@@ -6,7 +6,7 @@
   <a href="https://github.com/agentic-swe/agentic-swe/actions/workflows/ci.yml"><img src="https://github.com/agentic-swe/agentic-swe/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg" alt="Node" /></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-3.3.0-orange.svg" alt="Version" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-3.3.1-orange.svg" alt="Version" /></a>
   <!-- catalog-counts:start kind=badge-line -->
   <a href="#subagents"><img src="https://img.shields.io/badge/subagents-138%2B-purple.svg" alt="Agents" /></a>
 <!-- catalog-counts:end -->
@@ -24,8 +24,15 @@ An open-source autonomous SWE pipeline that runs in your editor or CI, writes ev
 ## Quickstart
 
 ```bash
-npm install -g @agentic-swe/agentic-swe
-claude --plugin-dir "$(agentic-swe path)"
+curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/install.sh | bash
+agentic-swe setup
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/install.ps1 | iex
+agentic-swe setup
 ```
 
 Then in Claude Code:
@@ -146,12 +153,14 @@ Beyond the [Quickstart](#quickstart) above, alternate paths:
 
 | Host | How |
 |------|-----|
-| **Cursor** | `curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/scripts/install-cursor-plugin.sh \| bash` |
-| **Codex** | [`.codex/INSTALL.md`](.codex/INSTALL.md) |
-| **OpenCode** | [`.opencode/`](.opencode/) |
+| **Cursor** | `agentic-swe setup --host cursor` |
+| **VS Code** | `agentic-swe setup --host vscode` |
+| **Codex** | `agentic-swe setup --host codex` |
+| **OpenCode** | `agentic-swe setup --host opencode` |
+| **Antigravity** | `agentic-swe setup --host antigravity` |
 | **Gemini CLI** | `gemini-extension.json` · **`GEMINI.md`** |
 
-After enabling the plugin, run **`/install`** once to merge **`CLAUDE.md`** and an optional **`.gitignore`** entry for **`.worklogs/`**. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
+Run setup without `--host` to auto-detect installed hosts, or use `--host all`. The installer merges **`CLAUDE.md`**, adds **`.worklogs/`** to **`.gitignore`**, and writes host-specific files. Run `agentic-swe doctor` to verify an installation. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
 
 → [Full installation guide](https://agentic-swe.github.io/agentic-swe-site/docs/installation) · [Golden path (~15 min)](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)
 

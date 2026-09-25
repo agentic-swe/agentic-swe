@@ -57,8 +57,8 @@ This warms memory scopes (repo docs, transcripts, corpus L0, verify-command desc
 
 ### 6. What not to do
 
-- Do **not** tell users to run **`npx`** against the wrong package: the **unscoped** npm name **`agentic-swe`** points at a **different** project. For this pack, consumers install **`@agentic-swe/agentic-swe`** from the public registry (or Git clone / marketplace only).
-- The **`agentic-swe`** CLI from **`npm install -g @agentic-swe/agentic-swe`** only prints **`path`** / **`version`** — it is **not** a hosted runner. Use it to resolve **`claude --plugin-dir "$(agentic-swe path)"`** or **`AGENTIC_SWE_PACK_ROOT`** for Cursor — see **`README.md`** and **`docs/PUBLISHING.md`**.
+- Do **not** use the unscoped npm name **`agentic-swe`**; it belongs to a different project.
+- Prefer the GitHub-installed **`agentic-swe`** tool. **`agentic-swe setup`** detects supported hosts and configures the target repository; **`agentic-swe doctor`** verifies the installation. See **`README.md`**.
 - Do **not** bulk-copy **`commands/`**, **`phases/`**, **`agents/`**, etc. into **`target/.claude/`** unless the user explicitly asks for a **legacy/vendored** layout (out of scope for default onboarding).
 
 ### 7. Verification

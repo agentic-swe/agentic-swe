@@ -24,7 +24,21 @@ git push origin vX.Y.Z
 
 Listing in Anthropic’s directory is separate from the Git marketplace. Follow current submission guidance: [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) and your Claude Code **Settings → Plugins → Submissions** flow.
 
-## npm — `@agentic-swe/agentic-swe`
+## GitHub tool — primary distribution
+
+The public repository is the source for both platform installers:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/install.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/install.ps1 | iex
+```
+
+The installers download the requested Git ref, install production dependencies under the user's home directory, and create a durable `agentic-swe` command. Publishing requires only merging the verified changes to `main`; it does not require npm credentials. Before merging, run `npm run verify`, `npm test`, and the installer tests.
+
+## npm — `@agentic-swe/agentic-swe` (optional mirror)
 
 **New maintainers — read this first:** [First time on npm: create the scope](#first-time-on-npm-create-the-scope). The **`@agentic-swe`** org must exist on [npmjs.com](https://www.npmjs.com/) before the first **`npm publish`**; otherwise you get **`404 Scope not found`**.
 

@@ -8,6 +8,16 @@
 
 ## Setup
 
+### Automated setup
+
+From the target repository:
+
+```bash
+agentic-swe setup --host opencode
+```
+
+This installs the portable pack under `.agentic-swe/`, merges project policy, and safely creates or updates `opencode.json`.
+
 ### 1. Target repo layout
 
 The plugin file resolves pipeline paths from the **agentic-swe repository root** (parent of `.opencode/`). Either:
@@ -15,7 +25,7 @@ The plugin file resolves pipeline paths from the **agentic-swe repository root**
 - Open the **agentic-swe** checkout as your workspace, or
 - Point the plugin at a clone (see plugin source paths in **`.opencode/plugins/agentic-swe.js`**).
 
-There is **no** `npx agentic-swe` step in v3 — use the **Claude Code plugin** or a Git checkout.
+For a custom layout, use a Git checkout and follow the manual steps below.
 
 ### 2. Add the plugin to opencode.json
 
