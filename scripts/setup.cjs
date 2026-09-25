@@ -164,6 +164,7 @@ function setup(options, context = {}) {
   }
 
   const changes = [];
+  const would = (past, future) => (options.dryRun ? `Would ${future}` : past);
   if (options.dryRun) {
     changes.push(`Would merge policy into ${path.join(target, 'CLAUDE.md')}`);
   } else {
@@ -179,22 +180,22 @@ function setup(options, context = {}) {
   if (portableHosts.length) {
     const destination = installPortablePack(packRoot, target, options.dryRun);
     if (!context.skipDependencyInstall) installRuntimeDependencies(destination, options.dryRun);
-    changes.push(`Installed portable pack: ${destination}`);
+    changes.push(`${would('Installed', 'install')} portable pack: ${destination}`);
   }
   if (hosts.includes('cursor')) {
     const destination = installCursor(packRoot, home, options.dryRun);
     if (!context.skipDependencyInstall) installRuntimeDependencies(destination, options.dryRun);
-    changes.push(`Installed Cursor plugin: ${destination}`);
+    changes.push(`${would('Installed', 'install')} Cursor plugin: ${destination}`);
   }
   if (hosts.includes('claude-code')) {
     runClaudeInstall(options.dryRun);
-    changes.push(options.dryRun ? 'Would install the Claude Code plugin' : 'Installed Claude Code plugin');
+    changes.push(`${would('Installed', 'install')} Claude Code plugin`);
   }
   if (hosts.some((host) => ['vscode', 'codex'].includes(host))) {
-    changes.push(`Prepared agent policy: ${installAgentsFile(packRoot, target, options.dryRun)}`);
+    changes.push(`${would('Prepared', 'prepare')} agent policy: ${installAgentsFile(packRoot, target, options.dryRun)}`);
   }
   if (hosts.includes('opencode')) {
-    changes.push(`Updated OpenCode config: ${configureOpenCode(target, options.dryRun)}`);
+    changes.push(`${would('Updated', 'update')} OpenCode config: ${configureOpenCode(target, options.dryRun)}`);
   }
   if (hosts.includes('antigravity') && !options.dryRun && !fs.existsSync(path.join(target, 'GEMINI.md'))) {
     fs.copyFileSync(path.join(packRoot, 'GEMINI.md'), path.join(target, 'GEMINI.md'));
@@ -212,9 +213,10 @@ function main() {
       return;
     }
     const result = setup(options);
-    console.log(`Agentic SWE configured for: ${result.hosts.join(', ')}`);
+    const heading = options.dryRun ? 'Dry run, nothing written. Would configure' : 'Agentic SWE configured for';
+    console.log(`${heading}: ${result.hosts.join(', ')}`);
     for (const change of result.changes) console.log(`- ${change}`);
-    if (result.hosts.includes('cursor')) console.log('- Reload Cursor to activate the plugin.');
+    if (result.hosts.includes('cursor') && !options.dryRun) console.log('- Reload Cursor to activate the plugin.');
   } catch (error) {
     console.error(`error: ${error.message || error}`);
     process.exitCode = 1;
