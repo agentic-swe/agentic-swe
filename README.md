@@ -160,7 +160,7 @@ Beyond the [Quickstart](#quickstart) above, alternate paths:
 | **Antigravity** | `agentic-swe setup --host antigravity` |
 | **Gemini CLI** | `gemini-extension.json` · **`GEMINI.md`** |
 
-Run setup without `--host` to auto-detect installed hosts, or use `--host all`. The installer merges **`CLAUDE.md`**, adds **`.worklogs/`** to **`.gitignore`**, and writes host-specific files. Run `agentic-swe doctor` to verify an installation. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
+Run setup from the root of the git repository you want to configure. It refuses any other directory, shows the target and the planned changes, and waits for confirmation. `--yes` skips the question. `--dry-run` only prints the plan. Run setup without `--host` to auto-detect installed hosts, or use `--host all`. Run `agentic-swe doctor` to verify an installation. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
 
 → [Full installation guide](https://agentic-swe.github.io/agentic-swe-site/docs/installation) · [Golden path (~15 min)](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)
 
