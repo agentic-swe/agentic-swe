@@ -41,3 +41,11 @@ test('bin — help mentions receipt subcommand', () => {
   assert.equal(res.status, 0);
   assert.match(res.stderr, /receipt/);
 });
+
+test('bin — help lists scan, list-installed, repair, update, and uninstall', () => {
+  const res = spawnSync('node', [BIN, 'help'], { encoding: 'utf8' });
+  assert.equal(res.status, 0);
+  for (const command of ['scan', 'list-installed', 'repair', 'update', 'uninstall']) {
+    assert.match(res.stderr, new RegExp(`\\b${command}\\b`), `expected help to mention "${command}"`);
+  }
+});

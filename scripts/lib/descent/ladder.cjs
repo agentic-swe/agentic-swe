@@ -150,7 +150,7 @@ async function tryDescentLadder(opts) {
   for (const tier of ['L0', 'L1']) {
     const rec = findProcedureRecord(data.procedures, ladderOpts, tier);
     if (!rec) continue;
-    const r = replayProcedureWithTelemetry({ projectRoot, procedure: rec.procedure });
+    const r = replayProcedureWithTelemetry({ projectRoot, procedure: rec.procedure, record: rec });
     if (r.ok) {
       if (tier === 'L1') {
         promoteOrDemote({

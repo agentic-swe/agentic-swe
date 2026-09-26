@@ -6,6 +6,11 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { mergeClaudePolicy } = require('./merge-claude-policy.js');
+const { scanSurfaces } = require('./lib/agent-surface/scan.cjs');
+const { writeManifest, isRuntimePath } = require('./lib/install-state/manifest.cjs');
+const { sha256File } = require('./lib/install-state/hash.cjs');
+const { beginTransaction, recordCreated, rollback } = require('./lib/install-state/transaction.cjs');
+const { resolveProfile } = require('./lib/install-state/profiles.cjs');
 
 const SUPPORTED_HOSTS = ['claude-code', 'cursor', 'vscode', 'codex', 'opencode', 'antigravity'];
 const PORTABLE_ENTRIES = [
@@ -33,12 +38,18 @@ Options:
                Configure a directory that is not a git repository.
   --no-gitignore
                Do not add .worklogs/ to the target .gitignore.
+  --profile    Install profile: core (default), minimal, or full.
+  --with       Add a capability pack (repeatable). Use with core or minimal.
+  --accept-risk "<reason>"
+               Write the installation despite a critical agent-surface finding
+               and record a receipt with the given non-empty reason.
 `);
 }
 
 function parseArgs(argv) {
   const opts = {
     hosts: [], target: process.cwd(), dryRun: false, gitignore: true, yes: false, allowNonGit: false,
+    acceptRisk: '', profile: 'core', withCapabilities: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -48,6 +59,12 @@ function parseArgs(argv) {
     else if (arg === '--no-gitignore') opts.gitignore = false;
     else if (arg === '--yes') opts.yes = true;
     else if (arg === '--allow-non-git') opts.allowNonGit = true;
+    else if (arg === '--accept-risk') {
+      const reason = argv[i + 1];
+      if (!reason || reason.startsWith('--')) throw new Error('--accept-risk requires a reason');
+      opts.acceptRisk = argv[++i];
+    } else if (arg === '--profile' && argv[i + 1]) opts.profile = argv[++i];
+    else if (arg === '--with' && argv[i + 1]) opts.withCapabilities.push(argv[++i]);
     else if (arg === '--help' || arg === '-h') opts.help = true;
     else throw new Error(`unknown option: ${arg}`);
   }
@@ -77,18 +94,100 @@ function detectHosts(home = os.homedir()) {
   return SUPPORTED_HOSTS.filter((host) => checks[host]);
 }
 
-function copyEntry(source, destination) {
+function plannedPackWrites(packRoot, entries = PORTABLE_ENTRIES) {
+  const writes = [];
+  function addEntry(relative) {
+    const source = path.join(packRoot, relative);
+    if (!fs.existsSync(source)) return;
+    const stat = fs.statSync(source);
+    if (stat.isDirectory()) {
+      for (const child of fs.readdirSync(source, { withFileTypes: true })) {
+        if (child.name === 'node_modules' || child.name === '.git') continue;
+        addEntry(`${relative}/${child.name}`);
+      }
+    } else if (stat.isFile()) {
+      writes.push({ path: relative, content: fs.readFileSync(source, 'utf8') });
+    }
+  }
+  for (const entry of entries) addEntry(entry);
+  return writes;
+}
+
+function gateSetup(packRoot, target, acceptRisk, destination, entries = PORTABLE_ENTRIES, transaction = null) {
+  // Scan only the destination about to be written plus the planned pack content, not the
+  // whole target repository — unrelated docs elsewhere in the repo must never false-block setup.
+  const scan = scanSurfaces({ roots: [destination], plannedWrites: plannedPackWrites(packRoot, entries) });
+  if (scan.summary.status !== 'blocked') return scan;
+  if (!acceptRisk) throw new Error('critical agent-surface findings');
+  const receipts = path.join(destination, 'install-receipts');
+  const receiptsDirExisted = fs.existsSync(receipts);
+  fs.mkdirSync(receipts, { recursive: true });
+  const receipt = path.join(receipts, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  fs.writeFileSync(receipt, `${JSON.stringify({
+    schema_version: 1,
+    created_at: new Date().toISOString(),
+    command: 'setup',
+    reason: acceptRisk,
+    findings: scan.findings.filter((finding) => finding.severity === 'critical'),
+  }, null, 2)}\n`);
+  if (transaction) {
+    // If the receipts directory itself is new, tracking it is enough: rollback removes the
+    // directory (and the receipt inside it) recursively. Otherwise track just the receipt file.
+    if (!receiptsDirExisted) recordCreated(transaction, receipts);
+    else recordCreated(transaction, receipt);
+  }
+  return {
+    ...scan,
+    summary: { ...scan.summary, status: 'accepted-risk' },
+    receipt: path.relative(destination, receipt),
+    receiptAbsolute: receipt,
+  };
+}
+
+// A manifest's last_scan.receipt must resolve under that same manifest's own destination
+// (uninstall/repair resolve edit and receipt paths relative to the manifest's destination).
+// The gate scan's receipt (when present) is always written under the pack destination's
+// install-receipts/, so it is only safe to record as a relative path on the manifest whose
+// destination is that same directory. Any other manifest (e.g. the Cursor plugin manifest in
+// a Cursor-only install) must record null rather than a path that would resolve outside itself.
+function receiptRelativeToOrNull(receiptAbsolute, manifestDestination) {
+  if (!receiptAbsolute || !manifestDestination) return null;
+  const relative = path.relative(manifestDestination, receiptAbsolute);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return relative.split(path.sep).join('/');
+}
+
+function copyEntry(source, destination, transaction) {
   if (!fs.existsSync(source)) return;
   fs.mkdirSync(path.dirname(destination), { recursive: true });
+  if (transaction && !fs.existsSync(destination)) recordCreated(transaction, destination);
   fs.cpSync(source, destination, { recursive: true, force: true });
 }
 
-function installPortablePack(packRoot, target, dryRun) {
+function collectOwnedFiles(destination) {
+  const files = [];
+  function walk(directory, root) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      const relative = path.relative(root, full).split(path.sep).join('/');
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'install-receipts' || entry.name === 'skills') continue;
+        walk(full, root);
+      } else if (!isRuntimePath(relative)) {
+        files.push({ path: relative, sha256: sha256File(full) });
+      }
+    }
+  }
+  walk(destination, destination);
+  return files;
+}
+
+function installPortablePack(packRoot, target, dryRun, transaction, entries = PORTABLE_ENTRIES) {
   const destination = path.join(target, '.agentic-swe');
   if (dryRun) return destination;
   fs.mkdirSync(destination, { recursive: true });
-  for (const entry of PORTABLE_ENTRIES) {
-    copyEntry(path.join(packRoot, entry), path.join(destination, entry));
+  for (const entry of entries) {
+    copyEntry(path.join(packRoot, entry), path.join(destination, entry), transaction);
   }
   return destination;
 }
@@ -151,32 +250,35 @@ function assertCursorDestination(home, hosts) {
   }
 }
 
-function installCursor(packRoot, home, dryRun) {
+function installCursor(packRoot, home, dryRun, transaction, entries = PORTABLE_ENTRIES) {
   const destination = cursorPluginDestination(home);
   if (dryRun) return destination;
   assertCursorDestination(home, ['cursor']);
   fs.rmSync(destination, { recursive: true, force: true });
   fs.mkdirSync(destination, { recursive: true });
-  for (const entry of PORTABLE_ENTRIES.concat(['.cursor-plugin', '.claude-plugin', 'package.json'])) {
-    copyEntry(path.join(packRoot, entry), path.join(destination, entry));
+  const cursorEntries = new Set([...entries, '.cursor-plugin', '.claude-plugin', 'package.json']);
+  for (const entry of cursorEntries) {
+    copyEntry(path.join(packRoot, entry), path.join(destination, entry), transaction);
   }
   return destination;
 }
 
 function installAgentsFile(packRoot, target, dryRun) {
   const destination = path.join(target, 'AGENTS.md');
-  if (!dryRun && !fs.existsSync(destination)) {
+  const existed = fs.existsSync(destination);
+  if (!dryRun && !existed) {
     fs.copyFileSync(path.join(packRoot, 'AGENTS.md'), destination);
   }
-  return destination;
+  return { destination, created: !existed && !dryRun };
 }
 
 function configureOpenCode(target, dryRun) {
   const configFile = path.join(target, 'opencode.json');
   const entry = { name: 'agentic-swe', entry: '.agentic-swe/.opencode/plugins/agentic-swe.js' };
-  if (dryRun) return configFile;
+  const existed = fs.existsSync(configFile);
+  if (dryRun) return { configFile, created: !existed, entry };
   let config = {};
-  if (fs.existsSync(configFile)) {
+  if (existed) {
     try {
       config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
     } catch {
@@ -189,7 +291,7 @@ function configureOpenCode(target, dryRun) {
   if (index >= 0) config.plugins[index] = entry;
   else config.plugins.push(entry);
   fs.writeFileSync(configFile, `${JSON.stringify(config, null, 2)}\n`);
-  return configFile;
+  return { configFile, created: !existed, entry };
 }
 
 function runClaudeInstall(dryRun) {
@@ -223,42 +325,151 @@ function setup(options, context = {}) {
   const would = (past, future) => (options.dryRun ? `Would ${future}` : past);
   if (options.dryRun) {
     changes.push(`Would merge policy into ${path.join(target, 'CLAUDE.md')}`);
-  } else {
+    const portableHosts = hosts.filter((host) => !['claude-code', 'cursor'].includes(host));
+    if (portableHosts.length) {
+      changes.push(`Would install portable pack: ${path.join(target, '.agentic-swe')}`);
+    }
+    if (hosts.includes('cursor')) {
+      changes.push(`Would install Cursor plugin: ${cursorPluginDestination(home)}`);
+    }
+    if (hosts.includes('claude-code')) changes.push('Would install Claude Code plugin');
+    if (hosts.some((host) => ['vscode', 'codex'].includes(host))) {
+      changes.push(`Would prepare agent policy: ${path.join(target, 'AGENTS.md')}`);
+    }
+    if (hosts.includes('opencode')) {
+      changes.push(`Would update OpenCode config: ${path.join(target, 'opencode.json')}`);
+    }
+    if (hosts.includes('antigravity')) {
+      changes.push(`Would prepare Antigravity policy: ${path.join(target, 'GEMINI.md')}`);
+    }
+    return { hosts, target, changes };
+  }
+
+  const packEntries = resolveProfile({
+    profile: options.profile || 'core',
+    withCapabilities: options.withCapabilities || [],
+    packRoot,
+  });
+  const transaction = beginTransaction();
+  const edits = [];
+  const external_registrations = [];
+  const extraFiles = [];
+  const packDestination = path.join(target, '.agentic-swe');
+  const toDestinationRelative = (filePath) => path.relative(packDestination, filePath).split(path.sep).join('/');
+  try {
+    const gateScan = gateSetup(packRoot, target, options.acceptRisk || '', packDestination, packEntries, transaction);
+    const receiptAbsolute = gateScan.receiptAbsolute ?? null;
+    const lastScanBase = {
+      status: gateScan.summary.status,
+      critical: gateScan.summary.critical,
+      high: gateScan.summary.high,
+      medium: gateScan.summary.medium,
+      low: gateScan.summary.low,
+    };
+
     const result = mergeClaudePolicy({
       packRoot,
       targetDir: target,
       gitignore: options.gitignore,
     });
     changes.push(`${result.action}: ${result.targetFile}`);
-  }
+    if (result.action === 'created') {
+      extraFiles.push({ path: toDestinationRelative(result.targetFile), sha256: sha256File(result.targetFile) });
+    } else if (result.action === 'appended' && result.appendedBody !== undefined) {
+      edits.push({ type: 'policy-append', path: toDestinationRelative(result.targetFile), body: result.appendedBody });
+    }
+    if (result.gitignore === 'appended') {
+      edits.push({ type: 'gitignore-line', path: toDestinationRelative(path.join(target, '.gitignore')), line: '.worklogs/' });
+    }
 
-  const portableHosts = hosts.filter((host) => !['claude-code', 'cursor'].includes(host));
-  if (portableHosts.length) {
-    const destination = installPortablePack(packRoot, target, options.dryRun);
-    if (!context.skipDependencyInstall) installRuntimeDependencies(destination, options.dryRun);
-    changes.push(`${would('Installed', 'install')} portable pack: ${destination}`);
-  }
-  if (hosts.includes('cursor')) {
-    const destination = installCursor(packRoot, home, options.dryRun);
-    if (!context.skipDependencyInstall) installRuntimeDependencies(destination, options.dryRun);
-    changes.push(`${would('Installed', 'install')} Cursor plugin: ${destination}`);
-  }
-  if (hosts.includes('claude-code')) {
-    runClaudeInstall(options.dryRun);
-    changes.push(`${would('Installed', 'install')} Claude Code plugin`);
-  }
-  if (hosts.some((host) => ['vscode', 'codex'].includes(host))) {
-    changes.push(`${would('Prepared', 'prepare')} agent policy: ${installAgentsFile(packRoot, target, options.dryRun)}`);
-  }
-  if (hosts.includes('opencode')) {
-    changes.push(`${would('Updated', 'update')} OpenCode config: ${configureOpenCode(target, options.dryRun)}`);
-  }
-  if (hosts.includes('antigravity') && !options.dryRun && !fs.existsSync(path.join(target, 'GEMINI.md'))) {
-    fs.copyFileSync(path.join(packRoot, 'GEMINI.md'), path.join(target, 'GEMINI.md'));
-    changes.push(`Prepared Antigravity policy: ${path.join(target, 'GEMINI.md')}`);
-  }
+    const portableHosts = hosts.filter((host) => !['claude-code', 'cursor'].includes(host));
+    let packDestinationWritten = null;
+    let cursorDestinationWritten = null;
+    if (portableHosts.length) {
+      packDestinationWritten = installPortablePack(packRoot, target, false, transaction, packEntries);
+      if (!context.skipDependencyInstall) installRuntimeDependencies(packDestinationWritten, false);
+      changes.push(`${would('Installed', 'install')} portable pack: ${packDestinationWritten}`);
+    }
+    if (hosts.includes('cursor')) {
+      cursorDestinationWritten = installCursor(packRoot, home, false, transaction, packEntries);
+      if (!context.skipDependencyInstall) installRuntimeDependencies(cursorDestinationWritten, false);
+      changes.push(`${would('Installed', 'install')} Cursor plugin: ${cursorDestinationWritten}`);
+    }
+    if (hosts.includes('claude-code')) {
+      runClaudeInstall(false);
+      external_registrations.push({ host: 'claude-code', id: 'agentic-swe@agentic-swe-catalog' });
+      changes.push(`${would('Installed', 'install')} Claude Code plugin`);
+    }
+    if (hosts.some((host) => ['vscode', 'codex'].includes(host))) {
+      const agentsResult = installAgentsFile(packRoot, target, false);
+      changes.push(`${would('Prepared', 'prepare')} agent policy: ${agentsResult.destination}`);
+      if (agentsResult.created) {
+        extraFiles.push({ path: toDestinationRelative(agentsResult.destination), sha256: sha256File(agentsResult.destination) });
+      }
+    }
+    if (hosts.includes('opencode')) {
+      const opencodeResult = configureOpenCode(target, false);
+      changes.push(`${would('Updated', 'update')} OpenCode config: ${opencodeResult.configFile}`);
+      if (opencodeResult.created) {
+        extraFiles.push({ path: toDestinationRelative(opencodeResult.configFile), sha256: sha256File(opencodeResult.configFile) });
+      } else {
+        edits.push({
+          type: 'json-plugin-entry',
+          path: toDestinationRelative(opencodeResult.configFile),
+          match: { name: opencodeResult.entry.name, entry: opencodeResult.entry.entry },
+        });
+      }
+    }
+    if (hosts.includes('antigravity') && !fs.existsSync(path.join(target, 'GEMINI.md'))) {
+      const geminiFile = path.join(target, 'GEMINI.md');
+      fs.copyFileSync(path.join(packRoot, 'GEMINI.md'), geminiFile);
+      changes.push(`Prepared Antigravity policy: ${geminiFile}`);
+      extraFiles.push({ path: toDestinationRelative(geminiFile), sha256: sha256File(geminiFile) });
+    }
 
-  return { hosts, target, changes };
+    if (packDestinationWritten) {
+      writeManifest(packDestinationWritten, {
+        schema_version: 1,
+        installer_version: require('../package.json').version,
+        host: portableHosts.length === 1 ? portableHosts[0] : portableHosts.join(','),
+        profile: options.profile || 'core',
+        files: [...collectOwnedFiles(packDestinationWritten), ...extraFiles],
+        edits,
+        external_registrations,
+        last_scan: {
+          ...lastScanBase,
+          receipt: receiptRelativeToOrNull(receiptAbsolute, packDestinationWritten),
+        },
+      });
+    }
+    if (cursorDestinationWritten) {
+      // Host edits (policy-append/json-plugin-entry/gitignore-line) and external
+      // registrations (e.g. claude-code) always target files in the target repository, never
+      // inside the Cursor plugin directory. They must never be recorded on the Cursor
+      // manifest — even in a Cursor-only install where no <target>/.agentic-swe manifest
+      // exists to hold them — because uninstall resolves every edit path relative to this
+      // manifest's own destination, and a target-repo-relative path (e.g. "../CLAUDE.md")
+      // would then resolve outside the plugin directory entirely.
+      writeManifest(cursorDestinationWritten, {
+        schema_version: 1,
+        installer_version: require('../package.json').version,
+        host: 'cursor',
+        profile: options.profile || 'core',
+        files: collectOwnedFiles(cursorDestinationWritten),
+        edits: [],
+        external_registrations: [],
+        last_scan: {
+          ...lastScanBase,
+          receipt: receiptRelativeToOrNull(receiptAbsolute, cursorDestinationWritten),
+        },
+      });
+    }
+
+    return { hosts, target, changes };
+  } catch (error) {
+    rollback(transaction);
+    throw error;
+  }
 }
 
 function prompt(question) {
@@ -318,6 +529,7 @@ async function main() {
 if (require.main === module) main();
 else module.exports = {
   SUPPORTED_HOSTS,
+  PORTABLE_ENTRIES,
   parseArgs,
   detectHosts,
   assertTargetRepository,

@@ -133,6 +133,13 @@ test('setup refuses to replace a Cursor plugin that is a git checkout', (t) => {
   assert.equal(fs.existsSync(path.join(target, 'CLAUDE.md')), false);
 });
 
+test('setup --help lists --accept-risk', () => {
+  const bin = path.join(packRoot, 'scripts', 'setup.cjs');
+  const result = spawnSync('node', [bin, '--help'], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /--accept-risk/);
+});
+
 test('confirmation accepts only an explicit yes', async () => {
   const preview = { target: '/repo', hosts: ['cursor'], changes: ['Would merge policy'] };
   assert.equal(await confirmChanges(preview, async () => 'y'), true);

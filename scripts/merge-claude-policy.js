@@ -60,6 +60,7 @@ function mergeClaudePolicy(opts) {
   const policyBody = fs.readFileSync(sourceClaude, 'utf8').replace(/\r\n/g, '\n');
 
   let action;
+  let appendedBody;
   if (!fs.existsSync(targetFile)) {
     fs.writeFileSync(targetFile, policyBody.endsWith('\n') ? policyBody : `${policyBody}\n`, 'utf8');
     action = 'created';
@@ -72,8 +73,12 @@ function mergeClaudePolicy(opts) {
       const trimmed = existing.trimEnd();
       const sep = /\n---\s*$/.test(trimmed) ? '\n\n' : '\n\n---\n\n';
       const block = `${trimmed}${sep}${BEGIN_LINE}\n\n${policyBody}`;
-      fs.writeFileSync(targetFile, block.endsWith('\n') ? block : `${block}\n`, 'utf8');
+      const written = block.endsWith('\n') ? block : `${block}\n`;
+      fs.writeFileSync(targetFile, written, 'utf8');
       action = 'appended';
+      // Exact bytes appended after the pre-existing (trimmed) content, so uninstall can
+      // reverse this edit only when the file still ends with these exact bytes.
+      appendedBody = written.slice(trimmed.length);
     } else {
       const prefix = existing.slice(0, lineEnd);
       const merged = `${prefix}${policyBody.endsWith('\n') ? policyBody : `${policyBody}\n`}`;
@@ -83,6 +88,7 @@ function mergeClaudePolicy(opts) {
   }
 
   const out = { action, targetFile };
+  if (appendedBody !== undefined) out.appendedBody = appendedBody;
   const gi = maybeAppendGitignore(targetDir, gitignore);
   if (gi !== undefined) out.gitignore = gi;
   return out;

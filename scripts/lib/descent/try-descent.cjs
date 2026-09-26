@@ -44,7 +44,7 @@ function tryDescent(opts) {
     };
   }
 
-  const r = replayProcedureWithTelemetry({ projectRoot, procedure: rec.procedure });
+  const r = replayProcedureWithTelemetry({ projectRoot, procedure: rec.procedure, record: rec });
   return {
     ...r,
     fingerprint: rec.fingerprint,

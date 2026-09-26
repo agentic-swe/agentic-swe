@@ -26,7 +26,20 @@ function usage() {
   process.stderr.write(`  agentic-swe doctor [args]       Check the tool, host detection, and project setup\n`);
   process.stderr.write(`  agentic-swe receipt [args]      Render a receipt for a worklog (passes args to scripts/render-receipt.cjs)\n`);
   process.stderr.write(`  agentic-swe goal [args]         Run the goal-loop engine (passes args to scripts/goal-engine.cjs)\n`);
+  process.stderr.write(`  agentic-swe context-budget [args]  Estimate always-loaded context tokens for the install profile\n`);
+  process.stderr.write(`  agentic-swe host-parity [args]     Report stable / partial / instruction-only status per supported host\n`);
+  process.stderr.write(`  agentic-swe scan [args]          Scan a destination for agent-surface findings\n`);
+  process.stderr.write(`  agentic-swe list-installed [args]  Show owned, drifted, and preserved files\n`);
+  process.stderr.write(`  agentic-swe repair [args]        Restore drifted owned files and adopt exact hash matches\n`);
+  process.stderr.write(`  agentic-swe update [args]        Replace owned files from the current pack\n`);
+  process.stderr.write(`  agentic-swe uninstall [args]     Remove owned files whose current hash matches the manifest\n`);
   process.stderr.write(`  agentic-swe help                Show this message\n`);
+}
+
+if (cmd === 'context-budget') {
+  const script = path.join(root, 'scripts', 'context-budget.cjs');
+  const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
 }
 
 if (cmd === 'setup') {
@@ -41,6 +54,12 @@ if (cmd === 'doctor') {
   process.exit(res.status == null ? 1 : res.status);
 }
 
+if (cmd === 'host-parity') {
+  const script = path.join(root, 'scripts', 'host-parity.cjs');
+  const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
 if (cmd === 'receipt') {
   const script = path.join(root, 'scripts', 'render-receipt.cjs');
   const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
@@ -50,6 +69,13 @@ if (cmd === 'receipt') {
 if (cmd === 'goal') {
   const script = path.join(root, 'scripts', 'goal-engine.cjs');
   const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
+const controlCommands = new Set(['scan', 'list-installed', 'repair', 'update', 'uninstall']);
+if (controlCommands.has(cmd)) {
+  const script = path.join(root, 'scripts', 'control-plane.cjs');
+  const res = spawnSync(process.execPath, [script, cmd, ...argv.slice(1)], { stdio: 'inherit' });
   process.exit(res.status == null ? 1 : res.status);
 }
 

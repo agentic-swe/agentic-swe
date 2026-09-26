@@ -50,7 +50,7 @@ function main() {
       console.error('no procedure found');
       process.exit(1);
     }
-    const r = replayProcedure({ projectRoot, procedure: rec.procedure });
+    const r = replayProcedure({ projectRoot, procedure: rec.procedure, record: rec });
     if (args.json) console.log(JSON.stringify(r, null, 2));
     else console.log(r.ok ? 'OK L0 replay' : `FAIL escalate ${r.tier}: ${r.reason}`);
     process.exit(r.ok ? 0 : 1);

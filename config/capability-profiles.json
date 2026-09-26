@@ -1,0 +1,5 @@
+{
+  "security-scan": ["scripts/lib/agent-surface/scan.cjs", "scripts/control-plane.cjs"],
+  "context-budget": ["scripts/context-budget.cjs", "scripts/lib/context-budget/estimate.cjs"],
+  "memory-trust": ["scripts/lib/memory/trust.cjs"]
+}
