@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { detectHosts, PORTABLE_ENTRIES } = require('./setup.cjs');
+const { reportHostParity } = require('./lib/host-parity/report.cjs');
 const { readManifest, classifyDestination } = require('./lib/install-state/manifest.cjs');
 const { sha256File } = require('./lib/install-state/hash.cjs');
 
@@ -102,6 +103,7 @@ function inspect(options = {}, context = {}) {
     drift,
     last_scan,
     jev: jevReadiness(env),
+    hostParity: reportHostParity(),
   };
 }
 
