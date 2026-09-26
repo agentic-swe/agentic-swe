@@ -103,3 +103,55 @@ test('setup still refuses to replace a Cursor plugin that is a git checkout', (t
   assert.ok(fs.existsSync(path.join(plugin, '.git')));
   assert.equal(fs.existsSync(path.join(plugin, 'install-state.json')), false);
 });
+
+test('a Cursor-only install never records target-repo edit paths on the plugin manifest', (t) => {
+  const target = gitRepository(t);
+  const packRoot = minimalPackRoot(t);
+  const home = temporaryDirectory(t);
+
+  // Pre-existing target CLAUDE.md (without the policy delimiter) forces mergeClaudePolicy to
+  // *append* rather than create, which produces a 'policy-append' edit. A .gitignore without
+  // .worklogs/ forces a 'gitignore-line' edit too. Both target files live in the target repo,
+  // never inside the Cursor plugin directory.
+  fs.writeFileSync(path.join(target, 'CLAUDE.md'), '# pre-existing project policy\n');
+  fs.writeFileSync(path.join(target, '.gitignore'), 'node_modules/\n');
+
+  setup({
+    hosts: ['cursor'], target, dryRun: false, gitignore: true, yes: true, allowNonGit: false,
+    profile: 'minimal',
+  }, { packRoot, home, skipDependencyInstall: true });
+
+  const destination = path.join(home, '.cursor', 'plugins', 'local', 'agentic-swe');
+  const manifest = JSON.parse(fs.readFileSync(path.join(destination, 'install-state.json'), 'utf8'));
+
+  // No <target>/.agentic-swe manifest exists for this Cursor-only install, so host edits must
+  // not be smuggled onto the plugin manifest with target-relative paths like "../CLAUDE.md".
+  assert.deepEqual(manifest.edits, []);
+  assert.deepEqual(manifest.external_registrations, []);
+
+  // Every recorded edit path (defense in depth, should the array ever be non-empty) must
+  // resolve inside the plugin directory, matching how uninstall resolves edit paths.
+  for (const edit of manifest.edits) {
+    const resolved = path.resolve(destination, edit.path);
+    assert.ok(
+      resolved === destination || resolved.startsWith(`${destination}${path.sep}`),
+      `edit path escapes the plugin directory: ${edit.path}`,
+    );
+  }
+
+  // last_scan.receipt must be null or relative to the plugin directory itself, never a path
+  // relative to <target>/.agentic-swe (where the gate-scan receipt, if any, actually lives).
+  const { receipt } = manifest.last_scan;
+  if (receipt !== null) {
+    const resolvedReceipt = path.resolve(destination, receipt);
+    assert.ok(
+      resolvedReceipt === destination || resolvedReceipt.startsWith(`${destination}${path.sep}`),
+      `last_scan.receipt escapes the plugin directory: ${receipt}`,
+    );
+  }
+
+  // The target repo's own files were still edited correctly — only the manifest tracking of
+  // those edits was in question.
+  assert.match(fs.readFileSync(path.join(target, 'CLAUDE.md'), 'utf8'), /pre-existing project policy/);
+  assert.match(fs.readFileSync(path.join(target, '.gitignore'), 'utf8'), /\.worklogs\//);
+});

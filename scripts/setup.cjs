@@ -97,12 +97,6 @@ function detectHosts(home = os.homedir()) {
 function plannedPackWrites(packRoot, entries = PORTABLE_ENTRIES) {
   const writes = [];
   function addEntry(relative) {
-    // The scanner's own rule definitions necessarily embed literal examples of the unsafe
-    // strings they detect (secrets, injection markers, bypass phrases). Scanning that trusted
-    // control-plane source as "planned content" would self-trigger a critical finding on every
-    // install. It is excluded the same way install-receipts/ and .git/ are excluded: as
-    // installer/control-plane data, not agent-execution-surface content.
-    if (relative === 'scripts/lib/agent-surface' || relative.startsWith('scripts/lib/agent-surface/')) return;
     const source = path.join(packRoot, relative);
     if (!fs.existsSync(source)) return;
     const stat = fs.statSync(source);
@@ -146,7 +140,21 @@ function gateSetup(packRoot, target, acceptRisk, destination, entries = PORTABLE
     ...scan,
     summary: { ...scan.summary, status: 'accepted-risk' },
     receipt: path.relative(destination, receipt),
+    receiptAbsolute: receipt,
   };
+}
+
+// A manifest's last_scan.receipt must resolve under that same manifest's own destination
+// (uninstall/repair resolve edit and receipt paths relative to the manifest's destination).
+// The gate scan's receipt (when present) is always written under the pack destination's
+// install-receipts/, so it is only safe to record as a relative path on the manifest whose
+// destination is that same directory. Any other manifest (e.g. the Cursor plugin manifest in
+// a Cursor-only install) must record null rather than a path that would resolve outside itself.
+function receiptRelativeToOrNull(receiptAbsolute, manifestDestination) {
+  if (!receiptAbsolute || !manifestDestination) return null;
+  const relative = path.relative(manifestDestination, receiptAbsolute);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return relative.split(path.sep).join('/');
 }
 
 function copyEntry(source, destination, transaction) {
@@ -350,13 +358,13 @@ function setup(options, context = {}) {
   const toDestinationRelative = (filePath) => path.relative(packDestination, filePath).split(path.sep).join('/');
   try {
     const gateScan = gateSetup(packRoot, target, options.acceptRisk || '', packDestination, packEntries, transaction);
-    const last_scan = {
+    const receiptAbsolute = gateScan.receiptAbsolute ?? null;
+    const lastScanBase = {
       status: gateScan.summary.status,
       critical: gateScan.summary.critical,
       high: gateScan.summary.high,
       medium: gateScan.summary.medium,
       low: gateScan.summary.low,
-      receipt: gateScan.receipt ?? null,
     };
 
     const result = mergeClaudePolicy({
@@ -428,19 +436,32 @@ function setup(options, context = {}) {
         files: [...collectOwnedFiles(packDestinationWritten), ...extraFiles],
         edits,
         external_registrations,
-        last_scan,
+        last_scan: {
+          ...lastScanBase,
+          receipt: receiptRelativeToOrNull(receiptAbsolute, packDestinationWritten),
+        },
       });
     }
     if (cursorDestinationWritten) {
+      // Host edits (policy-append/json-plugin-entry/gitignore-line) and external
+      // registrations (e.g. claude-code) always target files in the target repository, never
+      // inside the Cursor plugin directory. They must never be recorded on the Cursor
+      // manifest — even in a Cursor-only install where no <target>/.agentic-swe manifest
+      // exists to hold them — because uninstall resolves every edit path relative to this
+      // manifest's own destination, and a target-repo-relative path (e.g. "../CLAUDE.md")
+      // would then resolve outside the plugin directory entirely.
       writeManifest(cursorDestinationWritten, {
         schema_version: 1,
         installer_version: require('../package.json').version,
         host: 'cursor',
         profile: options.profile || 'core',
         files: collectOwnedFiles(cursorDestinationWritten),
-        edits: packDestinationWritten ? [] : edits,
-        external_registrations: packDestinationWritten ? [] : external_registrations,
-        last_scan,
+        edits: [],
+        external_registrations: [],
+        last_scan: {
+          ...lastScanBase,
+          receipt: receiptRelativeToOrNull(receiptAbsolute, cursorDestinationWritten),
+        },
       });
     }
 

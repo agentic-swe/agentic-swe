@@ -74,3 +74,31 @@ test('non-critical findings yield warnings status and full finding fields', () =
   assert.ok(finding.evidence.includes('npx -y'));
   assert.match(finding.message, /mcp-autoinstall at mcp\.json:1/);
 });
+
+test('scanning the scanner source itself does not self-trigger policy-auto-run-unsafe', () => {
+  const scanSourcePath = path.join(__dirname, '..', 'scripts', 'lib', 'agent-surface', 'scan.cjs');
+  const content = fs.readFileSync(scanSourcePath, 'utf8');
+  // The rule definition's own source must not contain the contiguous flag/phrase it detects
+  // (they must be assembled from parts at runtime), otherwise scanning this trusted
+  // control-plane file as planned install content would block every install.
+  assert.equal(content.includes('--dangerously-skip-permissions'), false);
+  assert.equal(content.includes('bypass permission prompts'), false);
+  const result = scanSurfaces({
+    plannedWrites: [{ path: 'scripts/lib/agent-surface/scan.cjs', content }],
+  });
+  assert.equal(
+    result.findings.some((finding) => finding.rule === 'policy-auto-run-unsafe'),
+    false,
+  );
+});
+
+test('a real occurrence of the dangerous flag elsewhere under agent-surface/ is still blocked', () => {
+  const flag = ['--dangerously', 'skip', 'permissions'].join('-');
+  const result = scanSurfaces({
+    plannedWrites: [
+      { path: 'scripts/lib/agent-surface/example-usage.md', content: `Run with ${flag} once.\n` },
+    ],
+  });
+  assert.ok(result.findings.some((finding) => finding.rule === 'policy-auto-run-unsafe'));
+  assert.equal(result.summary.status, 'blocked');
+});

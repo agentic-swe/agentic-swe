@@ -3,11 +3,23 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+// Built from parts (rather than one contiguous string literal) so this trusted rule
+// definition itself does not contain the literal phrases it exists to detect. If it did,
+// scanning this scanner's own source (e.g. during a planned-write scan of the install pack)
+// would self-trigger a critical finding and block every install. The assembled values still
+// match the real flag and phrase exactly at runtime.
+const DANGEROUS_PERMISSION_FLAG = ['dangerously', 'skip', 'permissions'].join('-');
+const BYPASS_PERMISSION_PHRASE = ['bypass', 'permission', 'prompts'].join(' ');
+const POLICY_AUTO_RUN_UNSAFE_PATTERN = new RegExp(
+  `--${DANGEROUS_PERMISSION_FLAG}|${BYPASS_PERMISSION_PHRASE}`,
+  'i',
+);
+
 const RULES = [
   ['secret-hardcoded', 'critical', /(?:AKIA[0-9A-Z]{16}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|TYPESAFE_API_KEY\s*[:=]\s*['"]?[A-Za-z0-9_\-]{8,})/],
   ['permission-unrestricted-shell', 'critical', /Bash\(\*\)/],
   ['hook-command-injection', 'critical', /\$\{(?:TOOL_INPUT|FILE|ARGUMENTS)\}/],
-  ['policy-auto-run-unsafe', 'critical', /--dangerously-skip-permissions|bypass permission prompts/i],
+  ['policy-auto-run-unsafe', 'critical', POLICY_AUTO_RUN_UNSAFE_PATTERN],
   ['permission-missing-deny', 'high', /"allow"\s*:\s*\[[^\]]*"Bash\(\*\)"[^\]]*\](?![\s\S]{0,200}"deny")/],
   ['mcp-autoinstall', 'high', /npx\s+-y\s+/],
   ['hook-hidden-failure', 'medium', /\|\|\s*true|2>\s*\/dev\/null/],
