@@ -25,6 +25,9 @@ function repair({ destination, packRoot, packFiles, dryRun }) {
   };
   const classified = classifyDestination({ destination, manifest, packFiles });
   const changes = [];
+  for (const entry of classified.unreadable || []) {
+    changes.push(`skip unreadable ${entry.path}: ${entry.error}`);
+  }
   for (const relative of classified.drifted) {
     if (!packFiles.has(relative)) continue;
     changes.push(`restore ${relative}`);

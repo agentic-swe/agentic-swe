@@ -57,17 +57,26 @@ function classifyDestination({ destination, manifest, packFiles }) {
   const drifted = [];
   const preserved = [];
   const adoptable = [];
+  const unreadable = [];
   const owned = new Map((manifest.files || []).map((file) => [file.path, file.sha256]));
   for (const relative of walkFiles(destination)) {
     const full = path.join(destination, relative);
-    const actual = sha256File(full);
+    let actual;
+    try {
+      actual = sha256File(full);
+    } catch (error) {
+      // An individual unreadable file (permissions, dangling symlink, etc.) must not abort
+      // classification for every other file. Report it and continue.
+      unreadable.push({ path: relative, error: error.message || String(error) });
+      continue;
+    }
     if (owned.has(relative)) {
       if (owned.get(relative) === actual) current.push(relative);
       else drifted.push(relative);
     } else if (packFiles.get(relative) === actual) adoptable.push(relative);
     else preserved.push(relative);
   }
-  return { current, drifted, preserved, adoptable };
+  return { current, drifted, preserved, adoptable, unreadable };
 }
 
 module.exports = {

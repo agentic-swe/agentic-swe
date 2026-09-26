@@ -28,6 +28,11 @@ function usage() {
   process.stderr.write(`  agentic-swe goal [args]         Run the goal-loop engine (passes args to scripts/goal-engine.cjs)\n`);
   process.stderr.write(`  agentic-swe context-budget [args]  Estimate always-loaded context tokens for the install profile\n`);
   process.stderr.write(`  agentic-swe host-parity [args]     Report stable / partial / instruction-only status per supported host\n`);
+  process.stderr.write(`  agentic-swe scan [args]          Scan a destination for agent-surface findings\n`);
+  process.stderr.write(`  agentic-swe list-installed [args]  Show owned, drifted, and preserved files\n`);
+  process.stderr.write(`  agentic-swe repair [args]        Restore drifted owned files and adopt exact hash matches\n`);
+  process.stderr.write(`  agentic-swe update [args]        Replace owned files from the current pack\n`);
+  process.stderr.write(`  agentic-swe uninstall [args]     Remove owned files whose current hash matches the manifest\n`);
   process.stderr.write(`  agentic-swe help                Show this message\n`);
 }
 

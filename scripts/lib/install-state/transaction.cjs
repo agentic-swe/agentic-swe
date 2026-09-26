@@ -11,7 +11,7 @@ function recordCreated(transaction, filePath) {
 }
 
 function rollback(transaction) {
-  for (const filePath of transaction.created.reverse()) fs.rmSync(filePath, { force: true });
+  for (const filePath of transaction.created.reverse()) fs.rmSync(filePath, { recursive: true, force: true });
 }
 
 module.exports = { beginTransaction, recordCreated, rollback };
