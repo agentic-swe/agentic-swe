@@ -4,6 +4,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { recordTierEvent } = require('./tier-telemetry.cjs');
+const { canReplay } = require('../memory/trust.cjs');
 
 /**
  * @typedef {{ type: string, command?: string, path?: string, cwd?: string }} TypedAction
@@ -54,6 +55,17 @@ function replayProcedure(opts) {
   const root = path.resolve(opts.projectRoot);
   const proc = opts.procedure || { actions: [] };
   const steps = [];
+
+  const trustRecord = opts.record || opts.procedureRecord;
+  if (trustRecord && !canReplay(trustRecord)) {
+    return {
+      ok: false,
+      escalate: true,
+      tier: 'L3',
+      steps,
+      reason: 'external memory not promoted',
+    };
+  }
 
   for (const pre of proc.preconditions || []) {
     const r = executeAction(pre, root);
