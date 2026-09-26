@@ -53,6 +53,13 @@ if (cmd === 'goal') {
   process.exit(res.status == null ? 1 : res.status);
 }
 
+const controlCommands = new Set(['scan', 'list-installed', 'repair', 'update', 'uninstall']);
+if (controlCommands.has(cmd)) {
+  const script = path.join(root, 'scripts', 'control-plane.cjs');
+  const res = spawnSync(process.execPath, [script, cmd, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
 if (cmd === 'path' || cmd === 'pack-path') {
   if (!fs.existsSync(path.join(root, 'CLAUDE.md'))) {
     process.stderr.write(`error: pack root missing CLAUDE.md: ${root}\n`);
