@@ -52,3 +52,25 @@ test('a missing Jev key is not a finding', () => {
   });
   assert.equal(result.findings.some((finding) => finding.rule === 'secret-hardcoded'), false);
 });
+
+test('non-critical findings yield warnings status and full finding fields', () => {
+  const result = scanSurfaces({
+    plannedWrites: [
+      { path: 'mcp.json', content: '{ "command": "npx -y some-server" }\n' },
+      { path: 'quiet-hook.json', content: '{ "command": "npm test || true" }\n' },
+      { path: 'described.json', content: '{ "mcpServers": { "docs": {} } }\n' },
+    ],
+  });
+  assert.equal(result.summary.status, 'warnings');
+  assert.equal(result.summary.critical, 0);
+  assert.ok(result.findings.length > 0);
+  const finding = result.findings.find((item) => item.rule === 'mcp-autoinstall');
+  assert.ok(finding, 'expected mcp-autoinstall finding');
+  assert.match(finding.id, /^mcp-autoinstall:mcp\.json:\d+$/);
+  assert.equal(finding.rule, 'mcp-autoinstall');
+  assert.equal(finding.severity, 'high');
+  assert.equal(finding.path, 'mcp.json');
+  assert.equal(finding.line, 1);
+  assert.ok(finding.evidence.includes('npx -y'));
+  assert.match(finding.message, /mcp-autoinstall at mcp\.json:1/);
+});
