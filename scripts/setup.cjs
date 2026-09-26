@@ -10,6 +10,7 @@ const { scanSurfaces } = require('./lib/agent-surface/scan.cjs');
 const { writeManifest, isRuntimePath } = require('./lib/install-state/manifest.cjs');
 const { sha256File } = require('./lib/install-state/hash.cjs');
 const { beginTransaction, recordCreated, rollback } = require('./lib/install-state/transaction.cjs');
+const { resolveProfile } = require('./lib/install-state/profiles.cjs');
 
 const SUPPORTED_HOSTS = ['claude-code', 'cursor', 'vscode', 'codex', 'opencode', 'antigravity'];
 const PORTABLE_ENTRIES = [
@@ -37,13 +38,15 @@ Options:
                Configure a directory that is not a git repository.
   --no-gitignore
                Do not add .worklogs/ to the target .gitignore.
+  --profile    Install profile: core (default), minimal, or full.
+  --with       Add a capability pack (repeatable). Use with core or minimal.
 `);
 }
 
 function parseArgs(argv) {
   const opts = {
     hosts: [], target: process.cwd(), dryRun: false, gitignore: true, yes: false, allowNonGit: false,
-    acceptRisk: '',
+    acceptRisk: '', profile: 'core', withCapabilities: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -57,7 +60,9 @@ function parseArgs(argv) {
       const reason = argv[i + 1];
       if (!reason || reason.startsWith('--')) throw new Error('--accept-risk requires a reason');
       opts.acceptRisk = argv[++i];
-    } else if (arg === '--help' || arg === '-h') opts.help = true;
+    } else if (arg === '--profile' && argv[i + 1]) opts.profile = argv[++i];
+    else if (arg === '--with' && argv[i + 1]) opts.withCapabilities.push(argv[++i]);
+    else if (arg === '--help' || arg === '-h') opts.help = true;
     else throw new Error(`unknown option: ${arg}`);
   }
   if (opts.hosts.includes('all')) opts.hosts = [...SUPPORTED_HOSTS];
@@ -86,9 +91,9 @@ function detectHosts(home = os.homedir()) {
   return SUPPORTED_HOSTS.filter((host) => checks[host]);
 }
 
-function plannedPackWrites(packRoot) {
+function plannedPackWrites(packRoot, entries = PORTABLE_ENTRIES) {
   const writes = [];
-  for (const entry of PORTABLE_ENTRIES) {
+  for (const entry of entries) {
     const source = path.join(packRoot, entry);
     if (!fs.existsSync(source) || !fs.statSync(source).isFile()) continue;
     writes.push({ path: entry, content: fs.readFileSync(source, 'utf8') });
@@ -96,8 +101,8 @@ function plannedPackWrites(packRoot) {
   return writes;
 }
 
-function gateSetup(packRoot, target, acceptRisk, destination) {
-  const scan = scanSurfaces({ roots: [target], plannedWrites: plannedPackWrites(packRoot) });
+function gateSetup(packRoot, target, acceptRisk, destination, entries = PORTABLE_ENTRIES) {
+  const scan = scanSurfaces({ roots: [target], plannedWrites: plannedPackWrites(packRoot, entries) });
   if (scan.summary.status !== 'blocked') return scan;
   if (!acceptRisk) throw new Error('critical agent-surface findings');
   const receipts = path.join(destination, 'install-receipts');
@@ -138,11 +143,11 @@ function collectOwnedFiles(destination) {
   return files;
 }
 
-function installPortablePack(packRoot, target, dryRun, transaction) {
+function installPortablePack(packRoot, target, dryRun, transaction, entries = PORTABLE_ENTRIES) {
   const destination = path.join(target, '.agentic-swe');
   if (dryRun) return destination;
   fs.mkdirSync(destination, { recursive: true });
-  for (const entry of PORTABLE_ENTRIES) {
+  for (const entry of entries) {
     copyEntry(path.join(packRoot, entry), path.join(destination, entry), transaction);
   }
   return destination;
@@ -298,12 +303,17 @@ function setup(options, context = {}) {
     return { hosts, target, changes };
   }
 
+  const packEntries = resolveProfile({
+    profile: options.profile || 'core',
+    withCapabilities: options.withCapabilities || [],
+    packRoot,
+  });
   const transaction = beginTransaction();
   const edits = [];
   const external_registrations = [];
   const packDestination = path.join(target, '.agentic-swe');
   try {
-    const gateScan = gateSetup(packRoot, target, options.acceptRisk || '', packDestination);
+    const gateScan = gateSetup(packRoot, target, options.acceptRisk || '', packDestination, packEntries);
     const last_scan = {
       status: gateScan.summary.status,
       critical: gateScan.summary.critical,
@@ -324,7 +334,7 @@ function setup(options, context = {}) {
     const portableHosts = hosts.filter((host) => !['claude-code', 'cursor'].includes(host));
     let packDestinationWritten = null;
     if (portableHosts.length) {
-      packDestinationWritten = installPortablePack(packRoot, target, false, transaction);
+      packDestinationWritten = installPortablePack(packRoot, target, false, transaction, packEntries);
       if (!context.skipDependencyInstall) installRuntimeDependencies(packDestinationWritten, false);
       changes.push(`${would('Installed', 'install')} portable pack: ${packDestinationWritten}`);
     }
@@ -354,7 +364,7 @@ function setup(options, context = {}) {
         schema_version: 1,
         installer_version: require('../package.json').version,
         host: portableHosts.length === 1 ? portableHosts[0] : portableHosts.join(','),
-        profile: 'core',
+        profile: options.profile || 'core',
         files: collectOwnedFiles(packDestinationWritten),
         edits,
         external_registrations,
