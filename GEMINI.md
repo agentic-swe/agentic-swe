@@ -26,6 +26,8 @@ Session hooks index changed project docs, refresh lessons and the style profile,
 
 **`npm run memory-index`**, **`npm run memory-prime`**, **`npm run memory-reflect`**, and **`npm run cold-start-warm`** are bootstrap, diagnostic, and recovery commands. **`memory-import`** merges external graph JSON; **`memory-sliding-summary`** builds transcript sliding files. See root **`CLAUDE.md`** and [docs/specs/memory-graph.md](docs/specs/memory-graph.md).
 
+For Google Antigravity, `agentic-swe setup --host antigravity` safely merges `.agents/hooks.json`: `PreInvocation` runs entry maintenance and `Stop` performs transcript capture/evolution. Gemini CLI uses this context file but does not expose the same Antigravity IDE hook contract.
+
 ## Key Commands
 
 | Command | Purpose |

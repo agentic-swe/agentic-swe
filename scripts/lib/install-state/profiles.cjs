@@ -19,10 +19,15 @@ const MINIMAL_ENTRIES = [
   'hooks/session-start',
   'hooks/session-stop',
   'scripts/session-capture.cjs',
+  'scripts/host-lifecycle.cjs',
+  'scripts/mcp-memory-server.cjs',
   'scripts/memory-reflect.cjs',
   'scripts/lib/hooks',
   'scripts/lib/memory',
   'scripts/lib/descent',
+  'scripts/lib/work-engine',
+  'integrations',
+  'mcp-servers.json',
 ];
 
 const KNOWN_PROFILES = new Set(['core', 'minimal', 'full']);

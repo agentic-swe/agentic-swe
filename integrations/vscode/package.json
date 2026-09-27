@@ -1,0 +1,27 @@
+{
+  "name": "agentic-swe-lifecycle",
+  "displayName": "Agentic SWE Lifecycle",
+  "description": "Automatic durable-memory maintenance for Agentic SWE workspaces",
+  "version": "3.3.1",
+  "publisher": "agentic-swe",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:.agentic-swe/scripts/host-lifecycle.cjs",
+    "workspaceContains:agentic-swe/scripts/host-lifecycle.cjs"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentic-swe.refreshMemory",
+        "title": "Agentic SWE: Refresh Memory"
+      }
+    ]
+  }
+}

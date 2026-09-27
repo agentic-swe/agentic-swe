@@ -17,6 +17,17 @@ describe('session ingest', () => {
     assert.match(textFromJsonlLine(line), /work-engine/);
   });
 
+  it('extracts Windsurf user and planner records', () => {
+    assert.strictEqual(
+      textFromJsonlLine({ user_input: { user_response: 'Please update the lifecycle adapter.' } }),
+      'Please update the lifecycle adapter.',
+    );
+    assert.strictEqual(
+      textFromJsonlLine({ planner_response: { response: 'I updated and verified the adapter.' } }),
+      'I updated and verified the adapter.',
+    );
+  });
+
   it('parses transcript file into turns', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ingest-'));
     const f = path.join(tmp, 'demo.jsonl');

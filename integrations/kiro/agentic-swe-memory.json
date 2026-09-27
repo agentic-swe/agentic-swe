@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "agentic-swe-memory-start",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "command",
+        "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host kiro --event start"
+      }
+    },
+    {
+      "name": "agentic-swe-memory-stop",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host kiro --event stop"
+      }
+    }
+  ]
+}

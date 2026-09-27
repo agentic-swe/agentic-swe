@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "node .agentic-swe/scripts/host-lifecycle.cjs --host copilot --event start",
+        "powershell": "node .agentic-swe/scripts/host-lifecycle.cjs --host copilot --event start",
+        "timeoutSec": 120
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "node .agentic-swe/scripts/host-lifecycle.cjs --host copilot --event stop",
+        "powershell": "node .agentic-swe/scripts/host-lifecycle.cjs --host copilot --event stop",
+        "timeoutSec": 120
+      }
+    ]
+  }
+}

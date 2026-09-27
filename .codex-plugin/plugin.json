@@ -1,0 +1,6 @@
+{
+  "name": "agentic-swe",
+  "version": "3.3.1",
+  "description": "Agentic SWE lifecycle, durable memory, and governed software delivery",
+  "hooks": "./hooks/hooks.json"
+}

@@ -11,6 +11,8 @@ test('core matches the shipped portable pack and minimal omits Jev', () => {
   const minimal = resolveProfile({ profile: 'minimal', withCapabilities: [], packRoot: process.cwd() });
   assert.equal(minimal.includes('config/jev.default.json'), false);
   assert.equal(minimal.includes('scripts/lib/jev'), false);
+  assert.equal(minimal.includes('scripts/host-lifecycle.cjs'), true);
+  assert.equal(minimal.includes('integrations'), true);
 });
 
 test('unknown capability is rejected before a file list is returned', () => {

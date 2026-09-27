@@ -7,16 +7,32 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { mergeClaudePolicy } = require('./merge-claude-policy.js');
 const { scanSurfaces } = require('./lib/agent-surface/scan.cjs');
-const { writeManifest, isRuntimePath } = require('./lib/install-state/manifest.cjs');
+const { readManifest, writeManifest, isRuntimePath } = require('./lib/install-state/manifest.cjs');
 const { sha256File } = require('./lib/install-state/hash.cjs');
-const { beginTransaction, recordCreated, rollback } = require('./lib/install-state/transaction.cjs');
+const {
+  beginTransaction,
+  recordCreated,
+  recordModified,
+  rollback,
+} = require('./lib/install-state/transaction.cjs');
 const { resolveProfile } = require('./lib/install-state/profiles.cjs');
 
-const SUPPORTED_HOSTS = ['claude-code', 'cursor', 'vscode', 'codex', 'opencode', 'antigravity'];
+const SUPPORTED_HOSTS = [
+  'claude-code',
+  'cursor',
+  'vscode',
+  'codex',
+  'opencode',
+  'antigravity',
+  'windsurf',
+  'kiro',
+  'copilot',
+];
 const PORTABLE_ENTRIES = [
   'commands', 'phases', 'agents', 'templates', 'references', 'tools', 'skills',
   'scripts', 'schemas', 'config', 'hooks', 'state-machine.json', 'CLAUDE.md',
-  'AGENTS.md', 'GEMINI.md', '.opencode', 'package.json',
+  'AGENTS.md', 'GEMINI.md', '.opencode', '.codex-plugin', 'integrations', 'mcp-servers.json',
+  'package.json',
 ];
 
 function usage() {
@@ -89,7 +105,13 @@ function detectHosts(home = os.homedir()) {
     vscode: commandExists('code') || fs.existsSync(path.join(home, '.vscode')),
     codex: commandExists('codex') || fs.existsSync(path.join(home, '.codex')),
     opencode: commandExists('opencode') || fs.existsSync(path.join(home, '.config', 'opencode')),
-    antigravity: commandExists('antigravity') || fs.existsSync(path.join(home, '.antigravity')),
+    antigravity:
+      commandExists('antigravity') ||
+      fs.existsSync(path.join(home, '.gemini', 'antigravity')) ||
+      fs.existsSync(path.join(home, '.gemini', 'antigravity-ide')),
+    windsurf: commandExists('windsurf') || fs.existsSync(path.join(home, '.codeium', 'windsurf')),
+    kiro: commandExists('kiro') || fs.existsSync(path.join(home, '.kiro')),
+    copilot: commandExists('copilot') || fs.existsSync(path.join(home, '.copilot')),
   };
   return SUPPORTED_HOSTS.filter((host) => checks[host]);
 }
@@ -162,6 +184,170 @@ function copyEntry(source, destination, transaction) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   if (transaction && !fs.existsSync(destination)) recordCreated(transaction, destination);
   fs.cpSync(source, destination, { recursive: true, force: true });
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function adapterIdentity(value) {
+  if (!value || typeof value !== 'object') return null;
+  const commands = [];
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    for (const [key, child] of Object.entries(node)) {
+      if (['command', 'bash', 'powershell'].includes(key) && typeof child === 'string') commands.push(child);
+      else visit(child);
+    }
+  }
+  visit(value);
+  for (const command of commands) {
+    const normalized = command.replace(/\\/g, '/');
+    if (!/(?:\.agentic-swe|CLAUDE_PLUGIN_ROOT).*host-lifecycle\.cjs/.test(normalized)) continue;
+    const match = command.match(/--host\s+([^\s"']+)\s+--event\s+([^\s"']+)/);
+    if (match) return `${match[1]}:${match[2]}`;
+  }
+  return typeof value.name === 'string' && value.name.startsWith('agentic-swe-')
+    ? value.name
+    : null;
+}
+
+function mergeJsonValue(current, incoming) {
+  if (Array.isArray(current) && Array.isArray(incoming)) {
+    const merged = [...current];
+    const exact = new Set(current.map(stableJson));
+    const identities = new Map();
+    current.forEach((value, index) => {
+      const identity = adapterIdentity(value);
+      if (identity) identities.set(identity, index);
+    });
+    for (const value of incoming) {
+      const identity = adapterIdentity(value);
+      if (identity && identities.has(identity)) {
+        merged[identities.get(identity)] = value;
+      } else if (!exact.has(stableJson(value))) {
+        merged.push(value);
+      }
+    }
+    return merged;
+  }
+  if (
+    current &&
+    incoming &&
+    typeof current === 'object' &&
+    typeof incoming === 'object' &&
+    !Array.isArray(current) &&
+    !Array.isArray(incoming)
+  ) {
+    const merged = { ...current };
+    for (const [key, value] of Object.entries(incoming)) {
+      merged[key] = Object.prototype.hasOwnProperty.call(merged, key)
+        ? mergeJsonValue(merged[key], value)
+        : value;
+    }
+    return merged;
+  }
+  return current;
+}
+
+function jsonAdditions(current, incoming) {
+  if (Array.isArray(current) && Array.isArray(incoming)) {
+    const exact = new Set(current.map(stableJson));
+    const identities = new Set(current.map(adapterIdentity).filter(Boolean));
+    return incoming.filter((value) => {
+      const identity = adapterIdentity(value);
+      return !exact.has(stableJson(value)) && !(identity && identities.has(identity));
+    });
+  }
+  if (
+    current &&
+    incoming &&
+    typeof current === 'object' &&
+    typeof incoming === 'object' &&
+    !Array.isArray(current) &&
+    !Array.isArray(incoming)
+  ) {
+    const added = {};
+    for (const [key, value] of Object.entries(incoming)) {
+      if (!Object.prototype.hasOwnProperty.call(current, key)) added[key] = value;
+      else {
+        const nested = jsonAdditions(current[key], value);
+        if (
+          (Array.isArray(nested) && nested.length) ||
+          (nested && typeof nested === 'object' && Object.keys(nested).length)
+        ) {
+          added[key] = nested;
+        }
+      }
+    }
+    return added;
+  }
+  return null;
+}
+
+function installJsonAdapter(source, destination, transaction) {
+  const incoming = JSON.parse(fs.readFileSync(source, 'utf8'));
+  const existed = fs.existsSync(destination);
+  let output = incoming;
+  let added = incoming;
+  if (existed) {
+    try {
+      const original = fs.readFileSync(destination, 'utf8');
+      const current = JSON.parse(original);
+      output = mergeJsonValue(current, incoming);
+      added = jsonAdditions(current, incoming);
+      if (transaction) recordModified(transaction, destination, original);
+    } catch {
+      throw new Error(`cannot merge non-JSON host adapter safely: ${destination}`);
+    }
+  }
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  if (!existed && transaction) recordCreated(transaction, destination);
+  fs.writeFileSync(destination, `${JSON.stringify(output, null, 2)}\n`);
+  return { destination, created: !existed, added, incoming };
+}
+
+function installHostAdapters(packRoot, target, hosts, transaction) {
+  const installed = [];
+  const adapters = [
+    ['codex', 'integrations/codex/hooks.json', '.codex/hooks.json'],
+    ['antigravity', 'integrations/antigravity/hooks.json', '.agents/hooks.json'],
+    ['windsurf', 'integrations/windsurf/hooks.json', '.windsurf/hooks.json'],
+    ['kiro', 'integrations/kiro/agentic-swe-memory.json', '.kiro/hooks/agentic-swe-memory.json'],
+    ['copilot', 'integrations/copilot/agentic-swe.json', '.github/hooks/agentic-swe-memory.json'],
+  ];
+  for (const [host, source, destination] of adapters) {
+    if (!hosts.includes(host)) continue;
+    const sourcePath = path.join(packRoot, source);
+    if (!fs.existsSync(sourcePath)) continue;
+    installed.push({
+      host,
+      ...installJsonAdapter(sourcePath, path.join(target, destination), transaction),
+    });
+  }
+  return installed;
+}
+
+function installVsCodeExtension(packRoot, home, transaction) {
+  const pkg = require('../package.json');
+  const source = path.join(packRoot, 'integrations', 'vscode');
+  if (!fs.existsSync(source)) return null;
+  const destination = path.join(
+    home,
+    '.vscode',
+    'extensions',
+    `agentic-swe.agentic-swe-lifecycle-${pkg.version}`,
+  );
+  if (fs.existsSync(path.join(destination, '.git'))) {
+    throw new Error(`${destination} is a git checkout. Refusing to replace it.`);
+  }
+  const existed = fs.existsSync(destination);
+  copyEntry(source, destination, transaction);
+  return { destination, created: !existed };
 }
 
 function collectOwnedFiles(destination) {
@@ -342,6 +528,24 @@ function setup(options, context = {}) {
     if (hosts.includes('antigravity')) {
       changes.push(`Would prepare Antigravity policy: ${path.join(target, 'GEMINI.md')}`);
     }
+    if (hosts.includes('codex')) {
+      changes.push(`Would merge Codex hooks: ${path.join(target, '.codex', 'hooks.json')}`);
+    }
+    if (hosts.includes('antigravity')) {
+      changes.push(`Would merge Antigravity hooks: ${path.join(target, '.agents', 'hooks.json')}`);
+    }
+    if (hosts.includes('windsurf')) {
+      changes.push(`Would merge Windsurf hooks: ${path.join(target, '.windsurf', 'hooks.json')}`);
+    }
+    if (hosts.includes('kiro')) {
+      changes.push(`Would install Kiro hooks: ${path.join(target, '.kiro', 'hooks', 'agentic-swe-memory.json')}`);
+    }
+    if (hosts.includes('copilot')) {
+      changes.push(`Would install Copilot hooks: ${path.join(target, '.github', 'hooks', 'agentic-swe-memory.json')}`);
+    }
+    if (hosts.includes('vscode')) {
+      changes.push('Would install the Agentic SWE lifecycle VS Code extension');
+    }
     return { hosts, target, changes };
   }
 
@@ -351,10 +555,18 @@ function setup(options, context = {}) {
     packRoot,
   });
   const transaction = beginTransaction();
-  const edits = [];
-  const external_registrations = [];
-  const extraFiles = [];
   const packDestination = path.join(target, '.agentic-swe');
+  const previousManifest = fs.existsSync(path.join(packDestination, 'install-state.json'))
+    ? readManifest(packDestination)
+    : null;
+  const edits = [...(previousManifest?.edits || [])];
+  const external_registrations = [...(previousManifest?.external_registrations || [])];
+  const extraFiles = [];
+  const previousExternalFiles = (previousManifest?.files || []).filter((file) => file.path.startsWith('../'));
+  const driftedExternalFiles = new Set(previousExternalFiles.flatMap((file) => {
+    const full = path.join(packDestination, file.path);
+    return fs.existsSync(full) && sha256File(full) !== file.sha256 ? [file.path] : [];
+  }));
   const toDestinationRelative = (filePath) => path.relative(packDestination, filePath).split(path.sep).join('/');
   try {
     const gateScan = gateSetup(packRoot, target, options.acceptRisk || '', packDestination, packEntries, transaction);
@@ -426,14 +638,57 @@ function setup(options, context = {}) {
       changes.push(`Prepared Antigravity policy: ${geminiFile}`);
       extraFiles.push({ path: toDestinationRelative(geminiFile), sha256: sha256File(geminiFile) });
     }
+    const hostAdapters = installHostAdapters(packRoot, target, hosts, transaction);
+    for (const adapter of hostAdapters) {
+      changes.push(`Installed ${adapter.host} lifecycle hooks: ${adapter.destination}`);
+      const relativeDestination = toDestinationRelative(adapter.destination);
+      if (adapter.created) {
+        extraFiles.push({
+          path: relativeDestination,
+          sha256: sha256File(adapter.destination),
+        });
+      } else if (driftedExternalFiles.has(relativeDestination)) {
+        edits.push({
+          type: 'json-merge',
+          path: relativeDestination,
+          added: adapter.incoming,
+        });
+      } else if (
+        (Array.isArray(adapter.added) && adapter.added.length) ||
+        (adapter.added && typeof adapter.added === 'object' && Object.keys(adapter.added).length)
+      ) {
+        edits.push({
+          type: 'json-merge',
+          path: toDestinationRelative(adapter.destination),
+          added: adapter.added,
+        });
+      }
+    }
+    if (hosts.includes('vscode')) {
+      const vscodeExtension = installVsCodeExtension(packRoot, home, transaction);
+      if (vscodeExtension) {
+        changes.push(`Installed VS Code lifecycle extension: ${vscodeExtension.destination}`);
+        if (!external_registrations.some(
+          (registration) => registration.host === 'vscode' && registration.id === vscodeExtension.destination,
+        )) {
+          external_registrations.push({ host: 'vscode', id: vscodeExtension.destination });
+        }
+      }
+    }
 
     if (packDestinationWritten) {
+      const externalFiles = new Map();
+      for (const file of [...previousExternalFiles, ...extraFiles]) {
+        if (driftedExternalFiles.has(file.path)) continue;
+        const full = path.join(packDestinationWritten, file.path);
+        if (fs.existsSync(full)) externalFiles.set(file.path, { path: file.path, sha256: sha256File(full) });
+      }
       writeManifest(packDestinationWritten, {
         schema_version: 1,
         installer_version: require('../package.json').version,
         host: portableHosts.length === 1 ? portableHosts[0] : portableHosts.join(','),
         profile: options.profile || 'core',
-        files: [...collectOwnedFiles(packDestinationWritten), ...extraFiles],
+        files: [...collectOwnedFiles(packDestinationWritten), ...externalFiles.values()],
         edits,
         external_registrations,
         last_scan: {

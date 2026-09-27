@@ -57,6 +57,10 @@ function textFromJsonlLine(obj) {
   if (fromMessage.trim()) return fromMessage;
   const fromContent = partsToText(obj.content);
   if (fromContent.trim()) return fromContent;
+  const windsurfUser = partsToText(obj.user_input?.user_response);
+  if (windsurfUser.trim()) return windsurfUser;
+  const windsurfPlanner = partsToText(obj.planner_response?.response);
+  if (windsurfPlanner.trim()) return windsurfPlanner;
   if (typeof obj.text === 'string') return obj.text;
   return '';
 }
@@ -77,7 +81,12 @@ function parseTranscriptFile(filePath, maxLines = 500) {
     if (!line.trim()) continue;
     try {
       const obj = JSON.parse(line);
-      const role = obj.role || obj.type || 'unknown';
+      const role =
+        obj.role ||
+        obj.type ||
+        (obj.user_input ? 'user' : null) ||
+        (obj.planner_response ? 'assistant' : null) ||
+        'unknown';
       const text = textFromJsonlLine(obj);
       if (text.trim().length < 12) continue;
       turns.push({ role: String(role), text });
