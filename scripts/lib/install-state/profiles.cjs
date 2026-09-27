@@ -17,6 +17,12 @@ const MINIMAL_ENTRIES = [
   'schemas',
   'templates',
   'hooks/session-start',
+  'hooks/session-stop',
+  'scripts/session-capture.cjs',
+  'scripts/memory-reflect.cjs',
+  'scripts/lib/hooks',
+  'scripts/lib/memory',
+  'scripts/lib/descent',
 ];
 
 const KNOWN_PROFILES = new Set(['core', 'minimal', 'full']);

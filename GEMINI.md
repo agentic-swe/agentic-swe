@@ -22,7 +22,9 @@ initialized → feasibility → lean-track-check
 
 ## Optional durable memory
 
-The pack can maintain **`.agentic-swe/memory.sqlite`** and emit **memory prime** hints (**`npm run memory-index`**, **`npm run memory-prime`**). Session start **usually** appends the same block (opt out **`AGENTIC_SWE_MEMORY_PRIME=0`**). **`memory-import`** merges external graph JSON; **`memory-sliding-summary`** builds transcript sliding files. Treat as **advisory** — **`state.json`** and repo files are authoritative. See root **`CLAUDE.md`** and [docs/specs/memory-graph.md](docs/specs/memory-graph.md).
+Session hooks index changed project docs, refresh lessons and the style profile, and prime memory automatically. Treat the result as **advisory** — **`state.json`** and repo files are authoritative.
+
+**`npm run memory-index`**, **`npm run memory-prime`**, **`npm run memory-reflect`**, and **`npm run cold-start-warm`** are bootstrap, diagnostic, and recovery commands. **`memory-import`** merges external graph JSON; **`memory-sliding-summary`** builds transcript sliding files. See root **`CLAUDE.md`** and [docs/specs/memory-graph.md](docs/specs/memory-graph.md).
 
 ## Key Commands
 

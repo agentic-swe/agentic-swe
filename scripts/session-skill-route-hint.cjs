@@ -104,7 +104,8 @@ async function main() {
       }
     }
     for (const p of data.procedures || []) {
-      if (p.eval_status === 'unevaluated') continue;
+      if (p.eval_status === 'unevaluated' || p.eval_status === 'quarantined') continue;
+      if (p.quality === 'rejected' || p.quality === 'duplicate') continue;
       const cmd = p.procedure?.verify?.[0]?.command || '';
       if (!cmd) continue;
       if (!/test|verify|check/i.test(q) && !/test|verify/.test(cmd)) continue;

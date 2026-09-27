@@ -1,8 +1,7 @@
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
 const crypto = require('node:crypto');
+const { scoreCapture, acceptsPattern } = require('./evidence-score.cjs');
 
 const SECRET_PATTERNS = [
   /(?:api[_-]?key|secret|token|password|passwd|authorization)\s*[:=]\s*['"]?[A-Za-z0-9_\-./+=]{8,}/gi,
@@ -28,10 +27,23 @@ function redactSecrets(text) {
   return { redacted, hits };
 }
 
+function pushNode(nodes, fields) {
+  nodes.push({
+    id: fields.id,
+    kind: fields.kind,
+    label: fields.label.slice(0, 120),
+    body: fields.body,
+    score: fields.score,
+    evidence: fields.evidence,
+  });
+}
+
 /**
  * Distill a session transcript chunk into typed memory nodes.
+ * Nodes are kept only when evidence converges. A long transcript with no
+ * decision, lesson, runnable command, or repo path is not stored.
  * @param {{ text: string, workId?: string|null, source?: string }} input
- * @returns {{ nodes: Array<{ id: string, kind: string, label: string, body: string }>, redaction_hits: number }}
+ * @returns {{ nodes: Array<{ id: string, kind: string, label: string, body: string, score?: number, evidence?: string[] }>, redaction_hits: number }}
  */
 function distillSessionChunk(input) {
   const { redacted, hits } = redactSecrets(String(input.text || ''));
@@ -39,36 +51,42 @@ function distillSessionChunk(input) {
     return { nodes: [], redaction_hits: hits, blocked: true };
   }
   const nodes = [];
+  const scored = scoreCapture(redacted);
   const base = crypto.createHash('sha256').update(redacted.slice(0, 4000)).digest('hex').slice(0, 12);
   const work = input.workId ? `work:${input.workId}` : 'session';
+  const body = redacted.slice(0, 2000);
 
-  const decisionMatch = redacted.match(/(?:decided|decision|chosen|we will)\s*[:\-]?\s*(.{20,200})/i);
-  if (decisionMatch) {
-    nodes.push({
+  if (scored.decision && scored.score >= 0.45) {
+    pushNode(nodes, {
       id: `${work}:decision:${base}`,
       kind: 'decision',
-      label: decisionMatch[1].trim().slice(0, 120),
-      body: redacted.slice(0, 2000),
+      label: scored.decision,
+      body,
+      score: scored.score,
+      evidence: scored.evidence,
     });
   }
-  const lessonMatch = redacted.match(/(?:lesson|learned|takeaway)\s*[:\-]?\s*(.{20,200})/i);
-  if (lessonMatch) {
-    nodes.push({
+  if (scored.lesson && scored.score >= 0.45) {
+    pushNode(nodes, {
       id: `${work}:lesson:${base}`,
       kind: 'lesson',
-      label: lessonMatch[1].trim().slice(0, 120),
-      body: redacted.slice(0, 2000),
+      label: scored.lesson,
+      body,
+      score: scored.score,
+      evidence: scored.evidence,
     });
   }
-  if (!nodes.length && redacted.trim().length > 80) {
-    nodes.push({
+  if (!nodes.length && acceptsPattern(scored)) {
+    pushNode(nodes, {
       id: `${work}:pattern:${base}`,
       kind: 'pattern',
-      label: redacted.trim().slice(0, 120),
-      body: redacted.slice(0, 2000),
+      label: redacted.trim(),
+      body,
+      score: scored.score,
+      evidence: scored.evidence,
     });
   }
-  return { nodes, redaction_hits: hits, blocked: false };
+  return { nodes, redaction_hits: hits, blocked: false, score: scored.score, evidence: scored.evidence };
 }
 
 /**
@@ -81,7 +99,13 @@ function upsertTypedNodes(db, nodes) {
     const stmt = db.prepare(
       'INSERT OR REPLACE INTO nodes (id, kind, path, label, meta_json) VALUES (?, ?, ?, ?, ?)'
     );
-    stmt.run([n.id, n.kind, null, n.label, JSON.stringify({ body: n.body })]);
+    stmt.run([
+      n.id,
+      n.kind,
+      null,
+      n.label,
+      JSON.stringify({ body: n.body, score: n.score, evidence: n.evidence || [] }),
+    ]);
     stmt.free();
   }
 }

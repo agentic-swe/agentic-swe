@@ -43,7 +43,8 @@ function findOverlappingEvaluatedProcedure(projectRoot, declaredFiles, opts = {}
   }
   let best = null;
   for (const rec of data.procedures || []) {
-    if (rec.eval_status === 'unevaluated') continue;
+    if (rec.eval_status === 'unevaluated' || rec.eval_status === 'quarantined') continue;
+    if (rec.quality === 'rejected' || rec.quality === 'duplicate') continue;
     const src = rec.procedure?._meta?.source;
     if (src && sources.length && !sources.includes(src)) continue;
     const paths = procedureReadPaths(rec);
