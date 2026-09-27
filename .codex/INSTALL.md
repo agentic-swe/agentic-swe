@@ -8,7 +8,7 @@ From the target repository:
 agentic-swe setup --host codex
 ```
 
-This merges the project policy, preserves an existing `AGENTS.md`, and installs the portable pack under `.agentic-swe/`. The manual steps below remain available for custom layouts.
+This merges the project policy, preserves an existing `AGENTS.md`, installs the portable pack under `.agentic-swe/`, and safely merges lifecycle hooks into `.codex/hooks.json`. Review and approve those hooks when Codex asks you to trust the repository. The manual steps below remain available for custom layouts.
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ This merges the project policy, preserves an existing `AGENTS.md`, and installs 
 
 4. Use **`.worklogs/<id>/`** in the **target repo root** for per-work state (not **`.claude/.work/`**).
 
-5. Optional: **durable memory** (local SQLite index, **`memory-prime`**) uses pack **`scripts/`** with **`npm install`** at the pack root; see the docs site **[Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory)** (source in [`agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)).
+5. **Durable memory is automatic after hook approval.** Session start refreshes changed repository knowledge; Stop captures the transcript, evolves evidence-backed procedures, and writes a receipt. `npm run memory-index`, `memory-prime`, and `memory-reflect` are bootstrap, diagnostic, and recovery controls—not per-task requirements. See **[Durable memory](https://agentic-swe.github.io/agentic-swe-site/docs/durable-memory)**.
 
 6. Optional: enable multi-agent mode in Codex if your environment supports it (see **[README.codex.md](https://github.com/agentic-swe/agentic-swe-site/blob/main/src/content/docs/README.codex.md)** in **agentic-swe-site**).
 

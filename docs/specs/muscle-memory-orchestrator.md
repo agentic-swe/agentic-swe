@@ -63,6 +63,8 @@ Three scopes: **session** (transcripts in project sqlite), **personal** (`~/.age
 | Callable search | `npm run memory-search -- --scope session\|personal\|team` (diagnostic) |
 | Prime (session start) | `hooks/session-start`; `npm run memory-prime` prints the same digest on demand |
 | Team sync | `npm run sync:memory` → `scripts/sync/git-sync.cjs`; events ingested by `ingestTeamEvents` |
+
+Host adapters translate Codex, Antigravity, Windsurf, Kiro, and Copilot events into the same lifecycle contract. A small VS Code extension performs host-level maintenance when no agent transcript API exists. `scripts/mcp-memory-server.cjs` exposes refresh, prime, and status as the honest fallback for Cline, Roo, Continue, Junie/JetBrains, Zed, and other MCP-capable hosts. These fallback tools do not imply automatic transcript capture.
 | Style profile | refreshed by the session lifecycle; `scripts/lib/memory/style-profile.cjs` |
 
 Storage: `.agentic-swe/memory.sqlite` (nodes, edges, chunks). Memory is **advisory**; `state.json` and repo files remain authoritative.

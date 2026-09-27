@@ -7,7 +7,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const test = require('node:test');
 const { parseArgs, setup } = require('../scripts/setup.cjs');
-const { beginTransaction, recordCreated, rollback } = require('../scripts/lib/install-state/transaction.cjs');
+const {
+  beginTransaction,
+  recordCreated,
+  recordModified,
+  rollback,
+} = require('../scripts/lib/install-state/transaction.cjs');
 
 function gitRepository(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-gate-'));
@@ -94,6 +99,18 @@ test('rollback deletes only transaction-recorded paths', (t) => {
   rollback(transaction);
   assert.equal(fs.existsSync(keepPath), true);
   assert.equal(fs.existsSync(removePath), false);
+});
+
+test('rollback restores transaction-recorded file modifications', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-gate-modified-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const filePath = path.join(directory, 'hooks.json');
+  fs.writeFileSync(filePath, 'before\n');
+  const transaction = beginTransaction();
+  recordModified(transaction, filePath, fs.readFileSync(filePath));
+  fs.writeFileSync(filePath, 'after\n');
+  rollback(transaction);
+  assert.equal(fs.readFileSync(filePath, 'utf8'), 'before\n');
 });
 
 test('setup rollback removes portable files after a post-copy failure', (t) => {

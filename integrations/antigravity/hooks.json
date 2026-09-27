@@ -1,0 +1,20 @@
+{
+  "agentic-swe-memory-start": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host antigravity --event start",
+        "timeout": 120
+      }
+    ]
+  },
+  "agentic-swe-memory-stop": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host antigravity --event stop",
+        "timeout": 120
+      }
+    ]
+  }
+}

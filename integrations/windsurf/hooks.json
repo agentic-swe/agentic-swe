@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "pre_user_prompt": [
+      {
+        "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host windsurf --event start",
+        "powershell": "node .agentic-swe/scripts/host-lifecycle.cjs --host windsurf --event start",
+        "show_output": false
+      }
+    ],
+    "post_cascade_response_with_transcript": [
+      {
+        "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host windsurf --event stop",
+        "powershell": "node .agentic-swe/scripts/host-lifecycle.cjs --host windsurf --event stop",
+        "show_output": false
+      }
+    ]
+  }
+}

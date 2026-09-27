@@ -1,0 +1,57 @@
+{
+  "claude-code": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "Plugin hooks run automatic maintenance and transcript capture at session boundaries."
+  },
+  "cursor": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "Cursor hooks run the shared lifecycle at session start and stop."
+  },
+  "vscode": {
+    "start": true,
+    "stop": true,
+    "native": false,
+    "reason": "The extension performs automatic maintenance, but generic VS Code exposes no agent transcript lifecycle."
+  },
+  "codex": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "Trusted Codex plugin or repository hooks run the shared lifecycle at SessionStart and Stop."
+  },
+  "opencode": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "The OpenCode plugin runs shared lifecycle maintenance on normal chat turns."
+  },
+  "antigravity": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "Workspace hooks run maintenance on PreInvocation and capture on Stop."
+  },
+  "windsurf": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "Cascade hooks run maintenance and transcript capture when Restricted Mode is disabled."
+  },
+  "kiro": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "reason": "Kiro v1 SessionStart and Stop hooks run the shared lifecycle."
+  },
+  "copilot": {
+    "start": true,
+    "stop": true,
+    "native": true,
+    "fullScope": false,
+    "reason": "Copilot CLI and coding-agent hooks are covered; IDE chat transcript lifecycle is not exposed consistently."
+  }
+}

@@ -284,8 +284,10 @@ describe('multi-platform stubs: OpenCode', () => {
 describe('multi-platform stubs: npm package files[]', () => {
   const required = [
     '.cursor-plugin/',
+    '.codex-plugin/',
     '.codex/',
     '.opencode/',
+    'integrations/',
     'gemini-extension.json',
     'mcp-servers.json',
     'hooks/',

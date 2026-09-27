@@ -13,6 +13,7 @@ const {
   confirmChanges,
   setup,
 } = require('../scripts/setup.cjs');
+const { uninstall } = require('../scripts/lib/install-state/lifecycle.cjs');
 
 const packRoot = path.resolve(__dirname, '..');
 
@@ -80,14 +81,118 @@ test('configureOpenCode updates an existing agentic-swe entry without duplicates
   assert.equal(config.plugins[0].entry, '.agentic-swe/.opencode/plugins/agentic-swe.js');
 });
 
+test('setup safely installs and merges native lifecycle adapters', (t) => {
+  const target = gitRepository(t);
+  const home = temporaryDirectory(t);
+  const codexHooks = path.join(target, '.codex', 'hooks.json');
+  fs.mkdirSync(path.dirname(codexHooks), { recursive: true });
+  fs.writeFileSync(codexHooks, `${JSON.stringify({
+    hooks: {
+      SessionStart: [{ hooks: [{ type: 'command', command: 'echo existing' }] }],
+    },
+  })}\n`);
+
+  setup(
+    {
+      hosts: ['codex', 'antigravity', 'windsurf', 'kiro', 'copilot', 'vscode'],
+      target,
+      dryRun: false,
+      gitignore: false,
+    },
+    { packRoot, home, skipDependencyInstall: true },
+  );
+
+  const beforeUpgrade = JSON.parse(fs.readFileSync(codexHooks, 'utf8'));
+  beforeUpgrade.hooks.SessionStart[1].hooks[0].command = beforeUpgrade.hooks.SessionStart[1].hooks[0].command
+    .replace('host-lifecycle.cjs', 'legacy-host-lifecycle.cjs');
+  fs.writeFileSync(codexHooks, `${JSON.stringify(beforeUpgrade, null, 2)}\n`);
+  const antigravityHooks = path.join(target, '.agents', 'hooks.json');
+  const editedAntigravity = JSON.parse(fs.readFileSync(antigravityHooks, 'utf8'));
+  editedAntigravity.customHook = { PreInvocation: [{ type: 'command', command: 'echo custom' }] };
+  fs.writeFileSync(antigravityHooks, `${JSON.stringify(editedAntigravity, null, 2)}\n`);
+
+  setup(
+    {
+      hosts: ['codex', 'antigravity', 'windsurf', 'kiro', 'copilot', 'vscode'],
+      target,
+      dryRun: false,
+      gitignore: false,
+    },
+    { packRoot, home, skipDependencyInstall: true },
+  );
+
+  const mergedCodex = JSON.parse(fs.readFileSync(codexHooks, 'utf8'));
+  assert.equal(mergedCodex.hooks.SessionStart.length, 2, 'existing Codex hooks must be preserved');
+  assert.doesNotMatch(JSON.stringify(mergedCodex), /legacy-host-lifecycle/);
+  assert.ok(fs.existsSync(path.join(target, '.agents', 'hooks.json')));
+  assert.ok(fs.existsSync(path.join(target, '.windsurf', 'hooks.json')));
+  assert.ok(fs.existsSync(path.join(target, '.kiro', 'hooks', 'agentic-swe-memory.json')));
+  assert.ok(fs.existsSync(path.join(target, '.github', 'hooks', 'agentic-swe-memory.json')));
+  assert.ok(fs.existsSync(path.join(
+    home,
+    '.vscode',
+    'extensions',
+    'agentic-swe.agentic-swe-lifecycle-3.3.1',
+    'extension.js',
+  )));
+
+  uninstall({ destination: path.join(target, '.agentic-swe'), dryRun: false });
+  const preservedAntigravity = JSON.parse(fs.readFileSync(antigravityHooks, 'utf8'));
+  assert.deepEqual(preservedAntigravity, {
+    customHook: { PreInvocation: [{ type: 'command', command: 'echo custom' }] },
+  });
+});
+
+test('uninstall removes only merged Agentic SWE hooks from an existing host file', (t) => {
+  const target = gitRepository(t);
+  const codexHooks = path.join(target, '.codex', 'hooks.json');
+  fs.mkdirSync(path.dirname(codexHooks), { recursive: true });
+  fs.writeFileSync(codexHooks, `${JSON.stringify({
+    hooks: {
+      SessionStart: [{
+        hooks: [{
+          type: 'command',
+          command: 'node custom-wrapper.js --host codex --event start',
+        }],
+      }],
+    },
+  }, null, 2)}\n`);
+
+  setup(
+    { hosts: ['codex'], target, dryRun: false, gitignore: false },
+    { packRoot, home: temporaryDirectory(t), skipDependencyInstall: true },
+  );
+  uninstall({ destination: path.join(target, '.agentic-swe'), dryRun: false });
+
+  const restored = JSON.parse(fs.readFileSync(codexHooks, 'utf8'));
+  assert.deepEqual(restored, {
+    hooks: {
+      SessionStart: [{
+        hooks: [{
+          type: 'command',
+          command: 'node custom-wrapper.js --host codex --event start',
+        }],
+      }],
+    },
+  });
+});
+
 test('dry-run reports changes without writing files', (t) => {
   const target = temporaryDirectory(t);
   const result = setup(
-    { hosts: ['cursor', 'codex'], target, dryRun: true, gitignore: true, allowNonGit: true },
+    {
+      hosts: ['cursor', 'codex', 'antigravity', 'windsurf', 'kiro', 'copilot', 'vscode'],
+      target,
+      dryRun: true,
+      gitignore: true,
+      allowNonGit: true,
+    },
     { packRoot, home: temporaryDirectory(t), skipDependencyInstall: true },
   );
 
   assert.ok(result.changes.some((change) => change.startsWith('Would merge policy')));
+  assert.ok(result.changes.some((change) => change.includes('Windsurf hooks')));
+  assert.ok(result.changes.some((change) => change.includes('VS Code extension')));
   assert.deepEqual(fs.readdirSync(target), []);
 });
 

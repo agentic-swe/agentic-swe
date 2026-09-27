@@ -188,7 +188,7 @@ Add `scripts/lib/install-state/profiles.cjs` and `config/capability-profiles.jso
 
 `agentic-swe context-budget --target <repo> [--json]` reads the selected profile inventory and reports estimated tokens for policy files, agent description frontmatter, skills, MCP tool schemas, and the fixed Jev session-hint text. The command uses a documented estimator: prose at words × 1.3 and each MCP tool schema at 500 tokens. Jev's capped task text is reported separately and is not added to the always-loaded total. Its output names the total, the per-component totals, and the three largest savings opportunities. `AGENTIC_SWE_JEV=0` may appear as a savings opportunity; it is not a security finding.
 
-`agentic-swe host-parity [--json]` reports each supported host as `stable`, `partial`, or `instruction-only` from the lifecycle hooks that host actually executes. Claude Code, Cursor, and OpenCode are stable. VS Code and Codex ship the hooks but do not run them (`partial`). Antigravity is `instruction-only`. Doctor includes the summary.
+`agentic-swe host-parity [--json]` reports each supported host as `stable`, `partial`, or `instruction-only` from [`config/host-adapters.json`](../../config/host-adapters.json). Claude Code, Cursor, OpenCode, Codex, Antigravity, Windsurf, and Kiro have native lifecycle coverage. VS Code is partial because its extension cannot access agent transcripts. Copilot is partial across products because repository hooks cover CLI/cloud but not every IDE chat surface. Doctor includes the summary.
 
 ## Slice 4 — Memory trust
 

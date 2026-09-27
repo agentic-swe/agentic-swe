@@ -101,9 +101,70 @@ function applyEdit(filePath, edit, dryRun) {
     next = `${JSON.stringify(parsed, null, 2)}\n`;
   }
   if (edit.type === 'gitignore-line') next = content.replace(/\n?\.worklogs\/\n/, '\n');
+  if (edit.type === 'json-merge') {
+    const parsed = JSON.parse(content);
+    const cleaned = subtractJsonAdditions(parsed, edit.added);
+    next = `${JSON.stringify(cleaned, null, 2)}\n`;
+  }
   if (next === content) return false;
   if (!dryRun) fs.writeFileSync(filePath, next);
   return true;
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function adapterIdentity(value) {
+  if (!value || typeof value !== 'object') return null;
+  const commands = [];
+  function visit(node) {
+    if (!node || typeof node !== 'object') return;
+    for (const [key, child] of Object.entries(node)) {
+      if (['command', 'bash', 'powershell'].includes(key) && typeof child === 'string') commands.push(child);
+      else visit(child);
+    }
+  }
+  visit(value);
+  for (const command of commands) {
+    const normalized = command.replace(/\\/g, '/');
+    if (!/(?:\.agentic-swe|CLAUDE_PLUGIN_ROOT).*host-lifecycle\.cjs/.test(normalized)) continue;
+    const match = command.match(/--host\s+([^\s"']+)\s+--event\s+([^\s"']+)/);
+    if (match) return `${match[1]}:${match[2]}`;
+  }
+  return null;
+}
+
+function subtractJsonAdditions(current, added) {
+  if (Array.isArray(current) && Array.isArray(added)) {
+    const identities = new Set(added.map(adapterIdentity).filter(Boolean));
+    const exact = new Set(added.map(stableJson));
+    return current.filter((value) => {
+      const identity = adapterIdentity(value);
+      return !exact.has(stableJson(value)) && !(identity && identities.has(identity));
+    });
+  }
+  if (
+    current &&
+    added &&
+    typeof current === 'object' &&
+    typeof added === 'object' &&
+    !Array.isArray(current) &&
+    !Array.isArray(added)
+  ) {
+    const cleaned = { ...current };
+    for (const [key, value] of Object.entries(added)) {
+      if (!Object.prototype.hasOwnProperty.call(cleaned, key)) continue;
+      if (stableJson(cleaned[key]) === stableJson(value)) delete cleaned[key];
+      else cleaned[key] = subtractJsonAdditions(cleaned[key], value);
+    }
+    return cleaned;
+  }
+  return current;
 }
 
 module.exports = { applyEdit, listInstalled, repair, updateInstalled, uninstall };

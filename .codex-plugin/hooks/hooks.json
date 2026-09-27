@@ -1,0 +1,30 @@
+{
+  "description": "Automatic Agentic SWE memory lifecycle for Codex",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start\"",
+            "timeout": 120,
+            "statusMessage": "Refreshing Agentic SWE memory"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/host-lifecycle.cjs\" --host codex --event stop",
+            "timeout": 120,
+            "statusMessage": "Capturing Agentic SWE memory"
+          }
+        ]
+      }
+    ]
+  }
+}
