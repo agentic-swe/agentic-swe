@@ -114,4 +114,5 @@ function ingestChunksIntoDb(merged, projectRoot, db) {
 module.exports = {
   ingestChunksIntoDb,
   walkAllFiles,
+  defaultChunkExtensions,
 };

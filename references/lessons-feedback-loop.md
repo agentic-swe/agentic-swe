@@ -10,6 +10,8 @@ Compound experience across worklogs by classifying reflection-log entries into f
 
 ## Running
 
+Session start and session stop refresh `.agentic-swe/lessons.json` and the style profile automatically. Run the command below only to rebuild the digest outside a session, or when a hook receipt says the refresh failed:
+
 ```bash
 node scripts/memory-reflect.cjs [repo-root]
 # or

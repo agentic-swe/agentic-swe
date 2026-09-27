@@ -24,7 +24,7 @@ Experienced software architect — optimizes for correctness, simplicity, and im
 ## Procedure
 
 1. Read `feasibility.md`, the relevant repository files, and `reflection-log.md` (if exists — treat prior reflection entries as mandatory constraints).
-   - Also check **`.agentic-swe/lessons.json`** (`npm run memory-reflect`) and **`.agentic-swe/style-profile.json`** (`npm run cold-start-warm`) for team constraints before proposing architecture.
+   - Also check **`.agentic-swe/lessons.json`** and **`.agentic-swe/style-profile.json`** before proposing architecture. Session hooks refresh both automatically. **`npm run memory-reflect`** and **`npm run cold-start-warm`** are recovery commands.
 2. Define the problem in implementation terms:
    - target behavior, system boundaries, invariants, explicit non-goals
 3. Produce the smallest coherent design that solves the task.

@@ -16,7 +16,8 @@ function listMuscleMemoryRows(projectRoot, limit = 8) {
   }
   const rows = [];
   for (const p of data.procedures || []) {
-    if (p.eval_status === 'unevaluated') continue;
+    if (p.eval_status === 'unevaluated' || p.eval_status === 'quarantined') continue;
+    if (p.quality === 'rejected' || p.quality === 'duplicate') continue;
     if (p.tier !== 'L0' && p.tier !== 'L1') continue;
     const command = p.procedure?.verify?.[0]?.command || p.procedure?.actions?.[0]?.command;
     if (!command) continue;

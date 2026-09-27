@@ -152,6 +152,7 @@ async function main() {
   }
 
   let evolve = null;
+  let evolveError = null;
   const runEvolve = !args.noEvolve && process.env.AGENTIC_SWE_EVOLVE_ON_STOP !== '0';
   if (runEvolve) {
     try {
@@ -180,8 +181,32 @@ async function main() {
           promoteEnv === 'dry-run' ||
           scaffoldEnv === 'dry-run',
       });
-    } catch {
-      /* best-effort */
+    } catch (error) {
+      evolveError = error && error.message ? error.message : String(error);
+    }
+  }
+
+  let maintenance = null;
+  if (process.env.AGENTIC_SWE_HOOK_LIFECYCLE !== '0') {
+    try {
+      const { runMaintenance } = require('./lib/hooks/lifecycle.cjs');
+      maintenance = await runMaintenance({ projectRoot, pluginRoot, hook: 'stop' });
+      if (evolveError) {
+        const { writeHookReceipt } = require('./lib/hooks/hook-receipt.cjs');
+        writeHookReceipt({
+          projectRoot,
+          hook: 'stop-evolve',
+          ok: false,
+          failures: [{ step: 'evolve', message: evolveError }],
+        });
+        maintenance = {
+          ...maintenance,
+          ok: false,
+          failures: [...(maintenance.failures || []), { step: 'evolve', message: evolveError }],
+        };
+      }
+    } catch (error) {
+      maintenance = { ok: false, failures: [{ step: 'lifecycle', message: error.message || String(error) }] };
     }
   }
 
@@ -192,6 +217,7 @@ async function main() {
     redaction_hits: distilled.redaction_hits,
     work_id: workId,
     evolve,
+    maintenance,
   };
   if (args.json) console.log(JSON.stringify(out, null, 2));
 

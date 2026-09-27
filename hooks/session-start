@@ -45,6 +45,17 @@ if [[ "${AGENTIC_SWE_CHAT_WARM:-}" != "0" ]]; then
   set -e
 fi
 
+if [[ "${AGENTIC_SWE_HOOK_LIFECYCLE:-}" != "0" ]]; then
+  set +e
+  node "$REPO_ROOT/scripts/lib/hooks/lifecycle.cjs" start --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" --json >/dev/null
+  _LC_EXIT=$?
+  set -e
+  if [[ "$_LC_EXIT" != "0" ]]; then
+    mkdir -p "$PROJECT_ROOT/.agentic-swe"
+    printf '## Hook failures\n\n- session-start lifecycle exited %s\n' "$_LC_EXIT" > "$PROJECT_ROOT/.agentic-swe/hook-notice.md"
+  fi
+fi
+
 MEM_PRIME_BLOCK=""
 RUN_MEM_PRIME=1
 case "${AGENTIC_SWE_MEMORY_PRIME:-}" in
@@ -118,6 +129,11 @@ fi
 
 if [[ -n "$MEM_PRIME_BLOCK" ]]; then
   FULL_CTX="${FULL_CTX}"$'\n\n'"---"$'\n\n'"${MEM_PRIME_BLOCK}"
+fi
+
+HOOK_NOTICE="$PROJECT_ROOT/.agentic-swe/hook-notice.md"
+if [[ -f "$HOOK_NOTICE" ]]; then
+  FULL_CTX="${FULL_CTX}"$'\n\n'"$(cat "$HOOK_NOTICE")"
 fi
 
 emit_json() {

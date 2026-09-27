@@ -55,14 +55,15 @@ Three scopes: **session** (transcripts in project sqlite), **personal** (`~/.age
 
 | Pipeline stage | Command / hook |
 |----------------|----------------|
-| Repo + chunk index | `npm run memory-index` |
-| All scopes | `npm run ingest-memory-scopes` |
-| Session ingest | `scripts/ingest-sessions.cjs`, `scripts/cold-start-warm.cjs` |
+| Changed-file index, reflection, hygiene | session start and stop (`scripts/lib/hooks/lifecycle.cjs`) |
+| Full repo + chunk rebuild | `npm run memory-index` (bootstrap / recovery) |
+| All scopes | `npm run ingest-memory-scopes` (bootstrap) |
+| Session ingest | `scripts/ingest-sessions.cjs`, `scripts/cold-start-warm.cjs` (bootstrap) |
 | Stop capture + distill + evolve | `scripts/session-capture.cjs` → `scripts/evolve-cycle.cjs` (hooks Stop); **Cursor `session-stop` also runs `hook-record-cost.cjs`** (parity with Claude Code) |
-| Callable search | `npm run memory-search -- --scope session\|personal\|team` |
-| Prime (session start) | `npm run memory-prime`, `hooks/session-start` |
+| Callable search | `npm run memory-search -- --scope session\|personal\|team` (diagnostic) |
+| Prime (session start) | `hooks/session-start`; `npm run memory-prime` prints the same digest on demand |
 | Team sync | `npm run sync:memory` → `scripts/sync/git-sync.cjs`; events ingested by `ingestTeamEvents` |
-| Style profile | `scripts/lib/memory/style-profile.cjs` → personal sqlite |
+| Style profile | refreshed by the session lifecycle; `scripts/lib/memory/style-profile.cjs` |
 
 Storage: `.agentic-swe/memory.sqlite` (nodes, edges, chunks). Memory is **advisory**; `state.json` and repo files remain authoritative.
 

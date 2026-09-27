@@ -31,7 +31,10 @@ function loadTierTokenEstimates(pluginRoot) {
  * @param {string} tier
  */
 function isReplayEligible(rec) {
-  return rec && rec.eval_status !== 'unevaluated';
+  if (!rec) return false;
+  if (rec.quality === 'rejected' || rec.quality === 'duplicate') return false;
+  if (rec.eval_status === 'unevaluated' || rec.eval_status === 'quarantined') return false;
+  return true;
 }
 
 function findProcedureRecord(procedures, opts, tier) {
@@ -234,6 +237,7 @@ async function tryDescentLadderWithFallback(opts) {
 module.exports = {
   loadTierTokenEstimates,
   findProcedureRecord,
+  isReplayEligible,
   tryDescentLadder,
   tryDescentLadderWithFallback,
   tryL2MemoryVerify,
