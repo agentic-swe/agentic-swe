@@ -1,0 +1,98 @@
+# Publishes the Agentic SWE site at https://agentic-swe.github.io/agentic-swe/.
+# The site source lives in agentic-swe/agentic-swe-site; this workflow builds
+# that repository's main under this repository's Pages path.
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SITE_REPO: agentic-swe/agentic-swe-site
+  SITE_URL: https://agentic-swe.github.io/agentic-swe/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.freshness.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ env.SITE_REPO }}
+          ref: main
+          path: site
+
+      - name: Skip scheduled runs when the site source is already live
+        id: freshness
+        run: |
+          head="$(git -C site rev-parse HEAD)"
+          live="$(curl -fsSL "${SITE_URL}site-commit.txt" 2>/dev/null | tr -d '[:space:]' || true)"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$head" = "$live" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Site ${head} is already live."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "head=${head}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v6
+        if: steps.freshness.outputs.changed == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        if: steps.freshness.outputs.changed == 'true'
+        working-directory: site
+        run: npm ci --registry=https://registry.npmjs.org/
+
+      - name: Test route and viewport contracts
+        if: steps.freshness.outputs.changed == 'true'
+        working-directory: site
+        run: npm test
+
+      - name: Build site
+        if: steps.freshness.outputs.changed == 'true'
+        working-directory: site
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: |
+          npm run build
+          echo "${{ steps.freshness.outputs.head }}" > dist/site-commit.txt
+
+      - name: Audit generated routes and metadata
+        if: steps.freshness.outputs.changed == 'true'
+        working-directory: site
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run audit
+
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.freshness.outputs.changed == 'true'
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v5
+        id: deployment

@@ -45,7 +45,7 @@ For Google Antigravity, `agentic-swe setup --host antigravity` safely merges `.a
 | `npm run catalog:route` | Headless top‑k routing for a query (`--mode auto`, `lexical`, or `semantic`) |
 | `npm run catalog:index` | Build **`.agentic-swe/catalog-embeddings.json`** for semantic mode |
 
-See [docs/specs/catalog-routing.md](docs/specs/catalog-routing.md) and the site page **[Catalog routing](https://agentic-swe.github.io/agentic-swe-site/docs/catalog-routing)** (source in [`agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)).
+See [docs/specs/catalog-routing.md](docs/specs/catalog-routing.md) and the site page **[Catalog routing](https://agentic-swe.github.io/agentic-swe/docs/catalog-routing)** (source in [`agentic-swe-site`](https://github.com/agentic-swe/agentic-swe-site)).
 
 ## State and Artifacts
 

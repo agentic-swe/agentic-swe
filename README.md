@@ -10,7 +10,7 @@
   <!-- catalog-counts:start kind=badge-line -->
   <a href="#subagents"><img src="https://img.shields.io/badge/subagents-138%2B-purple.svg" alt="Agents" /></a>
 <!-- catalog-counts:end -->
-  <a href="https://agentic-swe.github.io/agentic-swe-site/"><img src="https://img.shields.io/badge/docs-site-informational.svg" alt="Docs site" /></a>
+  <a href="https://agentic-swe.github.io/agentic-swe/"><img src="https://img.shields.io/badge/docs-site-informational.svg" alt="Docs site" /></a>
 </p>
 
 An open-source autonomous SWE pipeline that runs in your editor or CI, writes every decision into your repo, and gives you a shareable audit trail of what the AI did and why.
@@ -92,7 +92,7 @@ Every line above is computed from `.worklogs/<id>/` — no LLM summary, no hallu
 node scripts/render-receipt.cjs --work-dir test/fixtures/receipt/lean-happy
 ```
 
-**Docs:** [agentic-swe.github.io/agentic-swe-site](https://agentic-swe.github.io/agentic-swe-site/)
+**Docs:** [agentic-swe.github.io/agentic-swe](https://agentic-swe.github.io/agentic-swe/)
 
 ---
 
@@ -167,7 +167,7 @@ Run setup from the root of the git repository you want to configure. It refuses 
 
 Codex requires approval of repository/plugin hooks. Windsurf hooks are disabled in Restricted Mode. Copilot hooks cover CLI and coding-agent environments; generic IDE chat transcript capture is not guaranteed. The VS Code extension performs automatic memory maintenance but cannot read another extension's private transcript. Cline, Roo, Continue, Junie/JetBrains, Zed, and similar hosts can use `AGENTS.md` plus the MCP fallback in [`integrations/fallback/README.md`](integrations/fallback/README.md).
 
-→ [Full installation guide](https://agentic-swe.github.io/agentic-swe-site/docs/installation) · [Golden path (~15 min)](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)
+→ [Full installation guide](https://agentic-swe.github.io/agentic-swe/docs/installation) · [Golden path (~15 min)](https://agentic-swe.github.io/agentic-swe/docs/golden-path)
 
 ---
 
@@ -183,7 +183,7 @@ Codex requires approval of repository/plugin hooks. Windsurf hooks are disabled 
 | `/subagent` | Browse / invoke specialists |
 | `/repo-scan` · `/test-runner` · `/lint` | Evidence helpers |
 
-**Full list:** [Usage](https://agentic-swe.github.io/agentic-swe-site/docs/usage) · **`commands/`**
+**Full list:** [Usage](https://agentic-swe.github.io/agentic-swe/docs/usage) · **`commands/`**
 
 ---
 
@@ -197,7 +197,7 @@ Codex requires approval of repository/plugin hooks. Windsurf hooks are disabled 
 Across 10 categories — Language Specialists (29), Infrastructure (16), Specialized Domains (15), Quality & Security (14), Data & AI (13), Developer Experience (13), Business & Product (11), Core Development (10), Meta & Orchestration (10), Research & Analysis (7).
 <!-- catalog-counts:end -->
 
-**Details:** [Subagent catalog](https://agentic-swe.github.io/agentic-swe-site/docs/subagent-catalog) · [Catalog routing](https://agentic-swe.github.io/agentic-swe-site/docs/catalog-routing)
+**Details:** [Subagent catalog](https://agentic-swe.github.io/agentic-swe/docs/subagent-catalog) · [Catalog routing](https://agentic-swe.github.io/agentic-swe/docs/catalog-routing)
 
 ---
 
@@ -215,7 +215,7 @@ Across 10 categories — Language Specialists (29), Infrastructure (16), Special
 
 A single **Hypervisor session** (this one) owns transitions, gates, and synthesis. Three **core agents** — **developer**, **git-operations**, **pr-manager** — carry bounded work. A **design panel** (architect, security, adversarial) reviews in parallel on the rigorous track. All consult the **135+ subagent** catalog, auto-selected from repo signals.
 
-→ [Architecture overview](https://agentic-swe.github.io/agentic-swe-site/docs/architecture) (full diagram)
+→ [Architecture overview](https://agentic-swe.github.io/agentic-swe/docs/architecture) (full diagram)
 
 ---
 
@@ -226,4 +226,4 @@ A single **Hypervisor session** (this one) owns transitions, gates, and synthesi
 | Extend pipeline | **`/author-pipeline`** · [`references/authoring-pipeline-capabilities.md`](references/authoring-pipeline-capabilities.md) |
 | CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — **`npm run ci`** locally |
 | Research basis | [`CLAUDE.md` — Research basis](CLAUDE.md#research-basis) |
-| License | [MIT](LICENSE) · [Licensing](https://agentic-swe.github.io/agentic-swe-site/docs/licensing) |
+| License | [MIT](LICENSE) · [Licensing](https://agentic-swe.github.io/agentic-swe/docs/licensing) |

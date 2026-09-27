@@ -71,4 +71,4 @@ echo "Next: restart Cursor or run “Developer: Reload Window”."
 if [[ -z "${AGENTIC_SWE_TARGET_REPO:-}" ]]; then
   echo "Optional: AGENTIC_SWE_TARGET_REPO=/path/to/your-app on the same command auto-merges CLAUDE.md (requires node). Add AGENTIC_SWE_AUTO_GITIGNORE=1 to append .worklogs/ to .gitignore."
 fi
-echo "Docs: https://agentic-swe.github.io/agentic-swe-site/docs/cursor-plugin"
+echo "Docs: https://agentic-swe.github.io/agentic-swe/docs/cursor-plugin"
