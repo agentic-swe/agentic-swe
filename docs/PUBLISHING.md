@@ -98,7 +98,7 @@ export AGENTIC_SWE_PACK_ROOT="$(agentic-swe path)"
 curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/scripts/install-cursor-plugin.sh | bash
 ```
 
-See the site doc [Cursor plugin](https://agentic-swe.github.io/agentic-swe-site/docs/cursor-plugin) for **`CLAUDE.md`** merge options.
+See the site doc [Cursor plugin](https://agentic-swe.github.io/agentic-swe/docs/cursor-plugin) for **`CLAUDE.md`** merge options.
 
 ## Version sync
 

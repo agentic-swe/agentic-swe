@@ -1,6 +1,6 @@
 # Golden path demo (scratch target repo)
 
-Minimal project for trying **[Golden path](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)** in Claude Code (or any host following the same policy). Copy this folder into a new git repository or merge **`src/counter.js`** into your existing app and point **`/work`** at it.
+Minimal project for trying **[Golden path](https://agentic-swe.github.io/agentic-swe/docs/golden-path)** in Claude Code (or any host following the same policy). Copy this folder into a new git repository or merge **`src/counter.js`** into your existing app and point **`/work`** at it.
 
 ## What is here
 

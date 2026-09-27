@@ -1,6 +1,6 @@
 # Demo script (about 2–3 minutes)
 
-Use with **[Golden path](https://agentic-swe.github.io/agentic-swe-site/docs/golden-path)**. Adjust wording for your audience (team chat, conference, social).
+Use with **[Golden path](https://agentic-swe.github.io/agentic-swe/docs/golden-path)**. Adjust wording for your audience (team chat, conference, social).
 
 ## 0:00–0:20 — Problem
 
@@ -37,4 +37,4 @@ Open **`.worklogs/<id>/`**:
 
 > “Everything is markdown in the pack; the runtime is your IDE + repo. Start at the golden path doc.”
 
-Link: `https://agentic-swe.github.io/agentic-swe-site/docs/golden-path`
+Link: `https://agentic-swe.github.io/agentic-swe/docs/golden-path`
