@@ -398,11 +398,17 @@ function gitRoot(directory) {
 }
 
 function sameDirectory(left, right) {
-  try {
-    return fs.realpathSync(left) === fs.realpathSync(right);
-  } catch {
-    return path.resolve(left) === path.resolve(right);
-  }
+  const normalize = (directory) => {
+    try {
+      return fs.realpathSync.native(directory);
+    } catch {
+      return path.resolve(directory);
+    }
+  };
+  const a = normalize(left);
+  const b = normalize(right);
+  if (process.platform === 'win32') return a.toLowerCase() === b.toLowerCase();
+  return a === b;
 }
 
 function assertTargetRepository(target, options) {

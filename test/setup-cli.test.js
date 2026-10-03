@@ -132,7 +132,7 @@ test('setup safely installs and merges native lifecycle adapters', (t) => {
     home,
     '.vscode',
     'extensions',
-    'agentic-swe.agentic-swe-lifecycle-3.3.1',
+    `agentic-swe.agentic-swe-lifecycle-${require('../package.json').version}`,
     'extension.js',
   )));
 

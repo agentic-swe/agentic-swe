@@ -6,7 +6,7 @@
   <a href="https://github.com/agentic-swe/agentic-swe/actions/workflows/ci.yml"><img src="https://github.com/agentic-swe/agentic-swe/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg" alt="Node" /></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-3.3.1-orange.svg" alt="Version" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-3.4.0-orange.svg" alt="Version" /></a>
   <!-- catalog-counts:start kind=badge-line -->
   <a href="#subagents"><img src="https://img.shields.io/badge/subagents-138%2B-purple.svg" alt="Agents" /></a>
 <!-- catalog-counts:end -->
@@ -175,13 +175,16 @@ Codex requires approval of repository/plugin hooks. Windsurf hooks are disabled 
 
 | Command | Role |
 |---------|------|
-| `/work` | Start or resume a work item |
+| `agentic-swe work` | Same engine from the terminal: `init`, `status`, `transition`, `descent-try` |
+| `/work` | Start or resume a work item inside the editor |
 | `/plan-only` | Feasibility / design without implementation |
 | `/brainstorm` | Design-first exploration (optional UI server) |
 | `/write-plan` · `/execute-plan` | Plan bar then execution |
 | `/check budget` · `/check transition` · `/check artifacts` | Enforcement before phases / transitions |
 | `/subagent` | Browse / invoke specialists |
 | `/repo-scan` · `/test-runner` · `/lint` | Evidence helpers |
+
+A new work item starts on the **lean** track. Set **`pipeline.acceptance_command`** in **`.worklogs/<id>/state.json`** to the project’s test command. Moving from **validation** to pull-request creation runs that command and refuses the step when it does not exit 0. The log is **`.worklogs/<id>/verify-result.json`**. Check the active item with **`agentic-swe work status`**.
 
 **Full list:** [Usage](https://agentic-swe.github.io/agentic-swe/docs/usage) · **`commands/`**
 
