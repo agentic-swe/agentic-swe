@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { scoreDimension, checkPatterns } = require('./score-dimension.cjs');
+const { verifyResultFailed } = require('../work-engine/acceptance.cjs');
 
 const DIMENSIONS = ['task_pass', 'cost_efficiency', 'cross_model', 'gate_respect'];
 
@@ -66,6 +67,14 @@ function scoreWorklog(workDir, taskDir) {
     result.details.task_pass = `acceptance ok but patterns failed: ${patternCheck.errors.join('; ')}`;
   }
 
+  const liveAcceptance =
+    scoring.task_pass?.method === 'run_acceptance_tests' || scoring.task_pass?.method === 'run_command';
+  if (!liveAcceptance && verifyResultFailed(workDir)) {
+    result.task_pass = 0;
+    result.acceptance_pass = false;
+    result.details.task_pass = 'verify-result.json exit is non-zero';
+  }
+
   let total = 0;
   for (const dim of DIMENSIONS) {
     const weight = scoring[dim]?.weight ?? 0;
@@ -91,7 +100,10 @@ function legacyScoreWorklog(workDir) {
     total: 0,
   };
   const state = JSON.parse(fs.readFileSync(path.join(workDir, 'state.json'), 'utf8'));
-  if (state.current_state === 'completed') scores.task_pass = 1.0;
+  if (verifyResultFailed(workDir)) {
+    scores.task_pass = 0;
+    scores.details = { task_pass: 'verify-result.json exit is non-zero' };
+  } else if (state.current_state === 'completed') scores.task_pass = 1.0;
   else if (state.current_state === 'pr-creation' || state.current_state === 'approval-wait') scores.task_pass = 0.8;
   else if (state.current_state === 'validation') scores.task_pass = 0.5;
 

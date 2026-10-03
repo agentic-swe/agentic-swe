@@ -11,8 +11,9 @@ Unified enforcement skill for budget, transition, and artifact validation. Permi
 
 The same **budget**, **transition**, and **destination artifact** rules are implemented in code at **`${CLAUDE_PLUGIN_ROOT}/scripts/lib/work-engine/`** and exposed as:
 
-- **`node ${CLAUDE_PLUGIN_ROOT}/scripts/work-engine.cjs help`** — subcommands: `init`, `apply-budget-profile`, `validate`, `budget`, `plan-transition`, `transition`, `record-cost`
-- From a checkout of this pack: **`npm run work-engine -- …`**
+- **`agentic-swe work`** — the work engine. Same process as **`node ${CLAUDE_PLUGIN_ROOT}/bin/agentic-swe.cjs work`**. Subcommands include `init`, `status`, `apply-budget-profile`, `validate`, `budget`, `plan-transition`, `transition`, `record-cost`, `descent-try`, `descent-capture`.
+- From a checkout of this pack: **`npm run work-engine -- …`** still reaches the same script. Prefer **`agentic-swe work`**.
+- **`validation` → `pr-creation`** runs **`pipeline.acceptance_command`** when it is set and refuses the transition when that command exits non-zero. The log is **`verify-result.json`**. New work items start on the **lean** track unless **`--budget-profile`** says otherwise.
 
 Use **`plan-transition`** to validate a proposed edge without writing; use **`transition`** only when artifacts and budgets already satisfy policy (atomic **`state.json`** write, optional **`--dry-run`**). **`budget.cost_used`** is updated from **real token usage** in the Claude Code session transcript: the **`Stop`** hook runs **`hook-record-cost.cjs`** (see root **`hooks/hooks.json`**), which parses new lines from **`transcript_path`** and adds estimated USD (see **`scripts/lib/work-engine/pricing.cjs`**; override with **`AGENTIC_SWE_PRICING_JSON`**). For CI or ad-hoc sync: **`npm run work-engine -- record-cost --transcript-path /path/to.jsonl --cwd /your/repo`**. Set **`AGENTIC_SWE_WORK_DIR`** to a specific **`.worklogs/<id>`** if multiple active work items exist. Iteration **`budget.budget_remaining`** is decremented by **`transition`** by default (**`--no-decrement-budget`** to skip).
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Session-start hook for agentic-swe (Claude Code + Cursor).
 # Injects Hypervisor policy context + compact implicit-routing hint.
-# Appends memory-prime by default (bounded markdown). Opt out: AGENTIC_SWE_MEMORY_PRIME=0
+# Appends a one-block work status. Memory, model-tier, skill-route, and context-pack
+# hints stay available as their own commands and are off unless set to 1.
 set -euo pipefail
 
 INPUT=$(cat || true)
@@ -57,9 +58,9 @@ if [[ "${AGENTIC_SWE_HOOK_LIFECYCLE:-}" != "0" ]]; then
 fi
 
 MEM_PRIME_BLOCK=""
-RUN_MEM_PRIME=1
+RUN_MEM_PRIME=0
 case "${AGENTIC_SWE_MEMORY_PRIME:-}" in
-  0|false|FALSE|no|NO|off|OFF) RUN_MEM_PRIME=0 ;;
+  1|true|TRUE|yes|YES|on|ON) RUN_MEM_PRIME=1 ;;
 esac
 
 if [[ "$RUN_MEM_PRIME" = "1" ]]; then
@@ -82,7 +83,7 @@ if [[ "$RUN_MEM_PRIME" = "1" ]]; then
 fi
 
 MODEL_TIER_BLOCK=""
-if [[ "${AGENTIC_SWE_MODEL_TIER_HINT:-}" != "0" ]]; then
+if [[ "${AGENTIC_SWE_MODEL_TIER_HINT:-}" == "1" ]]; then
   set +e
   MODEL_TIER_BLOCK=$(node "$REPO_ROOT/scripts/session-model-tier-hint.cjs" --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" 2>/dev/null)
   set -e
@@ -96,20 +97,29 @@ if [[ "${AGENTIC_SWE_DESCENT_HINT:-}" != "0" ]]; then
 fi
 
 SKILL_ROUTE_BLOCK=""
-if [[ "${AGENTIC_SWE_SKILL_ROUTE_HINT:-}" != "0" ]]; then
+if [[ "${AGENTIC_SWE_SKILL_ROUTE_HINT:-}" == "1" ]]; then
   set +e
   SKILL_ROUTE_BLOCK=$(node "$REPO_ROOT/scripts/session-skill-route-hint.cjs" --project-root "$PROJECT_ROOT" --plugin-root "$REPO_ROOT" 2>/dev/null)
   set -e
 fi
 
 CONTEXT_PACK_BLOCK=""
-if [[ "${AGENTIC_SWE_CONTEXT_PACK_HINT:-}" != "0" ]]; then
+if [[ "${AGENTIC_SWE_CONTEXT_PACK_HINT:-}" == "1" ]]; then
   set +e
   CONTEXT_PACK_BLOCK=$(node "$REPO_ROOT/scripts/session-context-pack-hint.cjs" --project-root "$PROJECT_ROOT" 2>/dev/null)
   set -e
 fi
 
+STATUS_BLOCK=""
+set +e
+STATUS_BLOCK=$(node "$REPO_ROOT/scripts/work-engine.cjs" status --project-root "$PROJECT_ROOT" 2>/dev/null)
+set -e
+
 FULL_CTX="${BASE}"$'\n\n'"${ROUTING}"
+
+if [[ -n "$STATUS_BLOCK" ]]; then
+  FULL_CTX="${FULL_CTX}"$'\n\n'"${STATUS_BLOCK}"
+fi
 
 if [[ -n "$MODEL_TIER_BLOCK" ]]; then
   FULL_CTX="${FULL_CTX}"$'\n\n'"${MODEL_TIER_BLOCK}"
