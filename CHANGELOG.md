@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-03
+
+### Added
+
+- **`agentic-swe work`** — the work engine is a subcommand of the same CLI as setup, doctor, and receipt (`init`, `status`, `transition`, descent, and cost).
+- **Acceptance gate** — when `pipeline.acceptance_command` is set, `validation` → `pr-creation` runs that command, writes `.worklogs/<id>/verify-result.json`, and refuses the transition on a non-zero exit.
+- **`agentic-swe work status`** — one block with the active work id, track, state, and last verify exit. Session start prints that block. Memory, model-tier, skill-route, and context-pack hints stay available and load only when their environment flags are set to `1`.
+
+### Changed
+
+- **New work items default to the lean track** unless `init --budget-profile` selects standard or rigorous. Existing work items keep the track already stored.
+- **Bench task pass** treats a completed work item as a failure when `verify-result.json` records a non-zero exit.
+
 ### Fixed
 
+- **`agentic-swe setup` treats a Windows short path and the long path Git prints as the same directory.**
 - **`agentic-swe setup` only configures a git repository root.** It refuses a parent folder or a subdirectory, prints the target and planned changes, and asks before writing. `--yes` confirms for scripts, and `--allow-non-git` is the explicit override. It also refuses to replace a Cursor plugin directory that is a git checkout.
 
 ## [3.3.1] - 2026-09-26
