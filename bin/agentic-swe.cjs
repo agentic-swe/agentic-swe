@@ -24,6 +24,7 @@ function usage() {
   process.stderr.write(`  agentic-swe version             Print ${pkg.name}@${pkg.version}\n`);
   process.stderr.write(`  agentic-swe setup [args]        Configure one or more supported coding hosts\n`);
   process.stderr.write(`  agentic-swe doctor [args]       Check the tool, host detection, and project setup\n`);
+  process.stderr.write(`  agentic-swe work [args]         Work engine (init, status, transition, descent, record-cost)\n`);
   process.stderr.write(`  agentic-swe receipt [args]      Render a receipt for a worklog (passes args to scripts/render-receipt.cjs)\n`);
   process.stderr.write(`  agentic-swe goal [args]         Run the goal-loop engine (passes args to scripts/goal-engine.cjs)\n`);
   process.stderr.write(`  agentic-swe context-budget [args]  Estimate always-loaded context tokens for the install profile\n`);
@@ -56,6 +57,12 @@ if (cmd === 'doctor') {
 
 if (cmd === 'host-parity') {
   const script = path.join(root, 'scripts', 'host-parity.cjs');
+  const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
+if (cmd === 'work') {
+  const script = path.join(root, 'scripts', 'work-engine.cjs');
   const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
   process.exit(res.status == null ? 1 : res.status);
 }

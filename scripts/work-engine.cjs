@@ -52,6 +52,8 @@ function parseArgs(argv) {
     else if (a === '--track') out.track = argv[++i];
     else if (a === '--skill') out.skill = argv[++i];
     else if (a === '--verify') out.verify = argv[++i];
+    else if (a === '--acceptance-command') out.acceptanceCommand = argv[++i];
+    else if (a === '--acceptance-cwd') out.acceptanceCwd = argv[++i];
     else if (a === '--files') out.files = argv[++i];
     else if (a === '--allow-manual') out.allowManual = true;
     else if (!a.startsWith('-')) rest.push(a);
@@ -85,10 +87,14 @@ function main() {
 
 Commands:
   init --id <id> [--task "…"] [--work-root <dir>] [--plugin-root <pack>] [--json]
+      New work items default pipeline.track to lean unless --budget-profile is set.
+  status [--project-root <abs>] [--work-dir <.worklogs/id>]
+      One-block status: work id, track, state, last verify exit.
   validate --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
   budget   --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
   plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--json]
-  transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--dry-run] [--no-decrement-budget] [--json]
+  transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--json]
+      validation → pr-creation runs pipeline.acceptance_command (or --acceptance-command) and refuses a non-zero exit.
   record-cost --transcript-path <abs.jsonl> [--work-dir <.worklogs/id>] [--project-root <abs>] [--cwd <project>] [--dry-run] [--json]
       (omit --work-dir to use AGENTIC_SWE_WORK_DIR or discover under project root: --project-root, AGENTIC_SWE_PROJECT_ROOT, --cwd, then pwd)
   init … [--budget-profile lean|standard|rigorous]  (sets iteration/cost ceilings + budget.policy from config; optional early pipeline.track)
@@ -274,7 +280,9 @@ Commands:
       state.pipeline.track = args.budgetProfile;
       applyTrackBudgetProfile(state, args.budgetProfile, mergedInit, { updateMoney: true });
     } else {
-      applyTrackBudgetProfile(state, 'rigorous', mergedInit, { updateMoney: false });
+      state.pipeline = state.pipeline || {};
+      state.pipeline.track = 'lean';
+      applyTrackBudgetProfile(state, 'lean', mergedInit, { updateMoney: true });
     }
     fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(state, null, 2) + '\n');
     fs.copyFileSync(progressTpl, path.join(workDir, 'progress.md'));
@@ -282,6 +290,61 @@ Commands:
     const out = { ok: true, workDir, id: args.id };
     if (args.json) printJson(out);
     else console.log(workDir);
+    return;
+  }
+
+  if (cmd === 'status') {
+    const { discoverActiveWorkDirWithMeta } = require('./lib/work-engine/discover-workdir.cjs');
+    const projectRoot = path.resolve(
+      args.projectRoot || process.env.AGENTIC_SWE_PROJECT_ROOT || args.cwd || process.cwd()
+    );
+    const workDirResolved = args.workDir
+      ? path.resolve(args.workDir)
+      : process.env.AGENTIC_SWE_WORK_DIR
+        ? path.resolve(process.env.AGENTIC_SWE_WORK_DIR)
+        : discoverActiveWorkDirWithMeta(projectRoot).workDir;
+    if (!workDirResolved || !fs.existsSync(path.join(workDirResolved, 'state.json'))) {
+      const empty = { ok: true, active: false, summary: 'Active work: none\nTrack: none\nState: none\nLast verify exit: none' };
+      if (args.json) printJson(empty);
+      else console.log(empty.summary);
+      return;
+    }
+    const loaded = loadWorkItem(workDirResolved, pluginRoot);
+    if (!loaded.ok) {
+      if (args.json) printJson(loaded);
+      else fail(loaded.message, 1, loaded);
+      process.exit(1);
+    }
+    const state = loaded.state;
+    let verifyExit = 'none';
+    const verifyPath = path.join(workDirResolved, 'verify-result.json');
+    if (fs.existsSync(verifyPath)) {
+      try {
+        const verify = JSON.parse(fs.readFileSync(verifyPath, 'utf8'));
+        verifyExit = String(verify.exit_code);
+      } catch {
+        verifyExit = 'unreadable';
+      }
+    }
+    const summary = [
+      `Active work: ${state.work_id || path.basename(workDirResolved)}`,
+      `Track: ${(state.pipeline && state.pipeline.track) || 'unset'}`,
+      `State: ${state.current_state}`,
+      `Last verify exit: ${verifyExit}`,
+    ].join('\n');
+    if (args.json) {
+      printJson({
+        ok: true,
+        active: true,
+        work_id: state.work_id || path.basename(workDirResolved),
+        track: (state.pipeline && state.pipeline.track) || null,
+        current_state: state.current_state,
+        verify_exit: verifyExit,
+        summary,
+      });
+    } else {
+      console.log(summary);
+    }
     return;
   }
 
@@ -414,6 +477,8 @@ Commands:
       dryRun: args.dryRun,
       decrementIterationBudget: !args.noDecrementBudget,
       setPipelineTrack: args.setPipelineTrack,
+      acceptanceCommand: args.acceptanceCommand,
+      acceptanceCwd: args.acceptanceCwd,
     });
 
     if (!r.ok) {

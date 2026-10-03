@@ -134,13 +134,37 @@ function applyTransition(opts) {
   });
   if (!v.ok) return v;
 
+  const { acceptanceCommandFromState, runWorkAcceptance } = require('./acceptance.cjs');
+  const acceptanceCommand =
+    (opts.acceptanceCommand && String(opts.acceptanceCommand).trim()) ||
+    acceptanceCommandFromState(state);
+  let acceptanceVerify = null;
+  if (from === 'validation' && to === 'pr-creation' && acceptanceCommand && !opts.skipAcceptance) {
+    acceptanceVerify = runWorkAcceptance({
+      workDir: opts.workDir,
+      command: acceptanceCommand,
+      cwd: opts.acceptanceCwd || (state.pipeline && state.pipeline.acceptance_cwd) || null,
+      write: !opts.dryRun,
+    });
+    if (!acceptanceVerify.ok) return acceptanceVerify;
+  }
+
   const next = structuredClone(state);
   next.current_state = to;
   next.updated_at = new Date().toISOString();
 
-  if (opts.setPipelineTrack) {
+  if (opts.setPipelineTrack || acceptanceCommand) {
     next.pipeline = next.pipeline || {};
+  }
+  if (opts.setPipelineTrack) {
     next.pipeline.track = opts.setPipelineTrack;
+  }
+  if (acceptanceCommand) {
+    next.pipeline.acceptance_command = acceptanceCommand;
+  }
+  if (acceptanceVerify && acceptanceVerify.ok && acceptanceVerify.verify) {
+    next.metrics = next.metrics || {};
+    next.metrics.tests_passed = true;
   }
 
   if (from === 'lean-track-check' && next.pipeline && next.pipeline.track) {
