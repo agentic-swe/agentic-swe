@@ -2,7 +2,7 @@
   "task_pass": {
     "weight": 0.4,
     "method": "run_command",
-    "command": "bash scripts/bump-version.sh check",
+    "command": "node scripts/bump-version.cjs check",
     "cwd": "../../..",
     "full_credit_exit_code": 0
   },

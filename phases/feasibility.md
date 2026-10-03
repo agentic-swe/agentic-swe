@@ -88,6 +88,16 @@ Write a `## Subagent Signals` section into the feasibility artifact:
 
 Set `subagent mode` to `minimal` for tasks likely to take the lean track (low complexity, narrow blast radius), `full` otherwise. Downstream phases read this section to auto-select subagents.
 
+### Catalog routing (file-backed)
+
+After collecting signals, run:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/feasibility-catalog-route.cjs --work-dir .worklogs/<id> --query "<task + primary signals>"
+```
+
+This writes a `## Catalog Routing` section with top-k specialist ids into `feasibility.md` (engine-readable, not chat-only). Prefer this over pasting catalog-route output only into the session transcript.
+
 If ambiguity is blocking, also write `.worklogs/<id>/ambiguity-report.md` with:
 
 - exact blocking question

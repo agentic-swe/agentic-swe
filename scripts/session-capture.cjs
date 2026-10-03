@@ -151,6 +151,25 @@ async function main() {
     closeDatabase(db);
   }
 
+  try {
+    const { writeHookReceipt } = require('./lib/hooks/hook-receipt.cjs');
+    writeHookReceipt({
+      projectRoot,
+      hook: 'session-capture',
+      ok: true,
+      redaction_hits: distilled.redaction_hits || 0,
+      steps: {
+        distill: {
+          redaction_hits: distilled.redaction_hits || 0,
+          nodes: distilled.nodes.length,
+          chunks: chunkStats.chunks,
+        },
+      },
+    });
+  } catch {
+    /* best-effort receipt */
+  }
+
   let evolve = null;
   let evolveError = null;
   const runEvolve = !args.noEvolve && process.env.AGENTIC_SWE_EVOLVE_ON_STOP !== '0';
@@ -198,6 +217,7 @@ async function main() {
           hook: 'stop-evolve',
           ok: false,
           failures: [{ step: 'evolve', message: evolveError }],
+          redaction_hits: distilled.redaction_hits || 0,
         });
         maintenance = {
           ...maintenance,

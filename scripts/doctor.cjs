@@ -7,6 +7,9 @@ const { detectHosts, PORTABLE_ENTRIES } = require('./setup.cjs');
 const { reportHostParity } = require('./lib/host-parity/report.cjs');
 const { readManifest, classifyDestination } = require('./lib/install-state/manifest.cjs');
 const { sha256File } = require('./lib/install-state/hash.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { verifyCriticalPackFiles } = require('./lib/doctor/verify-pack.cjs');
+const { summarizeRedactionHits } = require('./lib/hooks/redaction-summary.cjs');
 
 function jevReadiness(env) {
   if (env.AGENTIC_SWE_JEV === '0') return { state: 'disabled' };
@@ -94,6 +97,42 @@ function inspect(options = {}, context = {}) {
 
   const env = context.env || process.env;
 
+  let muscle_memory = null;
+  try {
+    muscle_memory = checkMuscleMemoryReadiness({ projectRoot: target, pluginRoot: packRoot });
+    const ready = muscle_memory && muscle_memory.ok === true;
+    add(
+      'Muscle memory',
+      ready,
+      ready ? 'ready' : 'needs-warm (run cold-start-warm / fleet-onboard)',
+      'advisory',
+    );
+  } catch (error) {
+    muscle_memory = { ok: false, error: error.message };
+    add('Muscle memory', false, error.message, 'advisory');
+  }
+
+  const redaction = summarizeRedactionHits(target);
+  add(
+    'Redaction hits (recent hooks)',
+    true,
+    `${redaction.total} across ${redaction.receipts_with_hits} receipts`,
+    'advisory',
+  );
+
+  let pack_verify = null;
+  if (options.verifyPack) {
+    pack_verify = verifyCriticalPackFiles(packRoot);
+    add(
+      'Pack verify',
+      pack_verify.ok,
+      pack_verify.ok
+        ? `${pack_verify.files.length} critical files hashed`
+        : `missing: ${(pack_verify.missing || []).join(', ') || 'hash failure'}`,
+      'required',
+    );
+  }
+
   return {
     ok: checks.every((check) => check.level !== 'required' || check.ok),
     target,
@@ -104,6 +143,9 @@ function inspect(options = {}, context = {}) {
     last_scan,
     jev: jevReadiness(env),
     hostParity: reportHostParity(),
+    muscle_memory,
+    redaction,
+    pack_verify,
   };
 }
 
@@ -116,10 +158,11 @@ function hasWorklogIgnore(target) {
 function main() {
   const args = process.argv.slice(2);
   const json = args.includes('--json');
+  const verifyPack = args.includes('--verify-pack');
   const targetIndex = args.indexOf('--target');
   const target = targetIndex >= 0 ? args[targetIndex + 1] : process.cwd();
   if (args.includes('--help') || args.includes('-h')) {
-    console.log('Usage: agentic-swe doctor [--target <repo>] [--json]');
+    console.log('Usage: agentic-swe doctor [--target <repo>] [--json] [--verify-pack]');
     return;
   }
   if (targetIndex >= 0 && !target) {
@@ -128,7 +171,7 @@ function main() {
     return;
   }
 
-  const result = inspect({ target });
+  const result = inspect({ target, verifyPack });
   if (json) {
     console.log(JSON.stringify(result, null, 2));
   } else {

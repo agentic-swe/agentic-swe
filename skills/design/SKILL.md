@@ -94,6 +94,7 @@ Write `.worklogs/<id>/design.md` following `${CLAUDE_PLUGIN_ROOT}/templates/arti
 - explicit non-goals
 
 If the panel runs, also write `.worklogs/<id>/design-panel-review.md`.
+**Rigorous track (required):** when `pipeline.track` is `rigorous` (or unset), the work engine refuses to leave `design` / `design-review` without a non-empty `design-panel-review.md` that records architect / security / adversarial findings and any dissent.
 If iterating, also write `.worklogs/<id>/design-feedback.md`.
 
 Apply `${CLAUDE_PLUGIN_ROOT}/templates/evidence-standard.md` throughout.

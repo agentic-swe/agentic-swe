@@ -10,6 +10,7 @@ const {
 } = require('./budget-config.cjs');
 const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
+const { assertPermissionsGate } = require('./permissions-gate.cjs');
 const { resolveEvidenceRef } = require('./paths.cjs');
 const { validateWorkItemSchemaAtRoot } = require('./validate-schema.cjs');
 
@@ -94,6 +95,11 @@ function validateTransition(params) {
   const art = assertArtifactsForTransition(workDir, from, to, state);
   if (!art.ok) {
     return { ok: false, code: art.code, message: art.message, missing: art.missing };
+  }
+
+  const perm = assertPermissionsGate({ from, to, state });
+  if (!perm.ok) {
+    return { ok: false, code: perm.code, message: perm.message };
   }
 
   const ev = assertEvidenceRefs(workDir, evidence_refs);

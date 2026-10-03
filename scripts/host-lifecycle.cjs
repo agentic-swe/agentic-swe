@@ -35,6 +35,19 @@ function firstString(values) {
   return values.find((value) => typeof value === 'string' && value.trim()) || null;
 }
 
+/**
+ * Resolve paths for host payloads. On Windows, keep POSIX-absolute strings as-is so
+ * Unix-style host fixtures (and cross-platform tests) are not rewritten to C:\...
+ */
+function resolveHostPath(p) {
+  if (!p) return p;
+  const s = String(p);
+  if (process.platform === 'win32' && s.startsWith('/') && !/^[A-Za-z]:/.test(s)) {
+    return s.replace(/\\/g, '/');
+  }
+  return path.resolve(s);
+}
+
 function normalizePayload(payload, explicitRoot) {
   const tool = payload.tool_info || payload.toolInfo || {};
   const workspacePaths = payload.workspacePaths || payload.workspace_paths || payload.workspace_roots || [];
@@ -57,8 +70,8 @@ function normalizePayload(payload, explicitRoot) {
     tool.transcriptPath,
   ]);
   return {
-    projectRoot: path.resolve(projectRoot || process.cwd()),
-    transcriptPath: transcriptPath ? path.resolve(transcriptPath) : null,
+    projectRoot: resolveHostPath(projectRoot || process.cwd()),
+    transcriptPath: transcriptPath ? resolveHostPath(transcriptPath) : null,
   };
 }
 

@@ -54,7 +54,7 @@ When verdict is `issues`, also append a structured entry to `.worklogs/<id>/refl
 
 - `.worklogs/<id>/feasibility.md`
 - `.worklogs/<id>/design.md`
-- `.worklogs/<id>/design-panel-review.md` (if exists)
+- `.worklogs/<id>/design-panel-review.md` (if exists; **required on rigorous track** before leaving design-review)
 
 ## Required Output
 

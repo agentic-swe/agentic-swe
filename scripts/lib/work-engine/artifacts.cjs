@@ -66,15 +66,46 @@ function requiredArtifactGroups(from, _to, state) {
       // Phase produces an implementation plan and a review verdict.
       return [['implementation.md'], ['review-pass.md', 'review-feedback.md']];
 
-    case 'design':
+    case 'design': {
       // Must have design.md before leaving design. Reflection-log.md is NOT enforced
       // here on re-entry from design-review — it is written by design-review when it
       // rejects, and verified by the receiving phase that reads it.
-      return [['design.md']];
+      const groups = [['design.md']];
+      const track = state && state.pipeline && state.pipeline.track;
+      const rigorous = track === 'rigorous' || track == null || track === '';
+      if (rigorous) {
+        // Parallel design panel (architect / security / adversarial) must leave a file.
+        groups.push(['design-panel-review.md']);
+      }
+      return groups;
+    }
 
-    case 'design-review':
+    case 'design-review': {
       // Must have produced a review outcome before transitioning.
-      return [['design-review.md', 'design-feedback.md']];
+      const groups = [['design-review.md', 'design-feedback.md']];
+      const track = state && state.pipeline && state.pipeline.track;
+      const rigorous = track === 'rigorous' || track == null || track === '';
+      if (rigorous) {
+        groups.push(['design-panel-review.md']);
+      }
+      return groups;
+    }
+
+    case 'permissions-check': {
+      // Artifact required unless an explicit waiver is recorded (asserted in permissions-gate).
+      const waiver = state && state.pipeline && state.pipeline.permissions_waiver;
+      const waiverOk =
+        waiver &&
+        typeof waiver === 'object' &&
+        typeof waiver.actor === 'string' &&
+        waiver.actor.trim() &&
+        typeof waiver.reason === 'string' &&
+        waiver.reason.trim() &&
+        typeof waiver.at === 'string' &&
+        waiver.at.trim();
+      if (waiverOk) return [];
+      return [['permissions-changes.md']];
+    }
 
     case 'verification':
       return [['verification-results.md']];
@@ -99,9 +130,6 @@ function requiredArtifactGroups(from, _to, state) {
     case 'code-review':
       // Must have a review verdict (pass or feedback) before transitioning.
       return [['review-pass.md', 'review-feedback.md']];
-
-    case 'permissions-check':
-      return [['permissions-changes.md']];
 
     case 'validation':
       return [['validation-results.md']];
