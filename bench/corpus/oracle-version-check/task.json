@@ -4,7 +4,7 @@
   "description": "Version manifest sync",
   "expected_track": "lean",
   "acceptance_tests": [
-    "bash scripts/bump-version.sh check"
+    "node scripts/bump-version.cjs check"
   ],
   "corpus_class": "oracle"
 }

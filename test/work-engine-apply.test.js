@@ -108,8 +108,13 @@ describe('requiredArtifactGroups — source-state semantics', () => {
     assert.deepStrictEqual(g, [['cicd.md'], ['pr-link.txt']]);
   });
 
-  it('design going to design-review requires only design.md on first pass', () => {
+  it('design going to design-review requires design.md and panel on rigorous (default)', () => {
     const g = requiredArtifactGroups('design', 'design-review', {});
+    assert.deepStrictEqual(g, [['design.md'], ['design-panel-review.md']]);
+  });
+
+  it('design going to verification requires only design.md on standard', () => {
+    const g = requiredArtifactGroups('design', 'verification', { pipeline: { track: 'standard' } });
     assert.deepStrictEqual(g, [['design.md']]);
   });
 

@@ -2,16 +2,24 @@
 
 /**
  * Extract YAML-like frontmatter between first two --- lines.
+ * Accepts LF or CRLF so Windows checkouts still lint.
  * @param {string} content
  * @returns {{ block: string, body: string } | null}
  */
 function extractFrontmatter(content) {
-  if (typeof content !== 'string' || !content.startsWith('---\n')) return null;
-  const end = content.indexOf('\n---\n', 4);
+  if (typeof content !== 'string') return null;
+  const normalized = content.replace(/^\uFEFF/, '');
+  const crlf = normalized.startsWith('---\r\n');
+  const lf = normalized.startsWith('---\n');
+  if (!crlf && !lf) return null;
+  const nl = crlf ? '\r\n' : '\n';
+  const open = `---${nl}`;
+  const close = `${nl}---${nl}`;
+  const end = normalized.indexOf(close, open.length);
   if (end === -1) return null;
   return {
-    block: content.slice(4, end),
-    body: content.slice(end + 5),
+    block: normalized.slice(open.length, end).replace(/\r\n/g, '\n'),
+    body: normalized.slice(end + close.length),
   };
 }
 

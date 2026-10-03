@@ -11,9 +11,15 @@ const { findJsonlFiles } = require('./session-ingest.cjs');
  * @returns {string[]}
  */
 function projectFolderSlugs(absPath) {
-  const resolved = path.resolve(absPath).replace(/\\/g, '/');
-  const noLead = resolved.replace(/^\/+/, '');
-  const dashed = noLead.split('/').join('-');
+  const raw = String(absPath).replace(/\\/g, '/');
+  // Keep POSIX or drive-letter absolutes as-is. path.resolve on Windows rewrites
+  // '/Users/...' into 'C:/Users/...', which breaks Cursor-style slug fixtures.
+  const resolved =
+    raw.startsWith('/') || /^[A-Za-z]:\//.test(raw)
+      ? raw
+      : path.resolve(absPath).replace(/\\/g, '/');
+  const forDash = resolved.replace(/^\/+/, '');
+  const dashed = forDash.split('/').join('-');
   const slashDash = resolved.replace(/\//g, '-');
   return [...new Set([dashed, `-${dashed}`, slashDash])];
 }

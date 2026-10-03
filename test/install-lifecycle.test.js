@@ -34,7 +34,9 @@ test('repair adopts an exact match and preserves a modified file', (t) => {
   assert.equal(fs.existsSync(path.join(destination, 'notes.md')), true);
 });
 
-test('repair reports an individual unreadable file and continues with the rest', { skip: process.getuid && process.getuid() === 0 }, (t) => {
+test('repair reports an individual unreadable file and continues with the rest', {
+  skip: process.platform === 'win32' || (process.getuid && process.getuid() === 0),
+}, (t) => {
   const destination = tempDir(t);
   const packRoot = tempDir(t);
   fs.mkdirSync(path.join(packRoot, 'commands'), { recursive: true });

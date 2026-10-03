@@ -28,6 +28,9 @@ function writeHookReceipt(input) {
     failures: input.failures || [],
     steps: input.steps || {},
   };
+  if (typeof input.redaction_hits === 'number') {
+    receipt.redaction_hits = input.redaction_hits;
+  }
   fs.appendFileSync(receiptPath(projectRoot), `${JSON.stringify(receipt)}\n`);
   writeNotice(projectRoot);
   return receipt;

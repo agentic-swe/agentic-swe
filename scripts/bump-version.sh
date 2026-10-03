@@ -15,7 +15,11 @@ if [ ! -f "$CONFIG" ]; then
 fi
 
 if ! command -v jq &>/dev/null; then
+  if command -v node &>/dev/null; then
+    exec node "$SCRIPT_DIR/bump-version.cjs" "$@"
+  fi
   echo "ERROR: jq is required. Install it: brew install jq / apt install jq" >&2
+  echo "       (or use: node scripts/bump-version.cjs $*)" >&2
   exit 1
 fi
 

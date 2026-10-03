@@ -24,6 +24,11 @@ const checkOnly = process.argv.includes('--check');
 
 const SKILL_NAME_RE = /^[a-z0-9-]{1,64}$/;
 
+/** Always emit forward-slash paths in skill metadata (YAML-safe on Windows). */
+function posixRel(...parts) {
+  return path.join(...parts).split(path.sep).join('/');
+}
+
 /**
  * Agent Skills name: lowercase letters, digits, hyphens only.
  * @param {string} name
@@ -113,7 +118,7 @@ function collectSources() {
       abs,
       name,
       description,
-      sourceRel: path.join('commands', file),
+      sourceRel: posixRel('commands', file),
     });
   }
 
@@ -131,7 +136,7 @@ function collectSources() {
       abs,
       name,
       description,
-      sourceRel: path.join('phases', file),
+      sourceRel: posixRel('phases', file),
     });
   }
 
@@ -142,7 +147,7 @@ function collectSources() {
     const fm = parseSimpleFields(ex.block);
     const name = String(fm.name || path.basename(abs, '.md')).trim();
     const description = String(fm.description || '').trim();
-    const rel = path.relative(root, abs);
+    const rel = path.relative(root, abs).split(path.sep).join('/');
     out.push({
       kind: 'subagent',
       abs,
