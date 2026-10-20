@@ -179,7 +179,8 @@ describe('lean track end-to-end happy path (source-artifact semantics)', () => {
       from: 'approval-wait',
       to: 'completed',
       sourceArtifacts: ['cicd.md', 'pr-link.txt'],
-      description: 'approval-wait → completed needs cicd.md + pr-link.txt',
+      humanApprovalRecord: { decision: 'approved', approval_iter: 0, actor: 'user:e2e@example.com' },
+      description: 'approval-wait → completed needs cicd.md + pr-link.txt and a human approval record',
     },
   ];
 
@@ -207,6 +208,10 @@ describe('lean track end-to-end happy path (source-artifact semantics)', () => {
 
         const opts = { workDir: wd, pluginRoot, to: tc.to, actor: 'e2e-test', skipMuscleMemory: true };
         if (tc.setPipelineTrack) opts.setPipelineTrack = tc.setPipelineTrack;
+        if (tc.humanApprovalRecord) {
+          writeFile(path.join(wd, 'approval-record.json'), JSON.stringify(tc.humanApprovalRecord));
+          opts.humanApproval = { record: 'approval-record.json' };
+        }
 
         const r = applyTransition(opts);
         assert.strictEqual(r.ok, true, `${tc.from} → ${tc.to} failed: ${r.message || JSON.stringify(r)}`);
