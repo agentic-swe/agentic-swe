@@ -122,4 +122,32 @@ describe('transcript cost / API spend', () => {
     assert.ok(meta.warning && meta.warning.includes('alpha'));
     fs.rmSync(tmp, { recursive: true, force: true });
   });
+
+  it('discoverActiveWorkDir ignores _archive and other _-prefixed folders', () => {
+    const { discoverActiveWorkDir, listActiveCandidates } = require('../scripts/lib/work-engine/discover-workdir.cjs');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-disc-arch-'));
+    const minimal = (id, state) => ({ work_id: id, current_state: state, budget: {} });
+    fs.mkdirSync(path.join(tmp, '.worklogs', '_archive', 'stale'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, '.worklogs', 'live'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmp, '.worklogs', '_archive', 'stale', 'state.json'),
+      JSON.stringify(minimal('stale', 'feasibility'), null, 2)
+    );
+    // Even a top-level _archive with its own state.json must be skipped.
+    fs.writeFileSync(
+      path.join(tmp, '.worklogs', '_archive', 'state.json'),
+      JSON.stringify(minimal('_archive', 'feasibility'), null, 2)
+    );
+    fs.writeFileSync(
+      path.join(tmp, '.worklogs', 'live', 'state.json'),
+      JSON.stringify(minimal('live', 'feasibility'), null, 2)
+    );
+    const candidates = listActiveCandidates(tmp);
+    assert.deepStrictEqual(
+      candidates.map((c) => c.name).sort(),
+      ['live']
+    );
+    assert.strictEqual(path.basename(discoverActiveWorkDir(tmp)), 'live');
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
 });

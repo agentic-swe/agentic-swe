@@ -8,6 +8,9 @@
 # Cursor — local IDE state and personal rules (never commit)
 .cursor/
 
+# Local Superpowers brainstorm scratch (never commit; keep drafts in agentic-swe-lab)
+.superpowers/
+
 # OS metadata
 .DS_Store
 Thumbs.db
