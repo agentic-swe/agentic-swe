@@ -56,6 +56,10 @@ function parseArgs(argv) {
     else if (a === '--acceptance-cwd') out.acceptanceCwd = argv[++i];
     else if (a === '--files') out.files = argv[++i];
     else if (a === '--allow-manual') out.allowManual = true;
+    else if (a === '--decision') out.decision = argv[++i];
+    else if (a === '--note') out.note = argv[++i];
+    else if (a === '--base') out.base = argv[++i];
+    else if (a === '--write') out.write = true;
     else if (!a.startsWith('-')) rest.push(a);
   }
   out.command = rest[0];
@@ -77,6 +81,51 @@ function fail(msg, code, extra) {
   process.exit(code || 1);
 }
 
+async function runApprove(args, pluginRoot) {
+  const {
+    detectAgentContext,
+    resolveUserIdentity,
+    recordApproval,
+    DECISION_TARGET,
+  } = require('./lib/approval/human-approval.cjs');
+  const { collectRiskFlags, formatRiskFlags } = require('./lib/approval/risk-flags.cjs');
+
+  const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
+  if (refusal) fail(`refusing approval: ${refusal}`, 3, { code: 'AGENT_CONTEXT' });
+
+  const wdArg = args.workDir || process.env.AGENTIC_SWE_WORK_DIR;
+  if (!wdArg) fail('approve requires --work-dir (or AGENTIC_SWE_WORK_DIR)', 2);
+  const workDir = path.resolve(wdArg);
+  if (!DECISION_TARGET[args.decision]) {
+    fail(`approve requires --decision ${Object.keys(DECISION_TARGET).join('|')}`, 2);
+  }
+  const loaded = loadWorkItem(workDir, pluginRoot);
+  if (!loaded.ok) fail(loaded.message, 1, loaded);
+  if (loaded.state.current_state !== 'approval-wait') {
+    fail(`work item is at ${loaded.state.current_state}, not approval-wait`, 1, { code: 'NOT_AT_APPROVAL_WAIT' });
+  }
+  const cwd = path.resolve(args.cwd || projectRootFromWorkDir(workDir));
+  const identity = resolveUserIdentity({ cwd });
+  if (!identity) fail('cannot resolve your identity (set git user.email)', 1, { code: 'NO_IDENTITY' });
+
+  const risk = collectRiskFlags({ cwd, base: args.base });
+  const prLinkPath = path.join(workDir, 'pr-link.txt');
+  const prLink = fs.existsSync(prLinkPath) ? fs.readFileSync(prLinkPath, 'utf8').trim() : '(no pr-link.txt)';
+  process.stderr.write(`\nWork item: ${loaded.state.work_id}\nPR: ${prLink}\nApprover: ${identity.actor}\n`);
+  process.stderr.write(risk.ok ? `\n${formatRiskFlags(risk)}\n\n` : `\nRisk flags unavailable: ${risk.message}\n\n`);
+
+  const readline = require('node:readline/promises');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
+  const typed = await rl.question(`Type the work id to record "${args.decision}": `);
+  rl.close();
+  if (typed.trim() !== loaded.state.work_id) fail('confirmation did not match the work id; nothing recorded', 1, { code: 'NOT_CONFIRMED' });
+
+  const r = recordApproval({ workDir, pluginRoot, decision: args.decision, note: args.note, identity, risk });
+  if (!r.ok) fail(r.message, 1, r);
+  if (args.json) printJson(r);
+  else console.log('OK', r.decision, '→', r.current_state, 'by', identity.actor);
+}
+
 function main() {
   const args = parseArgs(process.argv);
   const pluginRoot = args.pluginRoot || getDefaultPluginRoot();
@@ -93,6 +142,11 @@ Commands:
   validate --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
   budget   --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
   plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--json]
+  risk-flags [--base origin/main] [--cwd <repo>] [--work-dir <dir>] [--write] [--json]
+      Flag security-sensitive paths, new dependencies and permission changes in base...HEAD.
+  approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--json]
+      Human-only: refuses agent sessions and non-TTY stdin, shows risk flags, asks you to type the work id.
+      Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
   transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--json]
       validation → pr-creation runs pipeline.acceptance_command (or --acceptance-command) and refuses a non-zero exit.
   record-cost --transcript-path <abs.jsonl> [--work-dir <.worklogs/id>] [--project-root <abs>] [--cwd <project>] [--dry-run] [--json]
@@ -421,6 +475,30 @@ Commands:
     if (args.json) printJson(discoverMeta && discoverMeta.warning ? { ...r, warning: discoverMeta.warning } : r);
     else if (r.dryRun) console.log('dry-run', r);
     else console.log('cost_used', r.cost_used, 'delta_usd', r.delta_usd);
+    return;
+  }
+
+  if (cmd === 'risk-flags') {
+    const { collectRiskFlags, formatRiskFlags } = require('./lib/approval/risk-flags.cjs');
+    const wd = args.workDir || process.env.AGENTIC_SWE_WORK_DIR;
+    const cwd = path.resolve(args.cwd || (wd ? projectRootFromWorkDir(path.resolve(wd)) : process.cwd()));
+    const r = collectRiskFlags({ cwd, base: args.base });
+    if (!r.ok) fail(r.message, 1, r);
+    if (args.write) {
+      if (!wd) fail('risk-flags --write needs --work-dir or AGENTIC_SWE_WORK_DIR', 2);
+      const { RISK_FILE } = require('./lib/approval/human-approval.cjs');
+      fs.writeFileSync(
+        path.join(path.resolve(wd), RISK_FILE),
+        JSON.stringify({ generated_at: new Date().toISOString(), ...r }, null, 2) + '\n'
+      );
+    }
+    if (args.json) printJson(r);
+    else console.log(formatRiskFlags(r));
+    return;
+  }
+
+  if (cmd === 'approve') {
+    runApprove(args, pluginRoot).catch((e) => fail(String(e && e.message ? e.message : e), 1));
     return;
   }
 

@@ -11,6 +11,7 @@ const {
 const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
+const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
 const { resolveEvidenceRef } = require('./paths.cjs');
 const { validateWorkItemSchemaAtRoot } = require('./validate-schema.cjs');
 
@@ -78,9 +79,10 @@ function assertEvidenceRefs(workDir, refs) {
  * @param {string} params.from
  * @param {string} params.to
  * @param {string[]} [params.evidence_refs]
+ * @param {{ record: string }} [params.humanApproval] set only by `work approve`
  */
 function validateTransition(params) {
-  const { workDir, pluginRoot, state, from, to, evidence_refs } = params;
+  const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval } = params;
 
   const b = checkBudgets(state, { pluginRoot, workDir });
   if (!b.ok) {
@@ -91,6 +93,9 @@ function validateTransition(params) {
   if (!tr.ok) {
     return { ok: false, code: tr.code || 'TRANSITION_INVALID', message: tr.message };
   }
+
+  const human = assertHumanApprovalGate({ workDir, from, to, state, humanApproval });
+  if (!human.ok) return human;
 
   const art = assertArtifactsForTransition(workDir, from, to, state);
   if (!art.ok) {
@@ -137,6 +142,7 @@ function applyTransition(opts) {
     from,
     to,
     evidence_refs: opts.evidence_refs,
+    humanApproval: opts.humanApproval,
   });
   if (!v.ok) return v;
 

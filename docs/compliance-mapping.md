@@ -24,7 +24,7 @@
 | AAI-4 Insecure output | Cross-model panel review (`agents/panel/cross-model-reviewer.md`) on rigorous track |
 | AAI-5 Prompt injection | Context Pack with trust levels; untrusted-content quarantine (`references/context-engineering.md`) |
 | AAI-6 Tool override | Policy-as-Code banned-tools list (`schemas/agentic-swe-policy.schema.json`) |
-| AAI-7 Unauthorized actions | Human gate at PR creation; no auto-merge |
+| AAI-7 Unauthorized actions | Human gate at PR creation; no auto-merge. *Unreleased (ASI09 Human-Agent Trust Exploitation, Partial):* `agentic-swe work risk-flags` writes `approval-risk.json` (security-sensitive paths, new dependencies, permission changes); `agentic-swe work approve` is the only exit from `approval-wait` — it refuses agent sessions and non-TTY stdin, writes `approval-record.json` under the user's git identity, and appends `audit.log`; other exits fail with `HUMAN_APPROVAL_REQUIRED` (`test/approval-human-gate.test.js`). Gap: identity is not cryptographically bound; an agent with unrestricted shell can still edit `state.json` |
 | AAI-8 Loop / runaway | Bounded loop counters (`state.json.counters.*`); escalation states |
 | AAI-9 Resource exhaustion | Budget tracking with hard ceilings (`budget.cost_budget_usd`, `budget.iteration_budget`) |
 | AAI-10 Audit trail loss | `.worklogs/<id>/` committed in repo; replayable snapshots (`scripts/lib/replay/`) |
