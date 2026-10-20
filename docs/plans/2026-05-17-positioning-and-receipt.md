@@ -1,5 +1,7 @@
 # Positioning + `/receipt` Implementation Plan
 
+> **Archive (2026-10-21):** Historical execution plan from 2026-05-17. Many checkboxes are stale relative to the current tree (`/receipt`, compliance mapping, Phase 0 fixes shipped; asciinema cast still missing). **Do not drive launch from this file.** Use living [`docs/launch-week-1.md`](../launch-week-1.md) and strategy [`docs/specs/positioning-and-receipt.md`](../specs/positioning-and-receipt.md). Kept for audit trail of how launch assets were created.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the `/receipt` command, rewrite the README front-door, publish the NIST/OWASP compliance mapping page, and produce the asciinema launch demo — so the next 6 weeks of marketing motions (per `docs/specs/positioning-and-receipt.md`) have working code and ready-to-share assets.

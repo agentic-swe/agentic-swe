@@ -1,27 +1,31 @@
 # Positioning + `/receipt` — Design Spec
 
-**Status:** Draft (2026-05-17) · awaiting approval
-**Authors:** Suraj Gupta, design panel synthesis (adversarial, architect, competitive, content, DX subagents)
-**Related:** [`docs/the-north-star.md`](../the-north-star.md), [`docs/roadmap.md`](../roadmap.md), [`docs/capabilities-overview.md`](../capabilities-overview.md), [`docs/specs/owai-1.0.md`](./owai-1.0.md)
+**Status:** Active strategy · originally Draft (2026-05-17) · **factual refresh 2026-10-21**  
+**Authors:** Suraj Gupta, design panel synthesis (adversarial, architect, competitive, content, DX subagents)  
+**Related:** [`docs/the-north-star.md`](../the-north-star.md), [`docs/roadmap.md`](../roadmap.md), [`docs/capabilities-overview.md`](../capabilities-overview.md), [`docs/specs/owai-1.0.md`](./owai-1.0.md), living launch seed [`docs/launch-week-1.md`](../launch-week-1.md), control map [`docs/compliance-mapping.md`](../compliance-mapping.md)
+
+> **Refresh note (2026-10-21, verified against `origin/main` 3.4.0):** Phase 0 silent failures below are **historical diagnosis** — all three are resolved (see §5). Live social checklist + metrics live in `docs/launch-week-1.md`. The EU AI Act high-risk dates moved (Regulation (EU) 2026/1744): any “regulatory deadline” framing below now means **2 December 2027** (Annex III) / **2 August 2028** (Annex I), not August 2026.
 
 ---
 
 ## 1. Problem statement
 
-`agentic-swe` is technically further along than its market awareness suggests. Shipped today: a state-machine pipeline with 3 tracks, 135+ subagents, Doubt-Driven Verification, cross-model panel, Policy-as-Code, replayable worklogs, OWAI spec, AGENTIC_SWE_BENCH scaffold, Context Packs, and per-phase cost attribution. Despite weekly LinkedIn posts, an OSS repo, and a docs site, traction is stuck (~39 LinkedIn followers, low single-digit engagement per post). The closest analog with **no pipeline** — `wshobson/agents` — has 35.5K GitHub stars by simply curating subagents.
+`agentic-swe` is technically further along than its market awareness suggests. Shipped today: a state-machine pipeline with 3 tracks, **138+** subagents, Doubt-Driven Verification, cross-model panel, Policy-as-Code, replayable worklogs, OWAI spec, AGENTIC_SWE_BENCH (3 seeded `bench/tasks/` + large corpus), Context Packs, per-phase cost attribution, and deterministic `/receipt`. Traction remains thin relative to capability (stars/npm still low — see §6 refresh). The closest analog with **no pipeline** — `wshobson/agents` — earned large GitHub stars by curating subagents alone.
 
-A 5-axis review (adversarial, architectural, competitive, content/marketing, DX) converges on three findings:
+A 5-axis review (adversarial, architectural, competitive, content/marketing, DX) originally (2026-05-17) converged on three findings:
 
-1. **Three silent failures** are turning every new user away before they see the value: (a) the `SessionStart` hook matcher likely drops the entire Hypervisor policy on real `/work` sessions, (b) `/check artifacts` blocks every legitimate transition by requiring destination-state outputs to exist before the destination phase has run, (c) AGENTIC_SWE_BENCH is empty (`bench/tasks/` has 0 task.json files).
-2. **The marketing surface is selling architecture, not outcomes.** "Hypervisor policy · Pure markdown · No cloud runtime" speaks to platform engineers. The Claude Code audience on Twitter/LinkedIn wants `/work add retry logic` → reviewable PR → merge. The docs site is React-rendered, so search engines and AI tools see nothing.
-3. **A real wedge is hiding in the codebase.** `state.json.history[]` + `audit.log` + `budget.cost_ledger` together compose a tamper-evident, cost-attributed, per-decision audit trail for AI coding work — that lives in the user's own repo. No hosted competitor (Devin, Cursor, OpenHands, Kiro) can replicate this in 6 months without surrendering state ownership to the customer.
+1. **~~Three silent failures~~ (resolved — see §5):** (a) `SessionStart` matcher dropping Hypervisor policy on resume, (b) `/check artifacts` destination-state inversion, (c) empty `bench/tasks/`.
+2. **The marketing surface risks selling architecture, not outcomes.** "Hypervisor policy · Pure markdown · No cloud runtime" speaks to platform engineers. The Claude Code audience wants `/work add retry logic` → reviewable PR → merge → `/receipt`. Keep the README outcome-first.
+3. **A real wedge is in the codebase.** `state.json.history[]` + `audit.log` + `budget.cost_ledger` compose a cost-attributed, per-decision audit trail for AI coding work in the user's own repo. Hosted competitors cannot match customer-owned evidence without surrendering state.
 
-The market is moving toward this wedge: **EU AI Act high-risk provisions take effect August 2026**, **NIST AI Agent Standards Initiative launched February 2026**, OWASP published an Agentic Top 10 in December 2025, and 72% of S&P 500 companies disclosed material AI risk in 2025 while only 26% have governance policies. Agentic-swe already generates the artifacts these audiences need; it just doesn't ship them as a screenshot-able product.
+The market still moves toward this wedge: EU AI Act record-keeping (Art. 12) and human-oversight (Art. 14) obligations for high-risk systems (from 2 December 2027 under Regulation (EU) 2026/1744), NIST AI RMF, and the OWASP Top 10 for Agentic Applications (2026). Agentic-swe already generates the artifacts; launch work makes them screenshot-able.
 
 ## 2. Strategic thesis (A+B sequenced)
 
 **Primary position (A — The Receipt):**
 > "Every AI coding decision, audited. The autonomous SWE pipeline that survives an AI Act review."
+
+*Internal positioning only (2026-10-21):* do not use “survives an AI Act review” in public copy — it reads as a legal claim the pack cannot make. Public copy says what the pack produces (logs, oversight gates, receipts); see `docs/launch-week-1.md`.
 
 **Acquisition channel (B — Magic-PR demo):**
 > "Claude codes your PRs. You review and merge. With evidence."
@@ -140,7 +144,7 @@ Move "Hypervisor policy" terminology out of the user-facing README; keep it only
 A one-page reference doc that maps `.worklogs/` artifacts to common AI governance controls. This is **not a compliance certification** — it's a screenshot for the eng lead to send to their compliance partner.
 
 - New file: `docs/compliance-mapping.md`
-- Covers: NIST AI RMF (Govern/Map/Measure/Manage), OWASP Agentic Top 10 (Dec 2025), and a stub for EU AI Act Article 14 (human oversight) and Article 15 (accuracy/robustness/cybersecurity).
+- Covers: NIST AI RMF (Govern/Map/Measure/Manage), OWASP Top 10 for Agentic Applications (2026, `ASI01–ASI10`), and EU AI Act Articles 12 (record-keeping), 14 (human oversight) and 15 (accuracy/robustness/cybersecurity). *2026-10-21:* the shipped page used invented OWASP IDs and non-existent NIST subcategories; it was rewritten against the official sources.
 - For each control: which artifact in `.worklogs/` provides evidence, and a one-line citation.
 - Wired into the site as a top-nav item.
 
@@ -155,37 +159,37 @@ The marketing work above presupposes the product works on first install. The thr
 | 1 | Land the three bug fixes; ship `/receipt` v1 behind a flag | PR merged | unblock everything |
 | 1 | Record asciinema cast of `/work` → `/receipt` end-to-end | `docs/assets/receipt-demo.cast` | embed in README |
 | 1 | README rewrite | PR merged | first-viewport rehab |
-| 2 | LinkedIn long-form post: "I built the audit trail Devin can't ship" | Post + screenshot of `/receipt` | seed P0 ICP |
+| 2 | LinkedIn long-form post: "Every AI coding decision, in your repo, with a receipt" (original competitor-comparison headline retired 2026-10-21) | Post + screenshot of `/receipt` | seed P0 ICP |
 | 2 | Twitter/X thread: "Show your AI's work. 1 command. Watch." | 6-tweet thread + Loom | seed P1 ICP |
 | 3 | dev.to / Medium post: "Ship a feature with Claude in 15 min, with a receipt" | Long-form article | SEO + inbound |
 | 3 | Cold DM 10 Claude Code power users (offer 30-min walkthrough) | DM thread → call | discovery + design partners |
 | 4 | Publish NIST/OWASP control-mapping page | `docs/compliance-mapping.md` | unlock P2 ICP |
-| 4 | Show HN: "Show HN: agentic-swe — autonomous coding agent with a portable audit trail" | HN post | distribution event |
+| 4 | Show HN: "Show HN: agentic-swe — autonomous coding agent with a portable audit trail" — written and submitted by hand (HN bans generated text and automated posting) | HN post | distribution event |
 | 5 | Conference / meetup submission (AI Engineer Summit, KubeCon governance track) | CFP | credibility |
 | 6 | First case study (real or synthetic from a design partner) | docs/case-study/ | social proof |
 
-## 5. Status of in-flight bug fixes (parallel work)
+## 5. Status of Phase 0 bug fixes (updated 2026-10-21)
 
-Three developer-agents are running in background as this spec is committed:
+| Bug | Original status (2026-05-17) | Current status |
+|-----|------------------------------|----------------|
+| **1** SessionStart missing `resume` | Resolved at spec time | Still resolved — matcher `startup\|resume\|clear\|compact` (CHANGELOG / PR #62) |
+| **2** Artifact enforcement keyed on destination | In flight | **Resolved** — `requiredArtifactGroups(from, …)` in `scripts/lib/work-engine/artifacts.cjs` checks source-state outputs |
+| **3** Empty `bench/tasks/` | In flight | **Resolved** — `01-off-by-one`, `02-add-retry`, `03-rate-limiter` + large `bench/corpus/` |
 
-1. **Bug 1 (resolved)** — `hooks/hooks.json` SessionStart matcher was missing `resume`. Hypervisor policy injection was being skipped on every resumed session (`--resume`, `--continue`, `/resume`). Fixed by changing matcher from `startup|clear|compact` to `startup|resume|clear|compact`. Regression test added to `test/install-platform-stubs.test.js`. Full suite green (362/362).
-2. **Bug 2 (in flight)** — Artifact enforcement inversion in `scripts/lib/work-engine/artifacts.cjs`. Refactor so requirements are evaluated against the *source* state's outputs, not the destination's. Add end-to-end smoke test that walks lean track happy path.
-3. **Bug 3 (in flight)** — Empty `bench/tasks/`. Seed 2-3 minimal tasks (lean/standard/rigorous track coverage) so `scripts/bench/run.cjs` is no longer vaporware.
-
-These three are gates on Week 1 marketing motions. Spec finalization can proceed in parallel.
+Remaining launch blockers are **assets/distribution**, not these bugs: missing `docs/assets/receipt-demo.cast`; README does not link `docs/compliance-mapping.md` (rewritten 2026-10-21, needs owner review first); npm registry at **3.3.0** while `main` is **3.4.0**, and the `v3.4.0` GitHub release notes still describe the 3.3.1 installer.
 
 ## 6. Success metrics (90 days)
 
-| Metric | Today (2026-05-17) | 90-day target | Source of truth |
-|--------|--------------------|----------------|------------------|
-| GitHub stars | 1 | 500 | github.com API |
-| LinkedIn company followers | 39 | 1,000 | LinkedIn analytics |
-| npm weekly downloads | 55 | 1,500 | npm registry |
-| `/receipt` mentions (Twitter/blog) | 0 | 25 | manual + search |
-| Design partners (NIST/OWASP-mapping use case) | 0 | 3 | self-reported |
-| AGENTIC_SWE_BENCH submissions from third parties | 0 | 1 | PR count |
+| Metric | Baseline (2026-05-17) | Verified (2026-10-21) | 90-day target | Source of truth |
+|--------|----------------------|------------------------|---------------|------------------|
+| GitHub stars | 1 | **6** | 500 | github.com API |
+| LinkedIn company followers | 39 | re-check manually | 1,000 | LinkedIn analytics |
+| npm weekly downloads | 55 | **1** (12–18 Oct; 12 over the prior 30 days) | 1,500 | npm downloads API |
+| `/receipt` mentions (Twitter/blog) | 0 | 0 (assume) | 25 | manual + search |
+| Design partners (NIST/OWASP-mapping use case) | 0 | 0 | 3 | self-reported |
+| AGENTIC_SWE_BENCH submissions from third parties | 0 | 0 | 1 | PR count |
 
-Star count is the most honest signal here. **1 star with 55 weekly npm downloads** says the small set of people finding the project are installing it but not bookmarking it — consistent with the diagnosis that the README front-door isn't doing acquisition work. The 500-star target is deliberately modest; the goal is repeatable inbound flow, not vanity numbers.
+Star count remains the honest acquisition signal. Growth since May is modest (1→6 stars) while weekly npm downloads fell vs the May snapshot — consistent with weak distribution (npm has also lagged two releases behind `main`), not a missing core feature. Living table: `docs/launch-week-1.md`.
 
 Lagging indicator: a non-author cites `agentic-swe` in a blog post about AI governance or autonomous coding hygiene without prompting. Aim: at least 2 unprompted citations by day 90.
 
@@ -194,7 +198,7 @@ Lagging indicator: a non-author cites `agentic-swe` in a blog post about AI gove
 - Hosted SaaS or cloud runtime (would destroy the moat in Section 2)
 - OWAI standards body application (year 2)
 - Cryptographic attestation / signed receipts (v2 of `/receipt`)
-- New subagent catalog work (catalog is already 135+; growth is not the bottleneck)
+- New subagent catalog work (catalog is already 138+; growth is not the bottleneck)
 - VS Code or JetBrains extension (post-90-day, post-traction)
 - New track types (lean/standard/rigorous is enough)
 - IDE marketplace listings beyond Claude Code (after Claude Code traction is established)
