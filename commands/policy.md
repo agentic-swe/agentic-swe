@@ -33,5 +33,5 @@ Validate the repo's `.agentic-swe/policy.json` against `${CLAUDE_PLUGIN_ROOT}/sc
 The policy is evaluated during:
 - `lean-track-check` — `track_rules` may force a minimum track
 - Phase delegation — `mandatory_subagents` are enforced
-- Tool invocations — `banned_tools` are checked pre-execution
+- Tool invocations — `banned_tools`, `banned_commands` and `phase_tool_allowlist` are enforced by the PreToolUse hook (`scripts/hook-pre-tool-policy.cjs`, Claude Code); each call is logged to the active work item's `audit.log`
 - Artifact validation — `required_artifacts` are merged with pack defaults

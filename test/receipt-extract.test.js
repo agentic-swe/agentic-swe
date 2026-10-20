@@ -49,6 +49,31 @@ test('extractReceipt — audit log entry count', () => {
   assert.equal(r.auditEntryCount, 9);
 });
 
+test('extractReceipt — counts policy-checked tool calls and denials', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const { formatMarkdown } = require('../scripts/lib/receipt/format.cjs');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-tools-'));
+  try {
+    fs.cpSync(FIXTURE, tmp, { recursive: true });
+    fs.appendFileSync(
+      path.join(tmp, 'audit.log'),
+      [
+        '2026-10-21T00:00:00.000Z actor=agent action=tool_call tool=Bash decision=allow state=implementation input="ls" | evidence: PreToolUse policy hook',
+        '2026-10-21T00:00:01.000Z actor=agent action=tool_call tool=Bash decision=deny state=implementation rule=banned_commands[0] input="rm -rf /" | evidence: PreToolUse policy hook',
+        '',
+      ].join('\n')
+    );
+    const r = extractReceipt(tmp);
+    assert.equal(r.toolCallCount, 2);
+    assert.equal(r.toolCallDenied, 1);
+    assert.match(formatMarkdown(r), /Policy-checked tool calls: 2 \(1 denied by policy\)/);
+    assert.equal(extractReceipt(FIXTURE).toolCallCount, 0);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('extractReceipt — throws when workDir lacks state.json', () => {
   assert.throws(
     () => extractReceipt('/tmp/does-not-exist-12345'),

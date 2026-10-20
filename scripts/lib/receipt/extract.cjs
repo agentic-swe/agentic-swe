@@ -40,9 +40,13 @@ function extractReceipt(workDir) {
     : null;
 
   const auditPath = path.join(workDir, 'audit.log');
-  const auditEntryCount = fs.existsSync(auditPath)
-    ? fs.readFileSync(auditPath, 'utf8').split('\n').filter((l) => l.trim().length > 0).length
-    : 0;
+  const auditLines = fs.existsSync(auditPath)
+    ? fs.readFileSync(auditPath, 'utf8').split('\n').filter((l) => l.trim().length > 0)
+    : [];
+  const auditEntryCount = auditLines.length;
+  const toolCalls = auditLines.filter((l) => / action=tool_call /.test(l));
+  const toolCallCount = toolCalls.length;
+  const toolCallDenied = toolCalls.filter((l) => / decision=deny /.test(l)).length;
 
   return {
     workId: state.work_id || path.basename(workDir),
@@ -57,6 +61,8 @@ function extractReceipt(workDir) {
     counters: state.counters || {},
     prUrl,
     auditEntryCount,
+    toolCallCount,
+    toolCallDenied,
     workDir,
   };
 }

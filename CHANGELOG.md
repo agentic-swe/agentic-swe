@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Ruflo gap closure (Phases 1–3):** `agentic-swe doctor` reports muscle-memory readiness, recent redaction hits, and optional `--verify-pack`; rigorous track requires `design-panel-review.md`; `feasibility-catalog-route.cjs` writes file-backed catalog routing into `feasibility.md`; rigorous validation entry requires `permissions-check` or `pipeline.permissions_waiver`; session-capture records `redaction_hits` on hook receipts; competitive note at [`docs/competitive-vs-ruflo.md`](docs/competitive-vs-ruflo.md). Spec: [`docs/superpowers/specs/2026-10-03-ruflo-gap-closure-design.md`](docs/superpowers/specs/2026-10-03-ruflo-gap-closure-design.md).
 - **`scripts/bump-version.cjs`:** Node fallback for version drift checks (oracle + environments without `jq`).
 - **Human-only approval with risk flags (OWASP ASI09):** `agentic-swe work risk-flags` flags security-sensitive paths, new dependencies and permission changes in `base...HEAD` and can write `approval-risk.json`. `agentic-swe work approve --decision approved|changes_requested` is the only way out of `approval-wait`: it refuses agent sessions (`CLAUDECODE`, `CURSOR_AGENT`, …) and non-TTY stdin, asks the human to type the work id, writes `approval-record.json` under their git identity, and appends `audit.log`.
 
@@ -19,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `resolvePolicy(repoRoot, packRoot)` loads `config/default-policy.json` from `packRoot` (it previously looked three directories above it).
 - Skill `source` metadata always uses forward slashes so Claude plugin YAML parse works on Windows.
 - Frontmatter extractor accepts CRLF; POSIX absolute host paths stay stable on Windows lifecycle adapters.
 

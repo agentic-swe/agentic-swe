@@ -34,15 +34,36 @@
     },
     "banned_tools": {
       "type": "array",
-      "description": "Tool combinations that are forbidden.",
+      "description": "Tools or shell command prefixes denied at runtime by the PreToolUse hook.",
       "items": {
         "type": "object",
         "required": ["tool", "reason"],
         "properties": {
-          "tool": { "type": "string" },
-          "context": { "type": "string" },
+          "tool": { "type": "string", "description": "Tool-name glob (e.g. 'WebFetch', 'mcp__github__*'), or a shell command prefix when it contains whitespace (e.g. 'git push --force')." },
+          "context": { "type": "string", "description": "When this is a work-item state name the rule applies only in that state; otherwise descriptive and the rule always applies." },
           "reason": { "type": "string" }
         }
+      }
+    },
+    "banned_commands": {
+      "type": "array",
+      "description": "Shell commands denied at runtime, matched as JavaScript regular expressions.",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "reason"],
+        "properties": {
+          "pattern": { "type": "string", "description": "JavaScript RegExp source tested against the full shell command." },
+          "reason": { "type": "string" },
+          "states": { "type": "array", "items": { "type": "string" }, "description": "Limit the rule to these work-item states. Omit to apply always." }
+        }
+      }
+    },
+    "phase_tool_allowlist": {
+      "type": "object",
+      "description": "Per-state tool-name globs. In a listed state any other tool is denied; unlisted states are unrestricted. When repo and org policies both list a state, only tools in both lists are allowed.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
       }
     },
     "required_artifacts": {

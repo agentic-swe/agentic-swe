@@ -61,6 +61,9 @@ function formatMarkdown(data) {
   const wd = displayWorkDir(data.workDir);
   lines.push(`- All artifacts: \`${wd}/\``);
   lines.push(`- Audit log: \`${wd}/audit.log\` (${data.auditEntryCount} entries)`);
+  if (data.toolCallCount) {
+    lines.push(`- Policy-checked tool calls: ${data.toolCallCount} (${data.toolCallDenied || 0} denied by policy)`);
+  }
   lines.push('');
   return lines.join('\n');
 }
