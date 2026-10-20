@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "banned_tools": [
+    { "tool": "git push --force", "context": "main branch", "reason": "Protected branch" },
+    { "tool": "mcp__danger__*", "reason": "Unreviewed MCP server" },
+    { "tool": "WebFetch", "context": "implementation", "reason": "No network fetches while editing code" }
+  ],
+  "banned_commands": [
+    { "pattern": "\\brm\\s+-rf\\s+/(\\s|$)", "reason": "Never delete the filesystem root" },
+    { "pattern": "\\bnpm\\s+publish\\b", "reason": "Publishing is a human release step", "states": ["implementation", "validation"] },
+    { "pattern": "([", "reason": "deliberately invalid regex" }
+  ],
+  "phase_tool_allowlist": {
+    "feasibility": ["Read", "Grep", "Glob", "Bash", "mcp__*"]
+  }
+}

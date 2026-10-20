@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Ruflo gap closure (Phases 1–3):** `agentic-swe doctor` reports muscle-memory readiness, recent redaction hits, and optional `--verify-pack`; rigorous track requires `design-panel-review.md`; `feasibility-catalog-route.cjs` writes file-backed catalog routing into `feasibility.md`; rigorous validation entry requires `permissions-check` or `pipeline.permissions_waiver`; session-capture records `redaction_hits` on hook receipts; competitive note at [`docs/competitive-vs-ruflo.md`](docs/competitive-vs-ruflo.md). Spec: [`docs/superpowers/specs/2026-10-03-ruflo-gap-closure-design.md`](docs/superpowers/specs/2026-10-03-ruflo-gap-closure-design.md).
 - **`scripts/bump-version.cjs`:** Node fallback for version drift checks (oracle + environments without `jq`).
+- **Runtime Policy-as-Code (OWASP ASI02):** blocking `PreToolUse` hook `scripts/hook-pre-tool-policy.cjs` enforces `banned_tools` (tool globs or shell command prefixes, optionally scoped to a state), new `banned_commands` (regex, optional `states`) and new `phase_tool_allowlist` (per-state tool globs; repo + org lists intersect). Every tool call is appended to the active work item's `audit.log` with its decision and a redacted input summary. Fails open on hook errors unless `AGENTIC_SWE_POLICY_FAIL_CLOSED=1`.
 
 ### Fixed
 
+- `resolvePolicy(repoRoot, packRoot)` loads `config/default-policy.json` from `packRoot` (it previously looked three directories above it).
 - Skill `source` metadata always uses forward slashes so Claude plugin YAML parse works on Windows.
 - Frontmatter extractor accepts CRLF; POSIX absolute host paths stay stable on Windows lifecycle adapters.
 

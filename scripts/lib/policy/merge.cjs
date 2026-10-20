@@ -33,6 +33,17 @@ function mergePolicies(packDefault, repoPolicy, orgPolicy) {
     if (policy.banned_tools) {
       result.banned_tools = [...(result.banned_tools || []), ...policy.banned_tools];
     }
+    if (policy.banned_commands) {
+      result.banned_commands = [...(result.banned_commands || []), ...policy.banned_commands];
+    }
+    if (policy.phase_tool_allowlist) {
+      // Most restrictive wins: a state restricted at two levels allows only tools in both lists.
+      const merged = { ...(result.phase_tool_allowlist || {}) };
+      for (const [state, tools] of Object.entries(policy.phase_tool_allowlist)) {
+        merged[state] = Array.isArray(merged[state]) ? merged[state].filter((t) => tools.includes(t)) : [...tools];
+      }
+      result.phase_tool_allowlist = merged;
+    }
     if (policy.required_artifacts) {
       result.required_artifacts = result.required_artifacts || {};
       for (const [state, arts] of Object.entries(policy.required_artifacts)) {
@@ -58,7 +69,8 @@ function mergePolicies(packDefault, repoPolicy, orgPolicy) {
  *   3. Org policy: AGENTIC_SWE_POLICY env var
  */
 function resolvePolicy(repoRoot, packRoot) {
-  const packDefault = loadPolicy(path.join(packRoot || __dirname, '..', '..', '..', 'config', 'default-policy.json')) || {};
+  const packConfig = packRoot ? path.join(packRoot, 'config') : path.join(__dirname, '..', '..', '..', 'config');
+  const packDefault = loadPolicy(path.join(packConfig, 'default-policy.json')) || {};
   const repoPolicy = loadPolicy(path.join(repoRoot, '.agentic-swe', 'policy.json'));
   const orgPolicyPath = process.env.AGENTIC_SWE_POLICY;
   const orgPolicy = orgPolicyPath ? loadPolicy(orgPolicyPath) : null;

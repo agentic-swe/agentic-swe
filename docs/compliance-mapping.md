@@ -23,7 +23,7 @@
 | AAI-3 Identity abuse | `audit.log` actor attribution; signed transitions (v2 — see roadmap) |
 | AAI-4 Insecure output | Cross-model panel review (`agents/panel/cross-model-reviewer.md`) on rigorous track |
 | AAI-5 Prompt injection | Context Pack with trust levels; untrusted-content quarantine (`references/context-engineering.md`) |
-| AAI-6 Tool override | Policy-as-Code banned-tools list (`schemas/agentic-swe-policy.schema.json`) |
+| AAI-6 Tool override | Policy-as-Code banned-tools list (`schemas/agentic-swe-policy.schema.json`). *Unreleased (ASI02 Tool Misuse, Partial):* a blocking `PreToolUse` hook (`scripts/hook-pre-tool-policy.cjs`) enforces `banned_tools`, `banned_commands` and `phase_tool_allowlist` per work-item state and logs every tool call with its decision to `audit.log` (`test/hook-pre-tool-policy.test.js`, `test/policy-runtime.test.js`). Gaps: Claude Code hosts only; shell matching is textual; hook errors fail open unless `AGENTIC_SWE_POLICY_FAIL_CLOSED=1` |
 | AAI-7 Unauthorized actions | Human gate at PR creation; no auto-merge |
 | AAI-8 Loop / runaway | Bounded loop counters (`state.json.counters.*`); escalation states |
 | AAI-9 Resource exhaustion | Budget tracking with hard ceilings (`budget.cost_budget_usd`, `budget.iteration_budget`) |
