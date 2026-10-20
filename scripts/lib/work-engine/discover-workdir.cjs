@@ -70,6 +70,8 @@ function listActiveCandidates(projectRoot) {
   const out = [];
   for (const ent of fs.readdirSync(root, { withFileTypes: true })) {
     if (!ent.isDirectory()) continue;
+    // Skip private/meta folders (e.g. _archive) so cost hooks never bill them.
+    if (ent.name.startsWith('_')) continue;
     const statePath = path.join(root, ent.name, 'state.json');
     if (!fs.existsSync(statePath)) continue;
     let state;

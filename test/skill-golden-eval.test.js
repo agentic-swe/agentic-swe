@@ -2,6 +2,8 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { runGoldenEval, loadGoldenEvalMap } = require('../scripts/lib/skills/golden-eval.cjs');
@@ -39,17 +41,20 @@ describe('golden eval harness', () => {
 
 describe('token scorecard CLI', () => {
   it('writes token-reduction scorecard', () => {
-    const out = path.join(root, 'bench', 'results', 'token-reduction-test.json');
+    // Write to a temp path so the test never dirties bench/results/ in the working tree.
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-token-scorecard-'));
+    const out = path.join(tmpDir, 'token-reduction-test.json');
     const r = spawnSync(
       process.execPath,
       [path.join(root, 'scripts/bench/token-scorecard.cjs'), '--out', out],
       { cwd: root, encoding: 'utf8' }
     );
     assert.strictEqual(r.status, 0, r.stderr);
-    const data = require(out);
+    const data = JSON.parse(fs.readFileSync(out, 'utf8'));
     assert.ok(data.fixed_overhead.reduction_ratio > 0.5);
     assert.ok(data.skills.evaluated >= 10);
     assert.ok('organic_portfolio' in data.warm_portfolio_projection);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });
 

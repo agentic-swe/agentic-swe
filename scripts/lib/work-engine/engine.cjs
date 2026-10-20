@@ -11,6 +11,7 @@ const {
 const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
+const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
 const { resolveEvidenceRef } = require('./paths.cjs');
 const { validateWorkItemSchemaAtRoot } = require('./validate-schema.cjs');
 
@@ -78,12 +79,22 @@ function assertEvidenceRefs(workDir, refs) {
  * @param {string} params.from
  * @param {string} params.to
  * @param {string[]} [params.evidence_refs]
+ * @param {{ record: string }} [params.humanApproval] set only by `work approve`
  */
 function validateTransition(params) {
-  const { workDir, pluginRoot, state, from, to, evidence_refs } = params;
+  const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval } = params;
+
+  // A recorded human approval may close the item even when the agent's budget is spent;
+  // changes_requested still needs budget because it starts more agent work.
+  let humanClose = false;
+  if (from === 'approval-wait') {
+    const human = assertHumanApprovalGate({ workDir, from, to, state, humanApproval });
+    if (!human.ok) return human;
+    humanClose = to === 'completed';
+  }
 
   const b = checkBudgets(state, { pluginRoot, workDir });
-  if (!b.ok) {
+  if (!b.ok && !humanClose) {
     return { ok: false, code: 'BUDGET_STOP', message: b.errors.join('; '), budget: b };
   }
 
@@ -137,6 +148,7 @@ function applyTransition(opts) {
     from,
     to,
     evidence_refs: opts.evidence_refs,
+    humanApproval: opts.humanApproval,
   });
   if (!v.ok) return v;
 

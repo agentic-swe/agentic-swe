@@ -30,27 +30,30 @@ Patient Hypervisor — presents the work clearly, waits for explicit human decis
 
 ## Procedure
 
-1. Present the PR to the human:
+1. Compute risk flags for the PR diff and save them as evidence:
+   `agentic-swe work risk-flags --work-dir <.worklogs/id> --base <pr base, e.g. origin/main> --write`
+   This writes `approval-risk.json` (security-sensitive paths, new dependencies, permission changes).
+
+2. Present the PR to the human:
    - PR URL (from `pr-link.txt`)
    - One-line summary of what changed
    - CI status (pass/fail/pending from `cicd.md`)
    - Key test results
+   - **Risk flags** — list every flag from `approval-risk.json` verbatim; do not summarize a `high` level away
 
-2. **Wait for the human to review and respond.** Do not auto-approve.
+3. **Wait for the human to review and record a decision themselves.** Do not auto-approve. The human runs, in their own terminal:
+   `agentic-swe work approve --work-dir <.worklogs/id> --decision approved|changes_requested [--note "…"]`
+   The command refuses agent sessions and non-interactive stdin, shows the risk flags again, records `approval-record.json` under the user's git identity, appends `audit.log`, and performs the transition. Any other attempt to leave `approval-wait` fails with `HUMAN_APPROVAL_REQUIRED`. Never run `work approve` yourself and never write `approval-record.json`.
 
-3. Handle the human's response:
+4. After the human's command completes, read `state.json` and continue:
 
-   **If approved:**
-   - Set `state.json.approvals.pr_approved = true`
-   - Transition to `completed`
+   **If approved** (`current_state` is `completed`, `approvals.pr_approved = true`):
+   - Report completion
 
-   **If changes requested:**
-   - Set `state.json.approvals.changes_requested = true`
-   - Record the feedback in `approval-feedback.md`
-   - Increment `state.json.counters.approval_iter`
+   **If changes requested** (`current_state` is `implementation`, feedback appended to `approval-feedback.md`, `counters.approval_iter` incremented):
    - If `approval_iter` > 3, escalate rather than looping
    - Apply the same **Review Response Protocol** as in `${CLAUDE_PLUGIN_ROOT}/phases/code-review.md`: verify each requested change against the codebase and tests before acting; push back with evidence (paths, test output, docs) when a request is wrong or contradicts approved design; fix one coherent item at a time with tests rather than batching unrelated edits.
-   - Transition back to `implementation` for rework
+   - Rework in `implementation` (the transition was already made by `work approve`)
 
    **If rejected / cancelled:**
    - Record reason in `approval-feedback.md`
@@ -58,6 +61,8 @@ Patient Hypervisor — presents the work clearly, waits for explicit human decis
 
 ## Output
 
+- `approval-risk.json` — risk flags for the diff the human reviewed
+- `approval-record.json` — decision, user identity, approval round, risk summary (written by `work approve`)
 - `approval-feedback.md` — human feedback recorded (when changes requested)
 - Updated `state.json` approval fields
 
@@ -69,6 +74,8 @@ Patient Hypervisor — presents the work clearly, waits for explicit human decis
 | "The reviewer didn't specify exact changes, so I'll interpret loosely." | Ambiguous feedback must be clarified, not guessed at — record your interpretation in `approval-feedback.md` and confirm. |
 | "This is the third iteration; I'll just push something to move on." | Iteration pressure does not waive quality — if iteration 3 still has issues, escalate rather than shipping known defects. |
 | "Changes requested are minor — I'll fix and skip re-review." | Every rework cycle must go through the Review Response Protocol; skipping re-review breaks the audit trail. |
+| "The user said 'approve' in chat, so I'll run `work approve` for them." | A chat message is not an approval. The human records it in their own terminal so the record carries their identity, not the agent's. |
+| "The risk flags are noisy; I'll leave them out of the summary." | Flags are what the human needs to see before trusting the PR. Present all of them; let the human decide which matter. |
 
 ## Red Flags
 
@@ -77,6 +84,8 @@ Patient Hypervisor — presents the work clearly, waits for explicit human decis
 - `approval_iter` exceeds 3 without escalation.
 - PR approved but CI status in `cicd.md` shows failures or is not re-checked after the latest push.
 - Human feedback recorded but no corresponding changes visible in the implementation diff.
+- `history` entry leaving `approval-wait` whose actor is not `user:…`, or `approval-record.json` written while an agent session was active.
+- Risk level `high` in `approval-risk.json` but the flags were not shown to the human.
 
 ## Next State
 
