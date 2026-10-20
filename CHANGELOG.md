@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **`approval-wait` exits need a human record:** `work transition` / `applyTransition` out of `approval-wait` now fails with `HUMAN_APPROVAL_REQUIRED` unless a matching `approval-record.json` for the current approval round exists. Scripts that auto-completed work items must switch to `work approve`.
+- **`approval-wait` exits need a human record:** `work transition` / `applyTransition` out of `approval-wait` now fails with `HUMAN_APPROVAL_REQUIRED` unless a matching `approval-record.json` for the current approval round exists. Scripts that auto-completed work items must switch to `work approve`. A recorded human `approved` decision can close the item even when the iteration or cost budget is spent (the standard track's 10 iterations are used up on arrival at `approval-wait`); `changes_requested` still stops on an exhausted budget.
 
 ### Fixed
 

@@ -84,8 +84,17 @@ function assertEvidenceRefs(workDir, refs) {
 function validateTransition(params) {
   const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval } = params;
 
+  // A recorded human approval may close the item even when the agent's budget is spent;
+  // changes_requested still needs budget because it starts more agent work.
+  let humanClose = false;
+  if (from === 'approval-wait') {
+    const human = assertHumanApprovalGate({ workDir, from, to, state, humanApproval });
+    if (!human.ok) return human;
+    humanClose = to === 'completed';
+  }
+
   const b = checkBudgets(state, { pluginRoot, workDir });
-  if (!b.ok) {
+  if (!b.ok && !humanClose) {
     return { ok: false, code: 'BUDGET_STOP', message: b.errors.join('; '), budget: b };
   }
 
@@ -93,9 +102,6 @@ function validateTransition(params) {
   if (!tr.ok) {
     return { ok: false, code: tr.code || 'TRANSITION_INVALID', message: tr.message };
   }
-
-  const human = assertHumanApprovalGate({ workDir, from, to, state, humanApproval });
-  if (!human.ok) return human;
 
   const art = assertArtifactsForTransition(workDir, from, to, state);
   if (!art.ok) {

@@ -130,6 +130,26 @@ describe('human approval gate (engine)', () => {
     assert.match(fs.readFileSync(path.join(ctx.wd, 'approval-feedback.md'), 'utf8'), /Drop SKIP_CHECK\./);
   });
 
+  it('a human approval can close the item after the iteration budget is spent', () => {
+    const st = JSON.parse(fs.readFileSync(path.join(ctx.wd, 'state.json'), 'utf8'));
+    st.budget.budget_remaining = 0;
+    fs.writeFileSync(path.join(ctx.wd, 'state.json'), JSON.stringify(st, null, 2));
+    const agent = applyTransition({ workDir: ctx.wd, pluginRoot, to: 'completed', actor: 'hypervisor', skipMuscleMemory: true });
+    assert.equal(agent.code, 'HUMAN_APPROVAL_REQUIRED');
+    const r = recordApproval({ workDir: ctx.wd, pluginRoot, decision: 'approved', identity, risk });
+    assert.equal(r.ok, true, r.message);
+    assert.equal(loadWorkItem(ctx.wd, pluginRoot).state.current_state, 'completed');
+  });
+
+  it('changes_requested still stops on an exhausted budget', () => {
+    const st = JSON.parse(fs.readFileSync(path.join(ctx.wd, 'state.json'), 'utf8'));
+    st.budget.budget_remaining = 0;
+    fs.writeFileSync(path.join(ctx.wd, 'state.json'), JSON.stringify(st, null, 2));
+    const r = recordApproval({ workDir: ctx.wd, pluginRoot, decision: 'changes_requested', note: 'x', identity, risk });
+    assert.equal(r.ok, false);
+    assert.equal(r.code, 'BUDGET_STOP');
+  });
+
   it('recordApproval refuses outside approval-wait', () => {
     const st = JSON.parse(fs.readFileSync(path.join(ctx.wd, 'state.json'), 'utf8'));
     st.current_state = 'validation';
