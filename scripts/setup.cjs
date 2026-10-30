@@ -787,8 +787,7 @@ async function main() {
   }
 }
 
-if (require.main === module) main();
-else module.exports = {
+module.exports = {
   SUPPORTED_HOSTS,
   PORTABLE_ENTRIES,
   parseArgs,
@@ -800,3 +799,5 @@ else module.exports = {
   confirmChanges,
   setup,
 };
+
+if (require.main === module) main();
