@@ -37,6 +37,9 @@ jobs:
       - name: Install root dependencies (npm ci)
         run: npm ci --registry=https://registry.npmjs.org/
 
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Install brainstorm-server dependencies (npm ci)
         run: npm ci --prefix agents/plugin-runtime/brainstorm-server --registry=https://registry.npmjs.org/
 
