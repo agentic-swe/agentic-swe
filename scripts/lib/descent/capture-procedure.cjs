@@ -147,7 +147,7 @@ function captureProcedureFromWork(opts) {
     fingerprint,
     procedure,
     evalPassed: true,
-    humanApproved: autoL0,
+    autoConfirm: autoL0,
     successCapture: !autoL0,
   });
 

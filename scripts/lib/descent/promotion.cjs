@@ -62,7 +62,8 @@ function promoteOrDemote(opts) {
     else if (opts.evalPassed === false) rec.eval_status = rec.eval_status || 'unevaluated';
     if (rec.success_count >= 2) {
       rec.tier = 'L0';
-      rec.human_approved = true;
+      rec.auto_confirmed = true;
+      rec.human_approved = false;
       rec.promoted_at = new Date().toISOString();
       rec.failures = 0;
     } else {
@@ -75,9 +76,10 @@ function promoteOrDemote(opts) {
   if (opts.evalPassed) rec.eval_status = 'evaluated';
   else if (opts.evalPassed === false) rec.eval_status = rec.eval_status || 'unevaluated';
 
-  if (opts.evalPassed && opts.humanApproved && rec.tier !== 'L0') {
+  if (opts.autoConfirm || (opts.evalPassed && opts.humanApproved && rec.tier !== 'L0')) {
     rec.tier = 'L0';
-    rec.human_approved = true;
+    rec.auto_confirmed = true;
+    rec.human_approved = false;
     rec.promoted_at = new Date().toISOString();
     rec.failures = 0;
   } else if (opts.evalPassed && !rec.human_approved) {
@@ -146,6 +148,60 @@ function promoteRecordTrust(opts) {
   return rec;
 }
 
+const APPROVAL_LOG = '.agentic-swe/procedure-approvals.log';
+
+function approvalLogPath(projectRoot) {
+  return path.join(projectRoot, APPROVAL_LOG);
+}
+
+function attestedFingerprints(projectRoot) {
+  const file = approvalLogPath(projectRoot);
+  if (!fs.existsSync(file)) return new Set();
+  const found = new Set();
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    const match = line.match(/fingerprint=(\S+)/);
+    if (match && line.includes('action=procedure_approved')) found.add(match[1]);
+  }
+  return found;
+}
+
+function approveProcedure({ projectRoot, fingerprint, actor }) {
+  if (!fingerprint) return { ok: false, code: 'MISSING_FINGERPRINT' };
+  if (!actor || !String(actor).startsWith('user:')) return { ok: false, code: 'ACTOR_REQUIRED' };
+  const data = loadStore(projectRoot);
+  const rec = data.procedures.find((p) => p.fingerprint === fingerprint);
+  if (!rec) return { ok: false, code: 'NOT_FOUND' };
+  const file = approvalLogPath(projectRoot);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.appendFileSync(
+    file,
+    `${new Date().toISOString()} actor=${actor} action=procedure_approved fingerprint=${fingerprint}\n`,
+  );
+  rec.tier = 'L0';
+  rec.human_approved = true;
+  rec.approved_at = new Date().toISOString();
+  rec.approved_by = actor;
+  rec.failures = 0;
+  saveStore(projectRoot, data);
+  return { ok: true, record: rec };
+}
+
+function migrateUnattestedApprovals(projectRoot) {
+  const data = loadStore(projectRoot);
+  const attested = attestedFingerprints(projectRoot);
+  let migrated = 0;
+  for (const rec of data.procedures) {
+    if (rec.human_approved === true && !attested.has(rec.fingerprint)) {
+      rec.human_approved = false;
+      rec.auto_confirmed = true;
+      rec.migrated = true;
+      migrated += 1;
+    }
+  }
+  if (migrated) saveStore(projectRoot, data);
+  return { migrated };
+}
+
 module.exports = {
   loadStore,
   saveStore,
@@ -153,5 +209,8 @@ module.exports = {
   tierHitRates,
   importExternalProcedure,
   promoteRecordTrust,
+  approveProcedure,
+  migrateUnattestedApprovals,
   DEFAULT_STORE,
+  APPROVAL_LOG,
 };
