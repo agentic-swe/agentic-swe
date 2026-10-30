@@ -245,6 +245,27 @@ test('setup --help lists --accept-risk', () => {
   assert.match(result.stdout, /--accept-risk/);
 });
 
+test('setup CLI installs when invoked as the process entry point', (t) => {
+  const target = gitRepository(t);
+  const home = temporaryDirectory(t);
+  const bin = path.join(packRoot, 'scripts', 'setup.cjs');
+  const result = spawnSync(process.execPath, [
+    bin,
+    '--host', 'cursor',
+    '--target', target,
+    '--yes',
+    '--no-gitignore',
+  ], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home, USERPROFILE: home },
+    timeout: 180000,
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /Agentic SWE configured for: cursor/);
+  assert.equal(result.stderr.includes('portableEntries'), false);
+  assert.ok(fs.existsSync(path.join(home, '.cursor', 'plugins', 'local', 'agentic-swe', 'package.json')));
+});
+
 test('confirmation accepts only an explicit yes', async () => {
   const preview = { target: '/repo', hosts: ['cursor'], changes: ['Would merge policy'] };
   assert.equal(await confirmChanges(preview, async () => 'y'), true);
