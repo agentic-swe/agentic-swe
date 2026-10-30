@@ -66,12 +66,15 @@ describe('jev client', () => {
     });
     assert.strictEqual(disabled.skipped, true);
     assert.strictEqual(disabled.reason, 'disabled');
+    const defaults = loadJevConfig(pluginRoot, null, {});
+    assert.strictEqual(defaults.enabled, false);
     const missing = await classify({
       pluginRoot,
       state: 'hello',
       questions: QUESTIONS,
       fetchImpl,
-      env: {},
+      env: { TYPESAFE_API_KEY: '' },
+      config: { ...defaults, enabled: true },
     });
     assert.strictEqual(missing.reason, 'missing_key');
     assert.strictEqual(called, false);
@@ -97,10 +100,12 @@ describe('jev client', () => {
     });
     assert.strictEqual(timeout.reason, 'timeout');
 
+    const enabled = { ...loadJevConfig(pluginRoot, null, {}), enabled: true };
     const http = await classify({
       pluginRoot,
       state: 'hello',
       questions: QUESTIONS,
+      config: enabled,
       env: { TYPESAFE_API_KEY: 'secret-key' },
       fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({ error: 'secret-key' }) }),
     });
@@ -110,6 +115,7 @@ describe('jev client', () => {
       pluginRoot,
       state: 'hello',
       questions: QUESTIONS,
+      config: enabled,
       env: { TYPESAFE_API_KEY: 'secret-key' },
       fetchImpl: async () => ({
         ok: true,
@@ -124,6 +130,7 @@ describe('jev client', () => {
       pluginRoot,
       state: 'hello',
       questions: QUESTIONS,
+      config: enabled,
       env: { TYPESAFE_API_KEY: 'secret-key' },
       fetchImpl: async () => ({ ok: true, json: async () => choiceBody('nope', 0.9) }),
     });
@@ -142,6 +149,7 @@ describe('jev client', () => {
       seam: 'classify',
       workDir: tmp,
       audit: true,
+      config: { ...loadJevConfig(pluginRoot, null, {}), enabled: true },
       env: { TYPESAFE_API_KEY: key },
       fetchImpl: async (_url, init) => {
         seenState = JSON.parse(init.body).state;
