@@ -5,6 +5,8 @@ const assert = require('node:assert');
 const { adviseModelTier, renderModelTierHint } = require('../scripts/lib/jev/tier.cjs');
 
 const pluginRoot = require('node:path').join(__dirname, '..');
+const { loadJevConfig } = require('../scripts/lib/jev/config.cjs');
+const enabled = { ...loadJevConfig(pluginRoot, null, {}), enabled: true };
 
 function baseline() {
   return renderModelTierHint({ wid: 'add-retry', phase: 'feasibility', phaseTier: 'fast', advice: null });
@@ -59,6 +61,7 @@ describe('jev model tier', () => {
       phase: 'feasibility',
       phaseTier: 'fast',
       task: 'Redesign the auth boundary',
+      config: enabled,
       env: { TYPESAFE_API_KEY: 'secret-key' },
       fetchImpl: async () => tierResponse('heavy', 0.88),
     });
@@ -79,6 +82,7 @@ describe('jev model tier', () => {
       phase: 'feasibility',
       phaseTier: 'fast',
       task: 'Redesign the auth boundary',
+      config: enabled,
       env: { TYPESAFE_API_KEY: 'secret-key' },
       fetchImpl: async () => tierResponse('heavy', 0.33),
     });

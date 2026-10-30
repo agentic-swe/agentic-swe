@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "description": "Advisory TypeSafe Jev classifier. Missing, failed, or low-confidence results fall back to local routers.",
-  "enabled": true,
+  "enabled": false,
   "model": "jev-1.13.0",
   "endpoint": "https://api.typesafe.ai/v1/systemone",
   "timeout_ms": 2000,

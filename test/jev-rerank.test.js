@@ -14,7 +14,7 @@ const {
 const { loadJevConfig } = require('../scripts/lib/jev/config.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
-const config = loadJevConfig(pluginRoot, null, {});
+const config = { ...loadJevConfig(pluginRoot, null, {}), enabled: true };
 
 describe('jev rerank', () => {
   it('keeps retrieval order in results and records a confident choice separately', async () => {
@@ -27,6 +27,7 @@ describe('jev rerank', () => {
       pluginRoot,
       query: 'terraform gizmos',
       candidates,
+      config,
       env: { TYPESAFE_API_KEY: 'secret-key' },
       fetchImpl: async () => ({
         ok: true,
