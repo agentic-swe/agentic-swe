@@ -64,6 +64,7 @@ async function runTrackHint(opts) {
     feasibilityText,
     env: opts.env || process.env,
     fetchImpl: opts.fetchImpl,
+    config: opts.config,
   });
   if (!state.pipeline || typeof state.pipeline !== 'object') state.pipeline = {};
   state.pipeline.jev_track = hint;
