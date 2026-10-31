@@ -45,8 +45,8 @@ Implementation:
 
 - **182 skills** under `skills/` (commands, phases, subagents) via `scripts/generate-skills.cjs`
 - Governance in SKILL.md `metadata`: `tier`, `eval_status`, `eval_ref`, `version`, `provenance`
-- **Fail-closed gate:** `scripts/lib/skills/eval-gate.cjs` blocks autonomous use of `unevaluated`, `deprecated`, and **unknown** skills
-- **Golden eval:** `scripts/skill-eval.cjs` + `config/skill-golden-eval.json`; **182/182 evaluated** in `npm run verify`
+- **Fail-closed gate:** `scripts/lib/skills/eval-gate.cjs` blocks autonomous use of `unevaluated`, `lint_passed`, `deprecated`, and **unknown** skills
+- **Golden eval:** `scripts/skill-eval.cjs` + `config/skill-golden-eval.json`; all 183 skills pass their eval in `npm run verify`, but 137 of them are checked only by `oracle-catalog-lint` and are labelled `lint_passed` (manual-only), not `evaluated`
 - **Runtime discovery:** `scripts/skill-route.cjs` ranks evaluated skills and flags unevaluated ones; session-start uses `routeSkillsWithMemory` so project memory graph, **evaluated procedure `npm run` rituals**, and chunk mentions can boost skills the team actually uses
 
 ## Memory graph
@@ -143,8 +143,8 @@ npm run bench:suite                # includes dogfood-live before portfolio + ob
 
 | Metric | Value |
 |--------|-------|
-| Fixed overhead reduction | 77.3% (7700 → 1750 policy tokens) |
-| Skills evaluated | 182/182 |
+| Fixed overhead reduction | 77.3% (7700 → 1750 policy tokens; estimated, bytes/4) |
+| Skills evaluated | 46/183 `evaluated` (repo test oracles); 137 `lint_passed` (catalog lint only) |
 | Holdout delivered | 3/7 (`mined-*` pass tasks; `ritual-*` are negative controls) |
 | Bench portfolio multiplier | ~0.84% per-task (3 holdout L0 hits) |
 | **`bench_target_met`** | **true** |

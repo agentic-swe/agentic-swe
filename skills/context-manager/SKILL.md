@@ -3,7 +3,7 @@ name: context-manager
 description: "Use for managing shared state, information retrieval, and data synchronization when multiple agents need coordinated access to context and metadata."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

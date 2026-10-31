@@ -57,11 +57,17 @@ function scoreTaskPass(taskDir, workDir, dim, patterns) {
   return { score: 0, detail: `unknown task_pass method: ${dim.method}` };
 }
 
+function hasTransitions(state) {
+  return (state.history || []).some((h) => typeof h === 'object' && h && h.to);
+}
+
 function scoreCostEfficiency(workDir, dim) {
   const stateFile = path.join(workDir, 'state.json');
   if (!fs.existsSync(stateFile)) return { score: 0, detail: 'state.json missing' };
   const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-  const costUsed = state.budget?.cost_used ?? 0;
+  if (!hasTransitions(state)) return { score: 0, detail: 'no transitions recorded; no cost evidence' };
+  if (typeof state.budget?.cost_used !== 'number') return { score: 0, detail: 'budget.cost_used not recorded' };
+  const costUsed = state.budget.cost_used;
   const budget = dim.cost_budget_usd ?? state.budget?.cost_budget_usd ?? 3.0;
   if (costUsed <= budget) return { score: 1.0, detail: `$${costUsed.toFixed(4)} <= $${budget}` };
   const over = costUsed - budget;
@@ -73,10 +79,7 @@ function scoreCrossModel(workDir, dim, patterns) {
   const artifact = dim.artifact || 'design-panel-review.md';
   const exists = fs.existsSync(path.join(workDir, artifact));
   if (exists) return { score: 1.0, detail: `${artifact} present` };
-  const partial = dim.partial_credit ?? 0.5;
-  const track = patterns?.track_must_be;
-  if (track === 'lean') return { score: partial, detail: `lean track; ${artifact} optional` };
-  return { score: partial, detail: `${artifact} absent` };
+  return { score: 0, detail: `${artifact} absent; no cross-model evidence` };
 }
 
 function scoreGateRespect(workDir, dim, patterns) {
@@ -84,6 +87,7 @@ function scoreGateRespect(workDir, dim, patterns) {
   if (!fs.existsSync(stateFile)) return { score: 0, detail: 'state.json missing' };
   const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
   const history = state.history || [];
+  if (!hasTransitions(state)) return { score: 0, detail: 'no transitions recorded; no gate evidence' };
   let penalty = 0;
 
   for (let i = 1; i < history.length; i++) {
@@ -174,6 +178,7 @@ function scoreDimension(name, taskDir, workDir, dim, patterns) {
 
 module.exports = {
   VALID_TRACKS,
+  hasTransitions,
   runAcceptanceCommand,
   scoreDimension,
   checkPatterns,

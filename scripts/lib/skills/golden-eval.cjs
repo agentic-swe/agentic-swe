@@ -5,6 +5,14 @@ const path = require('node:path');
 const { runTaskAcceptance } = require('../bench/run-task.cjs');
 const { extractFrontmatter, parseSimpleFields } = require('../catalog/parse-frontmatter.cjs');
 
+/** Eval refs that only lint catalog structure; passing them does not exercise the skill. */
+const LINT_ONLY_EVAL_REFS = new Set(['bench/corpus/oracle-catalog-lint']);
+
+/** eval_status a skill earns by passing `evalRef`. */
+function promotedEvalStatus(evalRef) {
+  return LINT_ONLY_EVAL_REFS.has(evalRef) ? 'lint_passed' : 'evaluated';
+}
+
 /**
  * @param {string} block frontmatter block (without --- delimiters)
  * @returns {Record<string,string>}
@@ -169,7 +177,7 @@ function runAllGoldenEvals(opts) {
       const skillPath = path.join(pluginRoot, 'skills', skillName, 'SKILL.md');
       if (fs.existsSync(skillPath)) {
         patchSkillMetadata(skillPath, {
-          eval_status: 'evaluated',
+          eval_status: promotedEvalStatus(r.eval_ref),
           eval_ref: r.eval_ref,
         });
       }
@@ -181,6 +189,8 @@ function runAllGoldenEvals(opts) {
 }
 
 module.exports = {
+  LINT_ONLY_EVAL_REFS,
+  promotedEvalStatus,
   loadGoldenEvalMap,
   resolveSkillPath,
   resolveEvalTaskDir,

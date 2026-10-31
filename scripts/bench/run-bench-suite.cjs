@@ -77,6 +77,7 @@ function main() {
       target_met: sc.warm_portfolio_projection?.combined_per_task?.target_met ?? false,
       claim_status: sc.warm_portfolio_projection?.combined_per_task?.claim_status ?? 'unknown',
       portfolio_multiplier: sc.warm_portfolio_projection?.current_estimated_multiplier,
+      portfolio_multiplier_provenance: 'estimated',
     };
   }
 

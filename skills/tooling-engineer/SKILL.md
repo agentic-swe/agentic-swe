@@ -3,7 +3,7 @@ name: tooling-engineer
 description: "Use this agent when you need to build or enhance developer tools including CLIs, code generators, build tools, and IDE extensions."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

@@ -3,7 +3,7 @@ name: fullstack-developer
 description: "Use this agent when you need to build complete features spanning database, API, and frontend layers together as a cohesive unit."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

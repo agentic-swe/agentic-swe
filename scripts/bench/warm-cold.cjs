@@ -44,9 +44,11 @@ function main() {
       ? process.argv[outIdx + 1]
       : path.join(root, 'bench', 'results', `warm-cold-${date}.json`);
 
-  const phase1 = fs.existsSync(path.join(root, 'bench/results/phase1-2026-08-29.json'))
+  const { estimated, policyTokenBasis, POLICY_TOKEN_FALLBACK } = require('../lib/bench/provenance.cjs');
+  const phase1Found = fs.existsSync(path.join(root, 'bench/results/phase1-2026-08-29.json'));
+  const phase1 = phase1Found
     ? readJson(path.join(root, 'bench/results/phase1-2026-08-29.json'))
-    : { estimated_tokens_before: 7700, estimated_tokens_after: 1750 };
+    : POLICY_TOKEN_FALLBACK;
 
   const procTiers = tierHitRates(root);
   const telem = tierHitRatesFromTelemetry(root);
@@ -62,8 +64,8 @@ function main() {
     holdoutMeasured = readJson(holdoutPath).summary;
   }
 
-  const coldPolicy = phase1.estimated_tokens_before || 7700;
-  const warmPolicy = phase1.estimated_tokens_after || 1750;
+  const coldPolicy = phase1.estimated_tokens_before || POLICY_TOKEN_FALLBACK.estimated_tokens_before;
+  const warmPolicy = phase1.estimated_tokens_after || POLICY_TOKEN_FALLBACK.estimated_tokens_after;
   const perTaskExploration = 120000;
   const perTaskReasoning = 80000;
   const perTaskVerify = 5000;
@@ -118,6 +120,10 @@ function main() {
 
   const report = {
     generated_at: new Date().toISOString(),
+    ...estimated([
+      policyTokenBasis(phase1Found),
+      `per-task exploration/reasoning/verify tokens: constants ${perTaskExploration}/${perTaskReasoning}/${perTaskVerify}`,
+    ]),
     measurement_contract:
       'Modeled tokens per corpus-delivered unit; L0/L1 hit rates from procedure store + telemetry',
     cold: {

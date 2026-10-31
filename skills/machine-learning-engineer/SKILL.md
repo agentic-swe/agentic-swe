@@ -3,7 +3,7 @@ name: machine-learning-engineer
 description: "Use this agent when you need to deploy, optimize, or serve machine learning models at scale in production environments."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

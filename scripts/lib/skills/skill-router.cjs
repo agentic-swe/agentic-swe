@@ -211,7 +211,7 @@ function routeSkills(opts) {
       eval_ref: skill?.eval_ref,
       tier: skill?.tier,
       autonomous_allowed: autonomousAllowed,
-      flag: autonomousAllowed ? null : 'unevaluated — manual invocation only',
+      flag: autonomousAllowed ? null : `${skill?.eval_status === 'lint_passed' ? 'lint_passed' : 'unevaluated'} — manual invocation only`,
     };
   });
 

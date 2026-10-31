@@ -3,7 +3,7 @@ name: accessibility-tester
 description: "Use this agent when you need comprehensive accessibility testing, WCAG compliance verification, or assessment of assistive technology support."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

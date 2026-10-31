@@ -3,12 +3,28 @@
 
 /**
  * Generate bench/corpus/ tasks: oracle checks, synthesized version-sync drift, mined test stubs.
+ *
+ * Default: only missing task directories are created; committed tasks are left untouched.
+ * --regenerate: delete every corpus task directory and rebuild the generated set.
  */
 const fs = require('fs');
 const path = require('path');
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const CORPUS_ROOT = path.join(REPO_ROOT, 'bench/corpus');
+const REGENERATE = process.argv.includes('--regenerate');
+const created = [];
+const kept = [];
+
+/** True when the generator should write task `id`; records the decision. */
+function claim(id) {
+  if (!REGENERATE && fs.existsSync(path.join(CORPUS_ROOT, id))) {
+    kept.push(id);
+    return false;
+  }
+  created.push(id);
+  return true;
+}
 
 function writeJson(file, obj) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -24,13 +40,14 @@ function baseScoring(command, cwd = '.') {
       cwd,
       full_credit_exit_code: 0,
     },
-    cost_efficiency: { weight: 0.2, method: 'cost_vs_budget', cost_budget_usd: 0, default_score: 1.0 },
-    cross_model: { weight: 0.2, method: 'artifact_presence', artifact: 'n/a', default_score: 1.0 },
-    gate_respect: { weight: 0.2, method: 'transition_chain', default_score: 1.0 },
+    cost_efficiency: { weight: 0.2, method: 'cost_vs_budget', cost_budget_usd: 0 },
+    cross_model: { weight: 0.2, method: 'artifact_presence', artifact: 'n/a' },
+    gate_respect: { weight: 0.2, method: 'transition_chain' },
   };
 }
 
 function writeOracleTask(id, title, description, command, cwdRel = '../../..') {
+  if (!claim(id)) return;
   const dir = path.join(CORPUS_ROOT, id);
   writeJson(path.join(dir, 'corpus.json'), { kind: 'oracle', class: 'docs-sync' });
   writeJson(path.join(dir, 'task.json'), {
@@ -46,6 +63,7 @@ function writeOracleTask(id, title, description, command, cwdRel = '../../..') {
 }
 
 function writeVersionSyncTask(id, driftVersion) {
+  if (!claim(id)) return;
   const dir = path.join(CORPUS_ROOT, id);
   const repoDir = path.join(dir, 'repo');
   fs.mkdirSync(repoDir, { recursive: true });
@@ -114,6 +132,7 @@ exit 0
 }
 
 function writeMinedScriptTask(id, title, verifyCommand, testFileName, testContent) {
+  if (!claim(id)) return;
   const dir = path.join(CORPUS_ROOT, id);
   const repoDir = path.join(dir, 'repo');
   fs.mkdirSync(path.join(repoDir, 'test'), { recursive: true });
@@ -143,7 +162,7 @@ function writeMinedTestTask(id, title, testRelPath, testContent) {
 }
 
 function main() {
-  if (fs.existsSync(CORPUS_ROOT)) {
+  if (REGENERATE && fs.existsSync(CORPUS_ROOT)) {
     for (const name of fs.readdirSync(CORPUS_ROOT)) {
       const p = path.join(CORPUS_ROOT, name);
       if (fs.statSync(p).isDirectory()) fs.rmSync(p, { recursive: true, force: true });
@@ -212,15 +231,20 @@ assert.equal(1 + 1, 3);
 `;
   writeMinedTestTask('mined-trivial-fail', 'Trivial failing test (negative control)', 'fail.test.js', failTest);
 
-  writeJson(path.join(CORPUS_ROOT, 'README.md'), {
-    generated: true,
-    oracle_count: oracleTasks.length,
-    ritual_count: 3,
-    mined_count: 4,
-  });
+  if (REGENERATE || !fs.existsSync(path.join(CORPUS_ROOT, 'README.md'))) {
+    writeJson(path.join(CORPUS_ROOT, 'README.md'), {
+      generated: true,
+      oracle_count: oracleTasks.length,
+      ritual_count: 3,
+      mined_count: 4,
+    });
+  }
 
   const total = fs.readdirSync(CORPUS_ROOT).filter((n) => fs.statSync(path.join(CORPUS_ROOT, n)).isDirectory()).length;
-  console.log(`Generated ${total} corpus tasks under ${CORPUS_ROOT}`);
+  console.log(
+    `Corpus: ${total} task(s) under ${CORPUS_ROOT}; created ${created.length}, kept ${kept.length} existing` +
+      (REGENERATE ? ' (--regenerate)' : ' (pass --regenerate to rebuild)')
+  );
 }
 
 main();

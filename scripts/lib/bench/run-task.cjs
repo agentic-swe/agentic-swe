@@ -49,16 +49,14 @@ function scoreTaskDirect(taskDir) {
   const want = dim.full_credit_exit_code ?? 0;
   const taskPass = result.exitCode === want ? 1.0 : 0;
 
-  let total = taskPass * (scoring.task_pass?.weight ?? 0.4);
-  for (const name of ['cost_efficiency', 'cross_model', 'gate_respect']) {
-    if (scoring[name]) {
-      total += (scoring[name].default_score ?? 1.0) * (scoring[name].weight ?? 0);
-    }
-  }
+  // Without a worklog there is no evidence for the other dimensions; they score 0.
+  const total = taskPass * (scoring.task_pass?.weight ?? 0.4);
+  const unscored = ['cost_efficiency', 'cross_model', 'gate_respect'].filter((name) => scoring[name]);
 
   return {
     task_pass: taskPass,
     total,
+    unscored,
     acceptance_pass: taskPass >= 1.0,
     exitCode: result.exitCode,
     stdout: result.stdout,

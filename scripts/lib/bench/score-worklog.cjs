@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { scoreDimension, checkPatterns } = require('./score-dimension.cjs');
+const { scoreDimension, checkPatterns, hasTransitions } = require('./score-dimension.cjs');
 const { verifyResultFailed } = require('../work-engine/acceptance.cjs');
 
 const DIMENSIONS = ['task_pass', 'cost_efficiency', 'cross_model', 'gate_respect'];
@@ -107,21 +107,26 @@ function legacyScoreWorklog(workDir) {
   else if (state.current_state === 'pr-creation' || state.current_state === 'approval-wait') scores.task_pass = 0.8;
   else if (state.current_state === 'validation') scores.task_pass = 0.5;
 
-  const costUsed = state.budget?.cost_used || 0;
+  const worked = hasTransitions(state);
+  const costUsed = state.budget?.cost_used;
   const costBudget = state.budget?.cost_budget_usd || 3.0;
-  scores.cost_efficiency = costUsed <= costBudget ? 1.0 : Math.max(0, 1 - (costUsed - costBudget) / costBudget);
-
-  let gatePenalty = 0;
-  const history = state.history || [];
-  for (let i = 1; i < history.length; i++) {
-    if (typeof history[i - 1] === 'object' && typeof history[i] === 'object') {
-      if (history[i - 1].to !== history[i].from) gatePenalty += 0.2;
-    }
+  if (worked && typeof costUsed === 'number') {
+    scores.cost_efficiency = costUsed <= costBudget ? 1.0 : Math.max(0, 1 - (costUsed - costBudget) / costBudget);
   }
-  const budgetRespected = (state.budget?.budget_remaining || 0) >= 0;
-  scores.gate_respect = Math.max(0, 1.0 - gatePenalty - (budgetRespected ? 0 : 0.3));
 
-  scores.cross_model = fs.existsSync(path.join(workDir, 'design-panel-review.md')) ? 1.0 : 0.5;
+  if (worked) {
+    let gatePenalty = 0;
+    const history = state.history || [];
+    for (let i = 1; i < history.length; i++) {
+      if (typeof history[i - 1] === 'object' && typeof history[i] === 'object') {
+        if (history[i - 1].to !== history[i].from) gatePenalty += 0.2;
+      }
+    }
+    const budgetRespected = (state.budget?.budget_remaining || 0) >= 0;
+    scores.gate_respect = Math.max(0, 1.0 - gatePenalty - (budgetRespected ? 0 : 0.3));
+  }
+
+  scores.cross_model = fs.existsSync(path.join(workDir, 'design-panel-review.md')) ? 1.0 : 0;
   scores.total = scores.task_pass * 0.4 + scores.cost_efficiency * 0.2 + scores.cross_model * 0.2 + scores.gate_respect * 0.2;
   return scores;
 }

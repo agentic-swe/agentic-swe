@@ -3,7 +3,7 @@ name: salesforce-agentforce
 description: "Use when building AI agents on the Salesforce platform using Agentforce DX, defining agent topics and actions via Salesforce metadata, configuring Einstein Trust Layer, implementing prompt templates, creating Apex-backed agent actions, or deploying Agentforce 360 capabilities (Agent Script, Voice, Intelligent Context). Invoke for any Agentforce or Einstein agent development work."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

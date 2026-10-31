@@ -3,7 +3,7 @@ name: agent-installer
 description: "Use this agent when the user wants to discover, browse, or install Claude Code agents from the awesome-claude-code-subagents repository."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

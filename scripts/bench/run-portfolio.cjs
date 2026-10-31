@@ -98,15 +98,15 @@ async function main() {
       : path.join(pluginRoot, 'bench', 'results', `portfolio-${date}.json`);
 
   const phase1Path = path.join(pluginRoot, 'bench/results/phase1-2026-08-29.json');
-  const phase1 = fs.existsSync(phase1Path)
-    ? JSON.parse(fs.readFileSync(phase1Path, 'utf8'))
-    : { estimated_tokens_before: 7700, estimated_tokens_after: 1750 };
+  const { estimated, policyTokenBasis, POLICY_TOKEN_FALLBACK } = require('../lib/bench/provenance.cjs');
+  const phase1Found = fs.existsSync(phase1Path);
+  const phase1 = phase1Found ? JSON.parse(fs.readFileSync(phase1Path, 'utf8')) : POLICY_TOKEN_FALLBACK;
 
   const holdout = await measureCorpus(pluginRoot, storeRoot, isHoldout);
   const full = await measureCorpus(pluginRoot, storeRoot, null);
 
-  const coldPolicy = phase1.estimated_tokens_before || 7700;
-  const warmPolicy = phase1.estimated_tokens_after || 1750;
+  const coldPolicy = phase1.estimated_tokens_before || POLICY_TOKEN_FALLBACK.estimated_tokens_before;
+  const warmPolicy = phase1.estimated_tokens_after || POLICY_TOKEN_FALLBACK.estimated_tokens_after;
 
   const warmPortfolio =
     warmPolicy +
@@ -139,6 +139,10 @@ async function main() {
   const payload = {
     generated_at: new Date().toISOString(),
     ok: true,
+    ...estimated([
+      policyTokenBasis(phase1Found),
+      'tier tokens: config/descent.default.json tier_token_estimates',
+    ]),
     measurement_contract:
       'Live .agentic-swe/procedures.json + full L0-L3 ladder; tier token estimates from config/descent.default.json',
     store: path.join(storeRoot, '.agentic-swe/procedures.json'),

@@ -3,7 +3,7 @@ name: git-workflow-manager
 description: "Use this agent when you need to design, establish, or optimize Git workflows, branching strategies, and merge management for a project or team."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

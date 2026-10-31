@@ -166,12 +166,12 @@ function main() {
 
   const production = aggregateProductionTierTotals(tmpRoot, { includeFixtures: false });
   const phase1Path = path.join(pluginRoot, 'bench/results/phase1-2026-08-29.json');
-  const phase1 = fs.existsSync(phase1Path)
-    ? JSON.parse(fs.readFileSync(phase1Path, 'utf8'))
-    : { estimated_tokens_before: 7700, estimated_tokens_after: 1750 };
+  const { estimated, policyTokenBasis, POLICY_TOKEN_FALLBACK } = require('../lib/bench/provenance.cjs');
+  const phase1Found = fs.existsSync(phase1Path);
+  const phase1 = phase1Found ? JSON.parse(fs.readFileSync(phase1Path, 'utf8')) : POLICY_TOKEN_FALLBACK;
   const portfolio = productionPortfolioMultiplier(production, {
-    policyCold: phase1.estimated_tokens_before || 7700,
-    policyWarm: phase1.estimated_tokens_after || 1750,
+    policyCold: phase1.estimated_tokens_before || POLICY_TOKEN_FALLBACK.estimated_tokens_before,
+    policyWarm: phase1.estimated_tokens_after || POLICY_TOKEN_FALLBACK.estimated_tokens_after,
   });
 
   const verified =
@@ -188,6 +188,10 @@ function main() {
   const payload = {
     generated_at: new Date().toISOString(),
     ok: true,
+    ...estimated([
+      policyTokenBasis(phase1Found),
+      'portfolio multiplier: tier_totals priced with config/descent.default.json tier_token_estimates',
+    ]),
     measurement_contract:
       'Work-engine E2E: descent-try with holdout task file keys + plugin project-root (corpus cwd) then validation→pr-creation',
     runs,

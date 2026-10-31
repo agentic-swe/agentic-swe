@@ -56,7 +56,8 @@ Each dimension has `weight` (must sum to 1.0) and `method`:
 - **version-sync** — synthesized manifest drift (`ritual-version-sync-*`)
 - **mined** — fail-to-pass test stubs
 
-Regenerate corpus: `npm run bench:corpus`
+Add missing generated tasks: `npm run bench:corpus` (existing task directories are kept).
+Rebuild the generated set from scratch: `npm run bench:corpus:regenerate` (deletes every corpus task directory first, including hand-added ones such as `oracle-fleet-pipeline`).
 
 Validate: `npm run bench:validate` or `node scripts/bench/run.cjs validate --corpus`
 

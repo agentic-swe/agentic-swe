@@ -3,7 +3,7 @@ name: django-developer
 description: "Use when building Django 4+ web applications, REST APIs, or modernizing existing Django projects with async views and enterprise patterns."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

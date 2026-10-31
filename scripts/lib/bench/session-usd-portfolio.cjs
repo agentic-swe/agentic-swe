@@ -9,7 +9,7 @@ const {
   isOrganicPipelineWorkItem,
 } = require('./production-tier-totals.cjs');
 
-const POLICY_WARM = 1750;
+const POLICY_WARM = require('./provenance.cjs').POLICY_TOKEN_FALLBACK.estimated_tokens_after;
 const TARGET = 0.02;
 
 /**

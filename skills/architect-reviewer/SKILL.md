@@ -3,7 +3,7 @@ name: architect-reviewer
 description: "Use this agent when you need to evaluate system design decisions, architectural patterns, and technology choices at the macro level."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

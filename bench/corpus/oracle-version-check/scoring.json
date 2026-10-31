@@ -9,18 +9,15 @@
   "cost_efficiency": {
     "weight": 0.2,
     "method": "cost_vs_budget",
-    "cost_budget_usd": 0,
-    "default_score": 1
+    "cost_budget_usd": 0
   },
   "cross_model": {
     "weight": 0.2,
     "method": "artifact_presence",
-    "artifact": "n/a",
-    "default_score": 1
+    "artifact": "n/a"
   },
   "gate_respect": {
     "weight": 0.2,
-    "method": "transition_chain",
-    "default_score": 1
+    "method": "transition_chain"
   }
 }

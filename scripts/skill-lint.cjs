@@ -11,11 +11,12 @@ const {
   extractFrontmatter,
   parseSimpleFields,
 } = require('./lib/catalog/parse-frontmatter.cjs');
+const { LINT_ONLY_EVAL_REFS } = require('./lib/skills/golden-eval.cjs');
 
 const root = path.join(__dirname, '..');
 const skillsRoot = path.join(root, 'skills');
 const SKILL_NAME_RE = /^[a-z0-9-]{1,64}$/;
-const EVAL_STATUSES = new Set(['unevaluated', 'evaluated', 'deprecated']);
+const EVAL_STATUSES = new Set(['unevaluated', 'lint_passed', 'evaluated', 'deprecated']);
 
 function parseMetadata(block) {
   const meta = {};
@@ -81,10 +82,13 @@ function lint() {
     const meta = parseMetadata(ex.block);
     const evalStatus = meta.eval_status || 'unevaluated';
     if (!EVAL_STATUSES.has(evalStatus)) {
-      errors.push(`${rel}: eval_status must be unevaluated|evaluated|deprecated; got "${evalStatus}"`);
+      errors.push(`${rel}: eval_status must be unevaluated|lint_passed|evaluated|deprecated; got "${evalStatus}"`);
     }
-    if (evalStatus === 'evaluated' && !meta.eval_ref) {
-      errors.push(`${rel}: evaluated skills require metadata.eval_ref golden eval reference`);
+    if ((evalStatus === 'evaluated' || evalStatus === 'lint_passed') && !meta.eval_ref) {
+      errors.push(`${rel}: ${evalStatus} skills require metadata.eval_ref golden eval reference`);
+    }
+    if (evalStatus === 'evaluated' && LINT_ONLY_EVAL_REFS.has(meta.eval_ref)) {
+      errors.push(`${rel}: eval_ref ${meta.eval_ref} is lint-only; eval_status must be lint_passed, not evaluated`);
     }
     if (!meta.version) errors.push(`${rel}: metadata.version required`);
   }

@@ -102,6 +102,7 @@
     "bench": "node scripts/bench/run.cjs",
     "bench:validate": "node scripts/bench/run.cjs validate --all",
     "bench:corpus": "node scripts/bench/build-corpus.cjs && node scripts/bench/run.cjs validate --corpus",
+    "bench:corpus:regenerate": "node scripts/bench/build-corpus.cjs --regenerate && node scripts/bench/run.cjs validate --corpus",
     "bench:run": "node scripts/bench/run.cjs run --all && node scripts/bench/run.cjs run --corpus --out bench/results/baseline-$(date +%Y-%m-%d).json",
     "bench:compare": "node scripts/bench/compare.cjs",
     "bench:token-scorecard": "node scripts/bench/token-scorecard.cjs",
