@@ -3,7 +3,7 @@ name: m365-admin
 description: "Use when automating Microsoft 365 administrative tasks including Exchange Online mailbox provisioning, Teams collaboration management, SharePoint site configuration, license lifecycle management, and Graph API-driven identity automation."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

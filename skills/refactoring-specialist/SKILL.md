@@ -3,7 +3,7 @@ name: refactoring-specialist
 description: "Use when you need to transform poorly structured, complex, or duplicated code into clean, maintainable systems while preserving all existing behavior."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

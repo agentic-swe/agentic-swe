@@ -3,7 +3,7 @@ name: csharp-developer
 description: "Use this agent when building ASP.NET Core web APIs, cloud-native .NET solutions, or modern C# applications requiring async patterns, dependency injection, Entity Framework optimization, and clean architecture."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

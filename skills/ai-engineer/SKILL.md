@@ -3,7 +3,7 @@ name: ai-engineer
 description: "Use this agent when architecting, implementing, or optimizing end-to-end AI systems—from model selection and training pipelines to production deployment and monitoring."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

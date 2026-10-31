@@ -3,7 +3,7 @@ name: api-documenter
 description: "Use this agent when creating or improving API documentation, writing OpenAPI specifications, building interactive documentation portals, or generating code examples for APIs."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

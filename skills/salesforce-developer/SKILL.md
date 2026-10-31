@@ -3,7 +3,7 @@ name: salesforce-developer
 description: "Use when building, modifying, or deploying any Salesforce platform solution — Apex classes, Lightning Web Components, SOQL queries, Flows, Metadata API deployments, scratch org configuration, Salesforce CLI automation, or Agentforce DX agent metadata. Invoke for any core Salesforce org development task including triggers, batch jobs, integrations, packaging, and DevOps pipelines."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

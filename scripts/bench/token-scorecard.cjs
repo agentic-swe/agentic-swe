@@ -13,6 +13,7 @@ const { frontierTokenTotal } = require('../lib/bench/tier-totals.cjs');
 const { aggregateProductionTierTotals } = require('../lib/bench/production-tier-totals.cjs');
 const { tierHitRates } = require('../lib/descent/promotion.cjs');
 const { loadGoldenEvalMap, runAllGoldenEvals } = require('../lib/skills/golden-eval.cjs');
+const { estimated, policyTokenBasis, POLICY_TOKEN_FALLBACK } = require('../lib/bench/provenance.cjs');
 
 const root = path.join(__dirname, '..', '..');
 
@@ -33,6 +34,7 @@ function latestJson(dir, prefix) {
 function countEvaluatedSkills() {
   const skillsRoot = path.join(root, 'skills');
   let evaluated = 0;
+  let lintPassed = 0;
   let unevaluated = 0;
   for (const d of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
     if (!d.isDirectory()) continue;
@@ -40,9 +42,10 @@ function countEvaluatedSkills() {
     if (!fs.existsSync(skillPath)) continue;
     const raw = fs.readFileSync(skillPath, 'utf8');
     if (/eval_status:\s*"evaluated"/.test(raw)) evaluated++;
+    else if (/eval_status:\s*"lint_passed"/.test(raw)) lintPassed++;
     else unevaluated++;
   }
-  return { evaluated, unevaluated, total: evaluated + unevaluated };
+  return { evaluated, lint_passed: lintPassed, unevaluated, total: evaluated + lintPassed + unevaluated };
 }
 
 function main() {
@@ -78,8 +81,8 @@ function main() {
     descentMeasured.l0_hit_rate_delivered >= 0.99 &&
     descentMeasured.frontier_tokens_total === 0;
 
-  const fixedOverheadBefore = phase1?.estimated_tokens_before ?? 7700;
-  const fixedOverheadAfter = phase1?.estimated_tokens_after ?? 1750;
+  const fixedOverheadBefore = phase1?.estimated_tokens_before ?? POLICY_TOKEN_FALLBACK.estimated_tokens_before;
+  const fixedOverheadAfter = phase1?.estimated_tokens_after ?? POLICY_TOKEN_FALLBACK.estimated_tokens_after;
   const fixedReductionPct = 1 - fixedOverheadAfter / fixedOverheadBefore;
 
   const delivered = corpus?.summary?.delivered ?? corpus?.tasks?.filter((t) => t.delivered).length ?? 0;
@@ -88,6 +91,10 @@ function main() {
 
   const scorecard = {
     generated_at: new Date().toISOString(),
+    ...estimated([
+      policyTokenBasis(Boolean(phase1)),
+      'frontier (L3) tokens: config/descent.default.json tier_token_estimates',
+    ]),
     measurement_contract: {
       headline_metric: 'median frontier-tier (L3) tokens per delivered unit on corpus (cold vs warm)',
       fixed_overhead_metric: 'session-start policy tokens (CLAUDE.md core)',
@@ -95,6 +102,7 @@ function main() {
         '1-2% warm-portfolio target is ladder tokens vs L3 estimates. Organic session_usd_multiplier is billed verify-replay vs historical cost_used — not a new-feature session.',
     },
     fixed_overhead: {
+      provenance: 'estimated',
       tokens_before: fixedOverheadBefore,
       tokens_after: fixedOverheadAfter,
       reduction_ratio: Number(fixedReductionPct.toFixed(4)),
@@ -138,6 +146,7 @@ function main() {
             : corpusCircular
               ? 'corpus_oracle_only'
               : 'framework_ready',
+      multiplier_provenance: 'estimated',
       current_estimated_multiplier:
         portfolioMeasured?.combined?.portfolio_multiplier ??
         holdoutMeasured?.portfolio_multiplier ??
@@ -164,7 +173,9 @@ function main() {
     `  fixed overhead: ${fixedOverheadBefore} → ${fixedOverheadAfter} tokens (${(fixedReductionPct * 100).toFixed(1)}% reduction)`
   );
   console.log(`  corpus pass rate: ${(passRate * 100).toFixed(1)}% (${delivered}/${totalTasks})`);
-  console.log(`  evaluated skills: ${skillCounts.evaluated}/${skillCounts.total}`);
+  console.log(
+    `  evaluated skills: ${skillCounts.evaluated}/${skillCounts.total} (lint_passed only: ${skillCounts.lint_passed})`
+  );
 }
 
 main();

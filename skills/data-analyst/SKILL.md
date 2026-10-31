@@ -3,7 +3,7 @@ name: data-analyst
 description: "Use when you need to extract insights from business data, create dashboards and reports, or perform statistical analysis to support decision-making."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

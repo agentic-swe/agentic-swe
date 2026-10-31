@@ -17,10 +17,11 @@ const { tryDescentLadder, loadTierTokenEstimates } = require('../lib/descent/lad
 const { captureOrganicWorklogs } = require('../lib/descent/capture-organic-worklogs.cjs');
 const { historicalSessionAccounting, usdForWarmTokens } = require('../lib/descent/historical-session.cjs');
 const { resolveVerifyCommand } = require('../lib/descent/capture-procedure.cjs');
+const { estimated, policyTokenBasis, POLICY_TOKEN_FALLBACK } = require('../lib/bench/provenance.cjs');
 
 const TARGET = 0.02;
-const POLICY_COLD = 7700;
-const POLICY_WARM = 1750;
+const POLICY_COLD = POLICY_TOKEN_FALLBACK.estimated_tokens_before;
+const POLICY_WARM = POLICY_TOKEN_FALLBACK.estimated_tokens_after;
 
 async function main() {
   const pluginRoot = getDefaultPluginRoot();
@@ -114,6 +115,10 @@ async function main() {
   const payload = {
     generated_at: new Date().toISOString(),
     ok: true,
+    ...estimated([
+      policyTokenBasis(false),
+      'L3 tokens for tasks without history: config/descent.default.json tier_token_estimates',
+    ]),
     measurement_contract:
       'Organic /work: capture verify + READ_FILE of declared implementation paths; ladder vs in/out tokens AND billed session USD (cache weighted). Does not claim a new feature can skip L3.',
     capture,

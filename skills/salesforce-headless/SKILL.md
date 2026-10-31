@@ -3,7 +3,7 @@ name: salesforce-headless
 description: "Use when building headless or composable storefronts on Salesforce B2C Commerce Cloud, integrating Salesforce Commerce APIs (SCAPI), developing with PWA Kit or Composable Storefront, migrating from SFRA to headless, implementing Shopper APIs, or deploying to Managed Runtime (MRT). Invoke for any frontend-decoupled Salesforce commerce implementation."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

@@ -3,7 +3,7 @@ name: product-manager
 description: "Use this agent when you need to make product strategy decisions, prioritize features, or define roadmap plans based on user needs and business goals."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

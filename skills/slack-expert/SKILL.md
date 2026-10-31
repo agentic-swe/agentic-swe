@@ -3,7 +3,7 @@ name: slack-expert
 description: "Use this agent when developing Slack applications, implementing Slack API integrations, or reviewing Slack bot code for security and best practices."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

@@ -3,7 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const BLOCKED_STATUSES = new Set(['unevaluated', 'deprecated']);
+// lint_passed: only a catalog lint passed, so the skill is manual-only for autonomous use.
+const BLOCKED_STATUSES = new Set(['unevaluated', 'deprecated', 'lint_passed']);
 
 /**
  * Parse metadata map from SKILL.md frontmatter block.

@@ -3,7 +3,7 @@ name: incident-responder
 description: "Use this agent when an active security breach, service outage, or operational incident requires immediate response, evidence preservation, and coordinated recovery."
 metadata:
   tier: "L2"
-  eval_status: "evaluated"
+  eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
   provenance: "generate-skills"

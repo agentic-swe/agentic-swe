@@ -40,6 +40,7 @@ function main() {
 
   const skills = listSkills(root);
   const unevaluated = skills.filter((s) => s.eval_status !== 'evaluated');
+  const lintPassed = skills.filter((s) => s.eval_status === 'lint_passed');
   const unknownBlocked = checkSkillEvalGate({
     pluginRoot: root,
     skillName: '__no_such_skill__',
@@ -82,7 +83,9 @@ function main() {
     {
       id: 'versioned-evaluated-skills',
       requirement: 'Every SWE operation is a versioned, evaluated skill',
-      evidence: [`${skills.length} skills, ${unevaluated.length} unevaluated`],
+      evidence: [
+        `${skills.length} skills: ${skills.length - unevaluated.length} evaluated, ${lintPassed.length} lint_passed only, ${unevaluated.length - lintPassed.length} unevaluated`,
+      ],
       status: skills.length > 0 && unevaluated.length === 0 ? 'met' : unevaluated.length ? 'partial' : 'missing',
     },
     {
@@ -391,7 +394,7 @@ function main() {
   const payload = {
     generated_at: new Date().toISOString(),
     claim_status: claim,
-    skills: { total: skills.length, unevaluated: unevaluated.length },
+    skills: { total: skills.length, unevaluated: unevaluated.length - lintPassed.length, lint_passed: lintPassed.length },
     production_tier_totals: {
       live: production.sources?.live ?? 0,
       fixtures: production.sources?.fixtures ?? 0,
