@@ -8,6 +8,8 @@ const path = require('node:path');
 const { runTrackHint } = require('../scripts/jev-track-hint.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
+const { loadJevConfig } = require('../scripts/lib/jev/config.cjs');
+const enabled = { ...loadJevConfig(pluginRoot, null, {}), enabled: true };
 
 function workDir() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jev-track-'));
@@ -47,6 +49,7 @@ describe('jev track hint', () => {
     const dir = workDir();
     const code = await runTrackHint({
       pluginRoot,
+      config: enabled,
       projectRoot: dir,
       workDir: dir,
       env: { TYPESAFE_API_KEY: 'secret-key' },
@@ -74,6 +77,7 @@ describe('jev track hint', () => {
     const lowDir = workDir();
     await runTrackHint({
       pluginRoot,
+      config: enabled,
       projectRoot: lowDir,
       workDir: lowDir,
       env: { TYPESAFE_API_KEY: 'secret-key' },
@@ -94,6 +98,7 @@ describe('jev track hint', () => {
     const cautionDir = workDir();
     await runTrackHint({
       pluginRoot,
+      config: enabled,
       projectRoot: cautionDir,
       workDir: cautionDir,
       env: { TYPESAFE_API_KEY: 'secret-key' },
@@ -116,6 +121,7 @@ describe('jev track hint', () => {
     const before = fs.readFileSync(path.join(dir, 'state.json'), 'utf8');
     const code = await runTrackHint({
       pluginRoot,
+      config: enabled,
       projectRoot: dir,
       workDir: dir,
       env: {},
