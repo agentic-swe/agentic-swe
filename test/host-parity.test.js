@@ -19,3 +19,10 @@ test('every setup host has one parity status', () => {
   assert.equal(rows.find((row) => row.host === 'copilot').status, 'partial');
   assert.ok(rows.every((row) => row.reason));
 });
+
+test('host parity reports policy_hook for every host', () => {
+  const rows = reportHostParity();
+  const registered = rows.filter((row) => row.policy_hook).map((row) => row.host);
+  assert.deepEqual(registered, ['claude-code', 'cursor', 'codex']);
+  assert.ok(rows.every((row) => typeof row.policy_hook === 'boolean' && row.policy_hook_reason));
+});

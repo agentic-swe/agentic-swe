@@ -8,9 +8,10 @@ const path = require('node:path');
 const {
   evaluateToolCall,
   extractCommand,
+  extractTargetPaths,
   summarizeInput,
 } = require('../scripts/lib/policy/runtime.cjs');
-const { mergePolicies, resolvePolicy } = require('../scripts/lib/policy/merge.cjs');
+const { mergePolicies, resolvePolicy, resolvePolicyChecked } = require('../scripts/lib/policy/merge.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
 const policy = JSON.parse(
@@ -104,7 +105,8 @@ describe('policy merge for runtime keys', () => {
       );
       const p = resolvePolicy(repo, pluginRoot);
       assert.equal(p.version, '1.0');
-      assert.deepEqual(p.banned_commands, [{ pattern: 'x', reason: 'y' }]);
+      assert.deepEqual(p.banned_commands.at(-1), { pattern: 'x', reason: 'y' });
+      assert.ok(p.banned_commands.slice(0, -1).every((c) => c.id.startsWith('baseline-')));
     } finally {
       fs.rmSync(repo, { recursive: true, force: true });
     }
@@ -125,5 +127,53 @@ describe('policy merge for runtime keys', () => {
     });
     assert.equal(command.decision, 'allow');
     assert.match(command.warnings.join('\n'), /exceeds 512/);
+  });
+});
+
+describe('protected_paths and rule ids', () => {
+  const pol = {
+    banned_commands: [{ id: 'no-curl', pattern: '\\bcurl\\b', reason: 'no network' }],
+    protected_paths: [{ id: 'secrets', pattern: '**/secrets/**', reason: 'secret store' }],
+  };
+
+  it('reports the rule id instead of the index', () => {
+    assert.equal(evaluateToolCall({ policy: pol, ...bash('curl x') }).rule, 'banned_commands[no-curl]');
+  });
+
+  it('extracts edit targets from path keys, edits arrays and apply_patch headers', () => {
+    assert.deepEqual(extractTargetPaths('Write', { file_path: 'a' }), ['a']);
+    assert.deepEqual(extractTargetPaths('MultiEdit', { edits: [{ file_path: 'b' }], path: 'c' }), ['c', 'b']);
+    assert.deepEqual(
+      extractTargetPaths('apply_patch', { command: '*** Begin Patch\n*** Add File: x/y\n*** Update File: z\n*** Move to: w\n*** End Patch' }),
+      ['x/y', 'z', 'w']
+    );
+    assert.deepEqual(extractTargetPaths('Read', { file_path: 'a' }), []);
+    assert.deepEqual(extractTargetPaths('Bash', { command: 'echo' }), []);
+  });
+
+  it('denies edits to protected paths given as absolute, relative or Windows paths', () => {
+    for (const p of ['/r/secrets/k', 'secrets/k', './secrets/k', '../up/secrets/k', 'C:\\r\\secrets\\k']) {
+      const r = evaluateToolCall({ policy: pol, toolName: 'Edit', toolInput: { file_path: p } });
+      assert.equal(r.decision, 'deny', p);
+      assert.equal(r.rule, 'protected_paths[secrets]');
+    }
+    assert.equal(evaluateToolCall({ policy: pol, toolName: 'Edit', toolInput: { file_path: 'src/secrets.js' } }).decision, 'allow');
+    assert.equal(evaluateToolCall({ policy: pol, toolName: 'Read', toolInput: { file_path: 'secrets/k' } }).decision, 'allow');
+  });
+
+  it('resolvePolicyChecked reports unreadable and schema-invalid sources', () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'asi02-checked-'));
+    try {
+      fs.mkdirSync(path.join(repo, '.agentic-swe'));
+      assert.deepEqual(resolvePolicyChecked(repo, pluginRoot).errors, []);
+      fs.writeFileSync(path.join(repo, '.agentic-swe', 'policy.json'), '{');
+      assert.match(resolvePolicyChecked(repo, pluginRoot).errors.join(), /repo policy .* is unreadable/);
+      fs.writeFileSync(path.join(repo, '.agentic-swe', 'policy.json'), JSON.stringify({ protected_paths: [{ pattern: 'x' }] }));
+      const r = resolvePolicyChecked(repo, pluginRoot);
+      assert.match(r.errors.join(), /must have required property 'reason'/);
+      assert.ok(r.policy.banned_commands.length > 0, 'pack baseline still applies');
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
   });
 });

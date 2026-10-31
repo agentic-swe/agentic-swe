@@ -36,6 +36,9 @@ function mergePolicies(packDefault, repoPolicy, orgPolicy) {
     if (policy.banned_commands) {
       result.banned_commands = [...(result.banned_commands || []), ...policy.banned_commands];
     }
+    if (policy.protected_paths) {
+      result.protected_paths = [...(result.protected_paths || []), ...policy.protected_paths];
+    }
     if (policy.phase_tool_allowlist) {
       // Most restrictive wins: a state restricted at two levels allows only tools in both lists.
       const merged = { ...(result.phase_tool_allowlist || {}) };
@@ -78,6 +81,46 @@ function resolvePolicy(repoRoot, packRoot) {
   return mergePolicies(packDefault, repoPolicy, orgPolicy);
 }
 
+function readPolicySource(label, filePath, errors) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (e) {
+    errors.push(`${label} policy ${filePath} is unreadable: ${e.message}`);
+    return null;
+  }
+  const { validatePolicy } = require('./validate.cjs');
+  const v = validatePolicy(parsed);
+  if (!v.ok) {
+    errors.push(`${label} policy ${filePath} is invalid: ${v.errors.join('; ')}`);
+    return null;
+  }
+  return parsed;
+}
+
+/**
+ * Like resolvePolicy, but reports every unreadable or schema-invalid source instead of
+ * silently dropping it. The merged result is validated too.
+ * @returns {{ policy: object, errors: string[] }}
+ */
+function resolvePolicyChecked(repoRoot, packRoot) {
+  const errors = [];
+  const packConfig = packRoot ? path.join(packRoot, 'config') : path.join(__dirname, '..', '..', '..', 'config');
+  const packFile = path.join(packConfig, 'default-policy.json');
+  if (!fs.existsSync(packFile)) errors.push(`pack default policy ${packFile} is missing`);
+  const packDefault = readPolicySource('pack', packFile, errors) || {};
+  const repoPolicy = readPolicySource('repo', path.join(repoRoot, '.agentic-swe', 'policy.json'), errors);
+  const orgPath = process.env.AGENTIC_SWE_POLICY;
+  if (orgPath && !fs.existsSync(orgPath)) errors.push(`org policy ${orgPath} (AGENTIC_SWE_POLICY) does not exist`);
+  const orgPolicy = readPolicySource('org', orgPath, errors);
+  const policy = mergePolicies(packDefault, repoPolicy, orgPolicy);
+  const { validatePolicy } = require('./validate.cjs');
+  const merged = validatePolicy(policy);
+  if (!merged.ok) errors.push(`merged policy is invalid: ${merged.errors.join('; ')}`);
+  return { policy, errors };
+}
+
 /**
  * Check whether a file path triggers any track rule.
  * Returns the highest minimum_track or null.
@@ -103,4 +146,4 @@ function checkTrackRules(filePaths, policy) {
   return maxTrack;
 }
 
-module.exports = { loadPolicy, mergePolicies, resolvePolicy, checkTrackRules };
+module.exports = { loadPolicy, mergePolicies, resolvePolicy, resolvePolicyChecked, checkTrackRules };

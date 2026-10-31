@@ -151,17 +151,20 @@ Beyond the [Quickstart](#quickstart) above, alternate paths:
 
 **Other hosts**
 
-| Host | How |
-|------|-----|
-| **Cursor** | `agentic-swe setup --host cursor` |
-| **VS Code** | `agentic-swe setup --host vscode` |
-| **Codex** | `agentic-swe setup --host codex` |
-| **OpenCode** | `agentic-swe setup --host opencode` |
-| **Antigravity** | `agentic-swe setup --host antigravity` |
-| **Windsurf** | `agentic-swe setup --host windsurf` |
-| **Kiro** | `agentic-swe setup --host kiro` |
-| **GitHub Copilot** | `agentic-swe setup --host copilot` |
-| **Gemini CLI** | `gemini-extension.json` · **`GEMINI.md`** |
+| Host | How | Policy hook |
+|------|-----|-------------|
+| **Claude Code** | plugin (above) | yes — `PreToolUse` |
+| **Cursor** | `agentic-swe setup --host cursor` | yes — `preToolUse` |
+| **VS Code** | `agentic-swe setup --host vscode` | no |
+| **Codex** | `agentic-swe setup --host codex` | plugin only — `PreToolUse` after hook trust |
+| **OpenCode** | `agentic-swe setup --host opencode` | no |
+| **Antigravity** | `agentic-swe setup --host antigravity` | no |
+| **Windsurf** | `agentic-swe setup --host windsurf` | no |
+| **Kiro** | `agentic-swe setup --host kiro` | no |
+| **GitHub Copilot** | `agentic-swe setup --host copilot` | no |
+| **Gemini CLI** | `gemini-extension.json` · **`GEMINI.md`** | no |
+
+The policy hook enforces [Policy-as-Code](references/policy-as-code.md) on every tool call; `agentic-swe host-parity --json` reports `policy_hook` per host. Hosts without it rely on instructions only.
 
 Run setup from the root of the git repository you want to configure. It refuses any other directory, shows the target and the planned changes, and waits for confirmation. `--yes` skips the question. `--dry-run` only prints the plan. Run setup without `--host` to auto-detect installed hosts, or use `--host all`. Run `agentic-swe doctor` to verify an installation. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
 

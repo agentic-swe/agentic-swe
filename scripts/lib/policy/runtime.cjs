@@ -36,6 +36,38 @@ function extractCommand(toolName, toolInput) {
   return typeof c === 'string' ? c : null;
 }
 
+const EDIT_TOOL_RE = /write|edit|replace|patch|delete|create|move|rename|notebook/i;
+const PATH_KEYS = ['file_path', 'path', 'target_file', 'notebook_path', 'target_notebook', 'filePath', 'filename', 'destination', 'new_path', 'old_path'];
+const PATCH_FILE_RE = /^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$/gm;
+
+/** Paths an edit-capable tool call would modify, as given in its input. */
+function extractTargetPaths(toolName, toolInput) {
+  if (!toolInput || typeof toolInput !== 'object' || SHELL_TOOLS.has(toolName) || !EDIT_TOOL_RE.test(toolName)) return [];
+  const out = [];
+  const add = (v) => {
+    if (typeof v === 'string' && v.trim()) out.push(v.trim());
+  };
+  for (const k of PATH_KEYS) add(toolInput[k]);
+  if (Array.isArray(toolInput.paths)) toolInput.paths.forEach(add);
+  if (Array.isArray(toolInput.edits)) for (const e of toolInput.edits) if (e && typeof e === 'object') add(e.file_path || e.path);
+  for (const key of ['command', 'patch', 'input']) {
+    if (typeof toolInput[key] !== 'string') continue;
+    for (const m of toolInput[key].matchAll(PATCH_FILE_RE)) add(m[1]);
+  }
+  return out;
+}
+
+function normalizeTarget(p) {
+  return path.posix
+    .normalize(p.replace(/\\/g, '/'))
+    .replace(/^[A-Za-z]:\//, '')
+    .replace(/^(?:\/|\.\.\/|\.\/)+/, '');
+}
+
+function ruleLabel(field, i, entry) {
+  return typeof entry.id === 'string' && entry.id ? `${field}[${entry.id}]` : `${field}[${i}]`;
+}
+
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -72,7 +104,7 @@ function evaluateToolCall({ policy, toolName, toolInput, state }) {
     const hit = isCommand
       ? command != null && commandPrefixRe(entry.tool).test(command)
       : minimatch(toolName, entry.tool);
-    if (hit) return deny(`banned_tools[${i}]`, entry.reason || `banned: ${entry.tool}`);
+    if (hit) return deny(ruleLabel('banned_tools', i, entry), entry.reason || `banned: ${entry.tool}`);
   }
 
   if (command != null) {
@@ -90,7 +122,16 @@ function evaluateToolCall({ policy, toolName, toolInput, state }) {
         warnings.push(`banned_commands[${i}] skipped: invalid regex (${e.message})`);
         continue;
       }
-      if (re.test(command)) return deny(`banned_commands[${i}]`, entry.reason || `banned command: ${entry.pattern}`);
+      if (re.test(command)) return deny(ruleLabel('banned_commands', i, entry), entry.reason || `banned command: ${entry.pattern}`);
+    }
+  }
+
+  const targets = extractTargetPaths(toolName, toolInput).map(normalizeTarget);
+  if (targets.length > 0) {
+    for (const [i, entry] of (pol.protected_paths || []).entries()) {
+      if (!entry || !patternOk(entry.pattern)) continue;
+      const hit = targets.find((t) => minimatch(t, entry.pattern, { dot: true }));
+      if (hit) return deny(ruleLabel('protected_paths', i, entry), `${entry.reason || 'protected path'} (${hit})`);
     }
   }
 
@@ -134,6 +175,7 @@ function formatAuditLine({ at, toolName, decision, state, rule, input }) {
 module.exports = {
   SHELL_TOOLS,
   extractCommand,
+  extractTargetPaths,
   evaluateToolCall,
   summarizeInput,
   formatAuditLine,

@@ -87,17 +87,41 @@ When repo and org policies both list a state, only tools present in both lists a
 
 ## Runtime enforcement (PreToolUse hook)
 
-`hooks/hooks.json` registers `scripts/hook-pre-tool-policy.cjs` as a blocking `PreToolUse` hook for every tool. Per call it:
+`scripts/hook-pre-tool-policy.cjs` runs as a blocking pre-tool hook for every tool on Claude Code (`hooks/hooks.json`), Cursor (`hooks/hooks-cursor.json`, `--host cursor`) and the Codex plugin (`.codex-plugin/hooks/hooks.json`). `agentic-swe host-parity --json` reports `policy_hook` per host. Per call it:
 
-1. Resolves the project root from the hook's `cwd` (then `CLAUDE_PROJECT_DIR`, then the process cwd) and the work item from `AGENTIC_SWE_WORK_DIR` or `.worklogs/` discovery.
-2. Evaluates `banned_tools` → `banned_commands` → `phase_tool_allowlist` against the current state.
-3. Appends one line to the work item's `audit.log`:
+1. Resolves the project root from the hook's `cwd` (then Cursor `workspace_roots[0]`, `CURSOR_PROJECT_DIR`, `CLAUDE_PROJECT_DIR`, the process cwd) and the work item from `AGENTIC_SWE_WORK_DIR` or `.worklogs/` discovery.
+2. Loads the pack default, repo and org policies and validates each, and the merged result, against `schemas/agentic-swe-policy.schema.json`.
+3. Evaluates `banned_tools` → `banned_commands` → `protected_paths` → `phase_tool_allowlist` against the current state.
+4. Appends one line to the work item's `audit.log`:
    `<ISO> actor=agent action=tool_call tool=<name> decision=allow|deny state=<state> [rule=<rule>] input="<redacted, ≤160 chars>" | evidence: PreToolUse policy hook`
-4. Exits `2` with the reason on stderr to deny, `0` to allow.
+5. Exits `2` with the reason on stderr to deny, `0` to allow. With `--host cursor` it also prints `{"permission":"allow"|"deny",...}`.
 
-Repo and org policy are enforced even without an active work item; audit lines are written only when one exists. Hook errors (bad input, crashes) **fail open** with a stderr warning and an `action=tool_call_hook_error` audit line; set `AGENTIC_SWE_POLICY_FAIL_CLOSED=1` to deny instead.
+Repo and org policy are enforced even without an active work item; audit lines are written only when one exists.
 
-**Limits:** enforcement exists only on hosts that run Claude Code–style `PreToolUse` hooks; Cursor, Codex and other adapters do not register it yet. Shell matching is textual — a command assembled at runtime (for example via `eval` or a script file) is not seen.
+### Baseline policy
+
+`config/default-policy.json` always applies; repo and org policies can add rules but not remove these:
+
+| Rule | Denies |
+|------|--------|
+| `banned_commands[baseline-force-push-protected]` | `git push` with `--force`, `-f`, `--force-with-lease` or a `+refspec` naming `main`, `master` or `release/*` |
+| `banned_commands[baseline-npm-publish]` | `npm publish`, `pnpm publish`, `yarn publish`, `yarn npm publish` |
+| `banned_commands[baseline-rm-root]` | `rm` of `/` or `/*` |
+| `banned_commands[baseline-integrity-files-shell]` | shell writes (`>`, `tee`, `sed -i`, `mv`, `cp`, `rm`, inline `node -e` / `python -c`, ...) naming `journal.jsonl` or `approval-record.json` |
+| `protected_paths[baseline-journal]`, `protected_paths[baseline-approval-record]` | Write / Edit / `apply_patch` / Delete targets under `.worklogs/**/journal.jsonl` or `.worklogs/**/approval-record.json` |
+
+`protected_paths` entries are globs matched against every path an edit-capable tool would modify (tool names containing write, edit, replace, patch, delete, create, move, rename or notebook; `apply_patch` file headers are parsed).
+
+### Hook errors
+
+A hook error is bad stdin, a missing `tool_name`, an unreadable or schema-invalid policy file, a missing `AGENTIC_SWE_POLICY` file, or a crash. It is logged as `action=tool_call_hook_error ... mode=fail-closed|fail-open`, and:
+
+- **denies** the call when the active work item's `pipeline.track` is `rigorous` or missing, or its state is unreadable;
+- in `lean` / `standard`, or with no work item, **denies** only when `.agentic-swe/runtime.json` contains `{ "policy": { "fail_closed": true } }` (or the file is unreadable) or `AGENTIC_SWE_POLICY_FAIL_CLOSED=1`; otherwise it warns on stderr and allows.
+
+Neither setting can turn a fail-closed case into fail-open. Rules from valid policy sources still apply while another source is broken.
+
+**Limits:** VS Code, OpenCode, Antigravity, Windsurf, Kiro and Copilot adapters do not register the hook yet, and repository-only Codex setup installs lifecycle hooks only. Codex runs plugin hooks only after you trust them, and hosted tools such as Codex `WebSearch` bypass hooks. Shell matching is textual — a command assembled at runtime (for example via `eval` or a script file) is not seen.
 
 ### Budget Overrides
 
