@@ -167,13 +167,35 @@ function requiredArtifactGroups(from, _to, state) {
 }
 
 /**
+ * Policy `required_artifacts[state]` entries as OR-groups. An entry may list
+ * alternatives as `a.md|b.md`; each name stays inside the work dir.
+ * @param {string[]|undefined} entries
+ * @returns {{ ok: true, groups: string[][] } | { ok: false, message: string }}
+ */
+function policyArtifactGroups(entries) {
+  const groups = [];
+  for (const entry of entries || []) {
+    const names = String(entry).split('|').map((n) => n.trim()).filter(Boolean);
+    const bad = names.find((n) => path.isAbsolute(n) || n.replace(/\\/g, '/').split('/').includes('..'));
+    if (names.length === 0 || bad) {
+      return { ok: false, message: `policy required_artifacts entry ${JSON.stringify(entry)} must name files inside the work dir` };
+    }
+    groups.push(names);
+  }
+  return { ok: true, groups };
+}
+
+/**
  * @param {string} workDir
  * @param {string} from
  * @param {string} to
  * @param {object} state
+ * @param {string[]} [policyArtifacts] merged policy `required_artifacts[from]`
  */
-function assertArtifactsForTransition(workDir, from, to, state) {
-  const groups = requiredArtifactGroups(from, to, state);
+function assertArtifactsForTransition(workDir, from, to, state, policyArtifacts) {
+  const extra = policyArtifactGroups(policyArtifacts);
+  if (!extra.ok) return { ok: false, code: 'POLICY_INVALID', message: extra.message };
+  const groups = [...requiredArtifactGroups(from, to, state), ...extra.groups];
   const r = checkAlternatives(workDir, groups);
   if (!r.ok) {
     return {
@@ -189,6 +211,7 @@ function assertArtifactsForTransition(workDir, from, to, state) {
 module.exports = {
   requiredArtifactGroups,
   assertArtifactsForTransition,
+  policyArtifactGroups,
   checkAlternatives,
   fileNonEmpty,
 };

@@ -176,6 +176,7 @@ module.exports = {
   SHELL_TOOLS,
   extractCommand,
   extractTargetPaths,
+  normalizeTarget,
   evaluateToolCall,
   summarizeInput,
   formatAuditLine,

@@ -8,12 +8,12 @@
     "version": { "type": "string", "default": "1.0" },
     "track_rules": {
       "type": "array",
-      "description": "Rules that force a minimum track based on file paths or patterns.",
+      "description": "Minimum track by changed path, checked by the work engine when leaving lean-track-check and on any --set-pipeline-track. A lower track is rejected (TRACK_POLICY).",
       "items": {
         "type": "object",
         "required": ["pattern", "minimum_track"],
         "properties": {
-          "pattern": { "type": "string", "description": "Glob pattern matching file paths (e.g. 'src/auth/**')" },
+          "pattern": { "type": "string", "description": "Glob matched against repo-relative changed paths (e.g. 'src/auth/**'). A pattern without '/' matches the file name at any depth (e.g. '*.sql')." },
           "minimum_track": { "type": "string", "enum": ["lean", "standard", "rigorous"] },
           "reason": { "type": "string" }
         }
@@ -21,14 +21,14 @@
     },
     "mandatory_subagents": {
       "type": "array",
-      "description": "Subagents that must be spawned when certain patterns are touched.",
+      "description": "Subagents that must have a spawn record (work record-spawn --role) when a changed path matches. Checked when leaving `phase`, and for every rule before validation -> pr-creation (MANDATORY_SUBAGENT_MISSING).",
       "items": {
         "type": "object",
         "required": ["pattern", "subagent"],
         "properties": {
-          "pattern": { "type": "string" },
-          "subagent": { "type": "string", "description": "Subagent path under agents/subagents/" },
-          "phase": { "type": "string", "description": "Phase where the subagent must be spawned" }
+          "pattern": { "type": "string", "description": "Glob matched like track_rules.pattern." },
+          "subagent": { "type": "string", "description": "Subagent path under agents/subagents/. Matched to a spawn record role by file name without .md (e.g. 'quality-security/security-auditor.md' = role 'security-auditor')." },
+          "phase": { "type": "string", "description": "State whose exit requires a spawn recorded in that state. Omit to require it only before pr-creation." }
         }
       }
     },
@@ -83,7 +83,7 @@
     },
     "required_artifacts": {
       "type": "object",
-      "description": "Additional artifacts required by state (merged with pack defaults).",
+      "description": "Extra files required before leaving a state, added to the work engine's built-in artifact check. An entry may list alternatives as 'a.md|b.md'; names must stay inside the work dir.",
       "additionalProperties": {
         "type": "array",
         "items": { "type": "string" }
@@ -91,11 +91,11 @@
     },
     "budget_overrides": {
       "type": "object",
-      "description": "Override default budget thresholds.",
+      "description": "Replace every track's ceilings from config/budget-thresholds; applied when a work item is initialised and when a track is set leaving lean-track-check.",
       "properties": {
-        "max_cost_usd": { "type": "number" },
-        "max_iterations": { "type": "integer" },
-        "max_doubt_cycles": { "type": "integer" }
+        "max_cost_usd": { "type": "number", "description": "budget.cost_budget_usd for every track." },
+        "max_iterations": { "type": "integer", "description": "budget.iteration_budget for every track." },
+        "max_doubt_cycles": { "type": "integer", "description": "Not enforced: no doubt-cycle counter exists. Accepted for compatibility and ignored." }
       }
     }
   },

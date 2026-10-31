@@ -57,6 +57,8 @@ Write `.worklogs/<id>/lean-track-check.md` following `${CLAUDE_PLUGIN_ROOT}/temp
 
 When updating `state.json` for the transition out of `lean-track-check`, set `pipeline.track` to the matching value above.
 
+Pass the repo-relative paths the work will change with `--changed-paths a,b` on that transition. Policy `track_rules` reject a track below a matching minimum (`TRACK_POLICY`), and a `lean` or `standard` track with no known paths (`POLICY_PATHS_REQUIRED`). See `${CLAUDE_PLUGIN_ROOT}/references/policy-as-code.md`.
+
 Apply `${CLAUDE_PLUGIN_ROOT}/templates/evidence-standard.md` throughout.
 
 ## Common Rationalizations

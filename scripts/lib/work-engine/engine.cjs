@@ -12,6 +12,7 @@ const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
 const { assertSetPipelineTrack } = require('./track-guard.cjs');
+const { loadTransitionPolicy, assertPolicyForTransition, needsPaths, gitHead } = require('../policy/enforce.cjs');
 const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
 const { resolveEvidenceRef } = require('./paths.cjs');
 const { validateWorkItemSchemaAtRoot } = require('./validate-schema.cjs');
@@ -82,9 +83,10 @@ function assertEvidenceRefs(workDir, refs) {
  * @param {string[]} [params.evidence_refs]
  * @param {{ record: string }} [params.humanApproval] set only by `work approve`
  * @param {string} [params.setPipelineTrack]
+ * @param {string[]} [params.changedPaths] paths declared by this transition (policy path rules)
  */
 function validateTransition(params) {
-  const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval, setPipelineTrack } = params;
+  const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval, setPipelineTrack, changedPaths } = params;
   const projection = assertProjection(workDir, state);
   if (!projection.ok) return projection;
 
@@ -114,7 +116,13 @@ function validateTransition(params) {
   const capped = rejectionCapBlock(state, from, to, caps);
   if (capped && !humanClose) return capped;
 
-  const art = assertArtifactsForTransition(workDir, from, to, state);
+  const pol = loadTransitionPolicy(workDir, pluginRoot);
+  if (pol.errors.length) {
+    return { ok: false, code: 'POLICY_INVALID', message: pol.errors.join('; ') };
+  }
+
+  const policyArtifacts = pol.policy.required_artifacts && pol.policy.required_artifacts[from];
+  const art = assertArtifactsForTransition(workDir, from, to, state, policyArtifacts);
   if (!art.ok) {
     return { ok: false, code: art.code, message: art.message, missing: art.missing };
   }
@@ -126,6 +134,17 @@ function validateTransition(params) {
 
   const trackGuard = assertSetPipelineTrack({ from, state, setPipelineTrack });
   if (!trackGuard.ok) return trackGuard;
+
+  const policyRules = assertPolicyForTransition({
+    policy: pol.policy,
+    projectRoot: pol.projectRoot,
+    state,
+    from,
+    to,
+    setPipelineTrack,
+    changedPaths,
+  });
+  if (!policyRules.ok) return policyRules;
 
   const ev = assertEvidenceRefs(workDir, evidence_refs);
   if (!ev.ok) return ev;
@@ -145,6 +164,7 @@ function validateTransition(params) {
  * @param {boolean} [opts.decrementIterationBudget=true]
  * @param {boolean} [opts.dryRun]
  * @param {string} [opts.setPipelineTrack] when leaving lean-track-check, set pipeline.track before applying profile
+ * @param {string[]} [opts.changedPaths] appended to pipeline.changed_paths for policy path rules
  * @param {boolean} [opts.skipMuscleMemory] skip post-transition hooks (descent + procedure capture)
  * @param {string[]} [opts.postTransitionHooks] override DEFAULT_POST_TRANSITION_HOOKS
  */
@@ -166,6 +186,7 @@ function applyTransition(opts) {
     evidence_refs: opts.evidence_refs,
     humanApproval: opts.humanApproval,
     setPipelineTrack: opts.setPipelineTrack,
+    changedPaths: opts.changedPaths,
   });
   if (!v.ok) return v;
 
@@ -185,6 +206,11 @@ function applyTransition(opts) {
   }
 
   const leavingLeanCheck = from === 'lean-track-check' && Boolean(opts.setPipelineTrack || state.pipeline?.track);
+  let baseSha;
+  if (from === 'lean-track-check' && !state.pipeline?.base_sha) {
+    const pol = loadTransitionPolicy(opts.workDir, pluginRoot);
+    if (needsPaths(pol.policy)) baseSha = gitHead(pol.projectRoot) || undefined;
+  }
   const { next } = decideTransition({
     state,
     from,
@@ -195,6 +221,8 @@ function applyTransition(opts) {
     evidence_refs: opts.evidence_refs,
     assigned_subagent: opts.assigned_subagent,
     setPipelineTrack: opts.setPipelineTrack,
+    changedPaths: opts.changedPaths,
+    baseSha,
     acceptanceCommand,
     testsPassed: Boolean(acceptanceVerify && acceptanceVerify.ok && acceptanceVerify.verify),
     budgetThresholds: leavingLeanCheck
