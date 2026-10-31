@@ -82,7 +82,7 @@ function promoteOrDemote(opts) {
     rec.human_approved = false;
     rec.promoted_at = new Date().toISOString();
     rec.failures = 0;
-  } else if (opts.evalPassed && !rec.human_approved) {
+  } else if (opts.evalPassed && !rec.human_approved && !rec.auto_confirmed) {
     rec.tier = 'L1';
   }
 
