@@ -11,6 +11,11 @@ const { redactSecrets } = require('../memory/session-capture.cjs');
 
 const SHELL_TOOLS = new Set(['Bash', 'Shell', 'run_shell_command', 'shell', 'local_shell']);
 const SUMMARY_MAX = 160;
+const PATTERN_MAX = 512;
+
+function patternOk(pattern) {
+  return typeof pattern === 'string' && pattern.length > 0 && pattern.length <= PATTERN_MAX;
+}
 
 let cachedStates = null;
 function knownStates() {
@@ -59,6 +64,10 @@ function evaluateToolCall({ policy, toolName, toolInput, state }) {
     if (!entry || typeof entry.tool !== 'string' || !entry.tool.trim()) continue;
     const scope = entry.context && knownStates().has(entry.context) ? [entry.context] : null;
     if (!appliesInState(scope, state)) continue;
+    if (!patternOk(entry.tool)) {
+      warnings.push(`banned_tools[${i}] skipped: pattern exceeds ${PATTERN_MAX} characters`);
+      continue;
+    }
     const isCommand = /\s/.test(entry.tool.trim());
     const hit = isCommand
       ? command != null && commandPrefixRe(entry.tool).test(command)
@@ -69,6 +78,10 @@ function evaluateToolCall({ policy, toolName, toolInput, state }) {
   if (command != null) {
     for (const [i, entry] of (pol.banned_commands || []).entries()) {
       if (!entry || typeof entry.pattern !== 'string') continue;
+      if (!patternOk(entry.pattern)) {
+        warnings.push(`banned_commands[${i}] skipped: pattern exceeds ${PATTERN_MAX} characters`);
+        continue;
+      }
       if (!appliesInState(entry.states, state)) continue;
       let re;
       try {
@@ -82,7 +95,7 @@ function evaluateToolCall({ policy, toolName, toolInput, state }) {
   }
 
   const allow = state != null && pol.phase_tool_allowlist ? pol.phase_tool_allowlist[state] : null;
-  if (Array.isArray(allow) && !allow.some((g) => minimatch(toolName, g))) {
+  if (Array.isArray(allow) && !allow.some((g) => patternOk(g) && minimatch(toolName, g))) {
     return deny(
       `phase_tool_allowlist.${state}`,
       `${toolName} is not allowed during ${state} (allowed: ${allow.join(', ') || 'none'})`

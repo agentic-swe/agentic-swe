@@ -90,7 +90,7 @@ function checkTrackRules(filePaths, policy) {
   for (const rule of (policy.track_rules || [])) {
     const { minimatch } = require('minimatch');
     for (const fp of filePaths) {
-      if (minimatch(fp, rule.pattern)) {
+      if (typeof rule.pattern === 'string' && rule.pattern.length > 0 && rule.pattern.length <= 512 && minimatch(fp, rule.pattern)) {
         const order = trackOrder[rule.minimum_track] || 0;
         if (order > maxOrder) {
           maxOrder = order;

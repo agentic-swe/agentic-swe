@@ -150,7 +150,12 @@
   },
   "dependencies": {
     "ajv": "^8.18.0",
-    "minimatch": "^9.0.5",
+    "minimatch": "^9.0.9",
     "sql.js": "^1.11.0"
+  },
+  "overrides": {
+    "minimatch": "^9.0.9",
+    "brace-expansion": "^2.1.7",
+    "fast-uri": "^3.1.9"
   }
 }

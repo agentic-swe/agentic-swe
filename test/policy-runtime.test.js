@@ -109,4 +109,21 @@ describe('policy merge for runtime keys', () => {
       fs.rmSync(repo, { recursive: true, force: true });
     }
   });
+
+  it('does not evaluate glob or regex patterns longer than 512 characters', () => {
+    const long = 'a'.repeat(513);
+    const banned = evaluateToolCall({
+      policy: { banned_tools: [{ tool: long, reason: 'too long' }] },
+      toolName: 'Bash',
+      toolInput: {},
+    });
+    assert.equal(banned.decision, 'allow');
+    assert.match(banned.warnings.join('\n'), /exceeds 512/);
+    const command = evaluateToolCall({
+      policy: { banned_commands: [{ pattern: long }] },
+      ...bash('npm test'),
+    });
+    assert.equal(command.decision, 'allow');
+    assert.match(command.warnings.join('\n'), /exceeds 512/);
+  });
 });
