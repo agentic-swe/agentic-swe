@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildFingerprint } = require('./fingerprint.cjs');
 const { promoteOrDemote, DEFAULT_STORE } = require('./promotion.cjs');
+const { writeJsonAtomic } = require('./atomic-json.cjs');
 const { procedureFromScoring } = require('./corpus-seed.cjs');
 const { runTaskAcceptance } = require('../bench/run-task.cjs');
 
@@ -20,9 +21,7 @@ function loadStore(projectRoot) {
 }
 
 function saveStore(projectRoot, data) {
-  const p = path.join(projectRoot, DEFAULT_STORE);
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n');
+  writeJsonAtomic(path.join(projectRoot, DEFAULT_STORE), data, { trailingNewline: true });
 }
 
 /**
