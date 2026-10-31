@@ -158,13 +158,15 @@ Commands:
   approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--json]
       Human-only: refuses agent sessions and non-TTY stdin, shows risk flags, asks you to type the work id.
       Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
+  waive-track --work-dir <dir> --reason "…" [--json]
+      Human-only. Records pipeline.track_waiver { actor: "user:…", reason, at } so a later transition may set a lower track.
   transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
       validation → pr-creation runs pipeline.acceptance_command (or --acceptance-command) and refuses a non-zero exit.
   record-cost --transcript-path <abs.jsonl> [--work-dir <.worklogs/id>] [--project-root <abs>] [--cwd <project>] [--dry-run] [--json]
       (omit --work-dir to use AGENTIC_SWE_WORK_DIR or discover under project root: --project-root, AGENTIC_SWE_PROJECT_ROOT, --cwd, then pwd)
   init … [--budget-profile lean|standard|rigorous]  (sets iteration/cost ceilings + budget.policy from config; optional early pipeline.track)
   apply-budget-profile --work-dir <dir> --track lean|standard|rigorous [--json]
-  transition … [--set-pipeline-track lean|standard|rigorous]  (when leaving lean-track-check; merges track budgets from config)
+  transition … [--set-pipeline-track lean|standard|rigorous]  (when leaving lean-track-check; merges track budgets from config. Elsewhere only a lower track is accepted, and only with a track_waiver from waive-track)
   doctor [--project-root <abs>] [--plugin-root <pack>] [--json]
   skill-check --skill <name> [--allow-manual] [--json]
   descent-try [--verify "cmd"] [--work-dir <dir>] [--files a,b] [--json]
@@ -547,6 +549,27 @@ Commands:
     return;
   }
 
+  if (cmd === 'waive-track') {
+    const { detectAgentContext, resolveUserIdentity } = require('./lib/approval/human-approval.cjs');
+    const { recordTrackWaiver } = require('./lib/work-engine/track-guard.cjs');
+    const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
+    if (refusal) fail(`refusing track waiver: ${refusal}`, 3, { code: 'AGENT_CONTEXT' });
+    const wdArg = args.workDir || process.env.AGENTIC_SWE_WORK_DIR;
+    if (!wdArg) fail('waive-track requires --work-dir (or AGENTIC_SWE_WORK_DIR)', 2);
+    const identity = resolveUserIdentity({ cwd: path.resolve(args.cwd || process.cwd()) });
+    if (!identity) fail('cannot resolve your identity (set git user.email)', 1, { code: 'NO_IDENTITY' });
+    const r = recordTrackWaiver({
+      workDir: path.resolve(wdArg),
+      pluginRoot,
+      reason: args.reason,
+      identity,
+    });
+    if (!r.ok) fail(r.message, 1, r);
+    if (args.json) printJson(r);
+    else console.log('OK', r.track_waiver.actor, r.track_waiver.reason);
+    return;
+  }
+
   if (!args.workDir) fail('missing --work-dir', 2);
   const workDir = path.resolve(args.workDir);
 
@@ -749,6 +772,7 @@ Commands:
       state: loaded.state,
       from,
       to,
+      setPipelineTrack: args.setPipelineTrack,
       evidence_refs: args.evidence
         ? args.evidence.split(',').map((s) => s.trim()).filter(Boolean)
         : [],

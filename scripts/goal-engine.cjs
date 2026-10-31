@@ -7,6 +7,7 @@
  *   node scripts/goal-engine.cjs init --id <id> --objective "…" [--work-root <dir>] [--plugin-root <pack>] [--json]
  *   node scripts/goal-engine.cjs validate --goal-dir .worklogs/goals/<id> [--json]
  *   node scripts/goal-engine.cjs transition --goal-dir <dir> --to <state> --actor <id> [--from <state>] [--reason str] [--evidence a,b] [--dry-run] [--json]
+ *   node scripts/goal-engine.cjs approve --goal-dir <dir> --decision approved|changes_requested [--note str] [--json]
  */
 'use strict';
 
@@ -18,7 +19,10 @@ const {
   loadGoalEdges,
   applyGoalTransition,
   validateGoalShape,
+  assertGoalBudget,
+  commitGoal,
 } = require('./lib/work-engine/goal.cjs');
+const { assertProjection } = require('./lib/work-engine/journal.cjs');
 
 function parseArgs(argv) {
   const out = { flags: {} };
@@ -37,6 +41,8 @@ function parseArgs(argv) {
     else if (a === '--actor') out.actor = argv[++i];
     else if (a === '--reason') out.reason = argv[++i];
     else if (a === '--evidence') out.evidence = argv[++i];
+    else if (a === '--decision') out.decision = argv[++i];
+    else if (a === '--note') out.note = argv[++i];
     else if (!a.startsWith('-')) rest.push(a);
   }
   out.command = rest[0];
@@ -66,6 +72,9 @@ Commands:
   init --id <id> --objective "…" [--work-root <dir>] [--plugin-root <pack>] [--json]
   validate --goal-dir .worklogs/goals/<id> [--plugin-root <pack>] [--json]
   transition --goal-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence a,b] [--dry-run] [--json]
+  approve --goal-dir <dir> --decision approved|changes_requested [--note "…"] [--json]
+      Human-only. goal-approval → goal-met|goal-execute is rejected without the record this writes.
+      A transition is also rejected when loop_turns_used, child_items_used, or cost_used has reached its cap.
 
 Canonical edges: goal-state-machine.json. State template: templates/goal.json.
 `);
@@ -89,7 +98,7 @@ Canonical edges: goal-state-machine.json. State template: templates/goal.json.
     const goal = JSON.parse(raw);
     goal.created_at = nowIso;
     goal.updated_at = nowIso;
-    fs.writeFileSync(path.join(goalDir, 'goal.json'), `${JSON.stringify(goal, null, 2)}\n`);
+    commitGoal(goalDir, goal, { type: 'init', at: nowIso });
     if (fs.existsSync(auditTpl)) fs.copyFileSync(auditTpl, path.join(goalDir, 'audit.log'));
     const out = { ok: true, goalDir, id: args.id };
     if (args.json) printJson(out);
@@ -119,10 +128,49 @@ Canonical edges: goal-state-machine.json. State template: templates/goal.json.
       fail(`current_state "${cur}" is not a known goal state`, 1);
     }
     const shape = validateGoalShape(loaded.goal);
-    const out = { ok: shape.ok, verdict: shape.ok ? 'VALID' : 'INVALID', current_state: cur, errors: shape.errors };
+    const projection = assertProjection(goalDir, loaded.goal, { stateFile: 'goal.json' });
+    const budget = assertGoalBudget(loaded.goal);
+    const errors = shape.errors.slice();
+    if (!projection.ok) errors.push(projection.message);
+    if (!budget.ok) errors.push(budget.message);
+    const ok = errors.length === 0;
+    const out = { ok, verdict: ok ? 'VALID' : 'INVALID', current_state: cur, errors, code: projection.ok ? (budget.ok ? undefined : budget.code) : projection.code };
     if (args.json) printJson(out);
-    else console.log(out.verdict, cur, shape.errors.join('; ') || '');
-    process.exit(shape.ok ? 0 : 1);
+    else console.log(out.verdict, cur, errors.join('; ') || '');
+    process.exit(ok ? 0 : 1);
+  }
+
+  if (cmd === 'approve') {
+    const { detectAgentContext, resolveUserIdentity } = require('./lib/approval/human-approval.cjs');
+    const { recordGoalApproval } = require('./lib/work-engine/goal-approval.cjs');
+    const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
+    if (refusal) fail(`refusing approval: ${refusal}`, 3, { code: 'AGENT_CONTEXT' });
+    if (!args.decision) fail('approve requires --decision approved|changes_requested', 2);
+    const loaded = loadGoal(goalDir);
+    if (!loaded.ok) fail(loaded.message, 1, loaded);
+    const identity = resolveUserIdentity({ cwd: process.cwd() });
+    if (!identity) fail('cannot resolve your identity (set git user.email)', 1, { code: 'NO_IDENTITY' });
+    const readline = require('node:readline/promises');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
+    rl.question(`Type the goal id to record "${args.decision}": `)
+      .then((typed) => {
+        rl.close();
+        if (typed.trim() !== loaded.goal.goal_id) {
+          fail('confirmation did not match the goal id; nothing recorded', 1, { code: 'NOT_CONFIRMED' });
+        }
+        const r = recordGoalApproval({
+          goalDir,
+          pluginRoot,
+          decision: args.decision,
+          note: args.note,
+          identity,
+        });
+        if (!r.ok) fail(r.message, 1, r);
+        if (args.json) printJson(r);
+        else console.log('OK', r.decision, '→', r.current_state, 'by', identity.actor);
+      })
+      .catch((e) => fail(String(e && e.message ? e.message : e), 1));
+    return;
   }
 
   if (cmd === 'transition') {
