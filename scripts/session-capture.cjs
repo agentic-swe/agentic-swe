@@ -244,7 +244,7 @@ async function main() {
   if (path.resolve(projectRoot) !== path.resolve(pluginRoot)) {
     try {
       const { writeFleetStatusSnapshot } = require('./lib/fleet/fleet-status-snapshot.cjs');
-      const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+      const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
       const doctor = checkMuscleMemoryReadiness({ projectRoot, pluginRoot });
       writeFleetStatusSnapshot({
         projectRoot,

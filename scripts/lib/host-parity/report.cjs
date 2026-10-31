@@ -1,6 +1,6 @@
 'use strict';
 
-const { SUPPORTED_HOSTS } = require('../../setup.cjs');
+const { SUPPORTED_HOSTS } = require('../install-state/hosts.cjs');
 const COVERAGE = require('../../../config/host-adapters.json');
 
 function statusFor(coverage) {

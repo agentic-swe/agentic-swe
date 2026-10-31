@@ -19,7 +19,7 @@ const { emptyTierTotals } = require('../lib/bench/tier-totals.cjs');
 const { captureOrganicWorklogs } = require('../lib/descent/capture-organic-worklogs.cjs');
 const { runFleetOnboard } = require('../fleet-onboard.cjs');
 const { buildSubmissionReadiness } = require('../lib/fleet/submission-readiness.cjs');
-const { checkMuscleMemoryReadiness } = require('../lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('../lib/doctor/muscle-memory-doctor.cjs');
 
 const TARGET = 0.02;
 

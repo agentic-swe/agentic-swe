@@ -71,7 +71,7 @@ Chosen: **A**.
 |---|---|---|
 | **Warm-path receipt** | `scripts/render-receipt.cjs` + fixtures exist | Completed `/work` items always yield a shareable receipt (phases, costs, gates, evidence paths). CI fixture asserts required fields. |
 | **Descent default** | Engine already runs `implementation-descent` / `descent-try` | Keep L0/L1 first on implementation entry; escalate only on miss. Warm portfolio median tokens remain below cold baseline on existing bench scorecards. |
-| **Muscle-memory doctor** | `scripts/lib/work-engine/muscle-memory-doctor.cjs` + unit test exist; not surfaced in `doctor` CLI | `agentic-swe doctor` reports ready / needs-warm for procedures, index, and prime. |
+| **Muscle-memory doctor** | `scripts/lib/doctor/muscle-memory-doctor.cjs` + unit test exist; not surfaced in `doctor` CLI | `agentic-swe doctor` reports ready / needs-warm for procedures, index, and prime. |
 | **Honest competitive claims** | Comparison canvas exists; README does not claim Ruflo parity wrongly | Short docs note: win on pipeline + receipt + replay; do not claim “more agents than Ruflo.” |
 
 **Phase 1 exit criteria**

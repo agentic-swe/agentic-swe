@@ -11,7 +11,7 @@ const { discoverActiveWorkDir } = require('./lib/work-engine/discover-workdir.cj
 const { routeSkillsWithMemory } = require('./lib/skills/skill-router.cjs');
 const { resolvePrimeQuery } = require('./lib/memory/resolve-prime-query.cjs');
 const { suggestSkillEvalFromProcedures } = require('./lib/skills/skill-eval-suggestions.cjs');
-const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 const { appendFleetConsumerHints } = require('./lib/fleet/session-fleet-hints.cjs');
 const { adviseSkillNouls, appendJevSkillLines } = require('./lib/jev/rerank.cjs');
 
