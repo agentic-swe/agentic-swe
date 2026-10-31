@@ -31,6 +31,8 @@ function formatMarkdown(data) {
   lines.push(`| Work ID | ${data.workId} |`);
   lines.push(`| Track | ${data.track} |`);
   lines.push(`| Status | ${data.status} |`);
+  if (data.integrity) lines.push(`| Integrity | ${data.integrity} |`);
+  if (data.historyGap) lines.push(`| History gap | ${data.historyGap} |`);
   if (data.durationSeconds != null) lines.push(`| Duration | ${formatDurationHuman(data.durationSeconds)} |`);
   lines.push(`| Cost | ${formatCost(data.costUsd)} |`);
   if (data.prUrl) lines.push(`| PR | ${data.prUrl} |`);

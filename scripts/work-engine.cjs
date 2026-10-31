@@ -63,6 +63,7 @@ function parseArgs(argv) {
     else if (a === '--note') out.note = argv[++i];
     else if (a === '--base') out.base = argv[++i];
     else if (a === '--write') out.write = true;
+    else if (a === '--journal') out.journal = true;
     else if (!a.startsWith('-')) rest.push(a);
   }
   out.command = rest[0];
@@ -143,6 +144,11 @@ Commands:
   status [--project-root <abs>] [--work-dir <.worklogs/id>]
       One-block status: work id, track, state, last verify exit.
   validate --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
+  verify-journal --work-dir <.worklogs/id> [--json]
+  recover --work-dir <.worklogs/id> [--json]
+      Rebuild state.json from the journal when the state file is corrupt.
+  migrate --journal --work-dir <.worklogs/id> [--json]
+      Genesis history.imported event for a work item that predates the journal.
   record-spawn --work-dir <.worklogs/id> --role <id> [--actor <id>] [--json]
       Only writer of counters.panel_runs (role "panel" or "panel:…") and counters.subagent_spawns.
   budget   --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
@@ -168,10 +174,42 @@ Commands:
       Zero-LLM replay of context-pack.json (declared files + primary verify only).
   descent-capture --work-dir <dir> [--project-root <abs>] [--auto-l0] [--json]
       Capture verify procedure from approved validation-results.md into descent store.
+  migrate --journal --work-dir <.worklogs/id> [--json]
+      Genesis history.imported event for a work item that predates the journal.
   migrate [--apply] …
       Delegates to scripts/migrate-work-state.js (same flags as that script).
 `);
     process.exit(0);
+  }
+
+  if (cmd === 'migrate' && args.journal) {
+    if (!args.workDir) fail('migrate --journal requires --work-dir', 2);
+    const journalWorkDir = path.resolve(args.workDir);
+    const { commitState, readJournal } = require('./lib/work-engine/journal.cjs');
+    const { withWriteLockSync } = require('./lib/work-engine/state-lock.cjs');
+    const existing = readJournal(journalWorkDir);
+    if (!existing.ok) fail(`FAILED at seq ${existing.seq}`, 1);
+    if (existing.events.length) {
+      const out = { ok: true, migrated: false, events: existing.events.length };
+      if (args.json) printJson(out);
+      else console.log('journal present', existing.events.length);
+      return;
+    }
+    const loaded = loadWorkItem(journalWorkDir, pluginRoot);
+    if (!loaded.ok) {
+      if (args.json) printJson(loaded);
+      else fail(loaded.message, 1, loaded);
+      process.exit(1);
+    }
+    let snapshot;
+    withWriteLockSync(journalWorkDir, () => {
+      snapshot = commitState(journalWorkDir, loaded.state, { type: 'history.imported', integrity: 'unverified-import' });
+      fs.writeFileSync(path.join(journalWorkDir, 'state.json'), JSON.stringify(snapshot, null, 2) + '\n');
+    });
+    const out = { ok: true, migrated: true, integrity: 'unverified-import' };
+    if (args.json) printJson(out);
+    else console.log('migrated', snapshot.journal.seq);
+    return;
   }
 
   if (cmd === 'migrate') {
@@ -343,7 +381,9 @@ Commands:
       state.pipeline.track = 'lean';
       applyTrackBudgetProfile(state, 'lean', mergedInit, { updateMoney: true });
     }
-    fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(state, null, 2) + '\n');
+    const { commitState } = require('./lib/work-engine/journal.cjs');
+    const snapshot = commitState(workDir, state, { type: 'init', at: nowIso });
+    fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(snapshot, null, 2) + '\n');
     fs.copyFileSync(progressTpl, path.join(workDir, 'progress.md'));
     fs.copyFileSync(auditTpl, path.join(workDir, 'audit.log'));
     const out = { ok: true, workDir, id: args.id };
@@ -520,6 +560,35 @@ Commands:
     const out = { ok: true, verdict: 'VALID', current_state: r.state.current_state };
     if (args.json) printJson(out);
     else console.log('VALID', r.state.current_state);
+    return;
+  }
+
+  if (cmd === 'verify-journal') {
+    const { verifyWorkJournal } = require('./lib/work-engine/journal.cjs');
+    const v = verifyWorkJournal(workDir);
+    if (!v.ok) {
+      const payload = { ok: false, code: 'INTEGRITY_FAILED', message: `FAILED at seq ${v.seq}`, seq: v.seq };
+      if (args.json) printJson(payload);
+      else console.error(payload.message);
+      process.exit(1);
+    }
+    const out = { ok: true, integrity: v.missing ? 'unanchored' : 'verified', events: v.events.length };
+    if (args.json) printJson(out);
+    else console.log(out.integrity, out.events);
+    return;
+  }
+
+  if (cmd === 'recover') {
+    const { recoverState } = require('./lib/work-engine/journal.cjs');
+    const r = recoverState(workDir);
+    if (!r.ok) {
+      if (args.json) printJson(r);
+      else console.error(r.message);
+      process.exit(1);
+    }
+    const out = { ok: true, current_state: r.state.current_state };
+    if (args.json) printJson(out);
+    else console.log('recovered', r.state.current_state);
     return;
   }
 

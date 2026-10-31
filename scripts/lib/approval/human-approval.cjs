@@ -159,6 +159,7 @@ function recordApproval({ workDir, pluginRoot, decision, note, identity, risk })
   if (!r.ok) return r;
 
   const { withWriteLockSync } = require('../work-engine/state-lock.cjs');
+  const { commitState } = require('../work-engine/journal.cjs');
   const statePath = path.join(workDir, 'state.json');
   withWriteLockSync(workDir, () => {
     const next = JSON.parse(fs.readFileSync(statePath, 'utf8'));
@@ -172,7 +173,8 @@ function recordApproval({ workDir, pluginRoot, decision, note, identity, risk })
       next.counters.approval_iter = iter + 1;
     }
     next.approvals.last_decision = { decision, actor: identity.actor, at, record: RECORD_FILE };
-    fs.writeFileSync(statePath, JSON.stringify(next, null, 2) + '\n');
+    const snapshot = commitState(workDir, next, { type: 'approve', at, expectCurrent: next.current_state });
+    fs.writeFileSync(statePath, JSON.stringify(snapshot, null, 2) + '\n');
   });
 
   appendAudit(

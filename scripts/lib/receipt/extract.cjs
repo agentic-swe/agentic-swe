@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { integrityReport } = require('../work-engine/journal.cjs');
 
 function extractReceipt(workDir) {
   const statePath = path.join(workDir, 'state.json');
@@ -48,7 +49,10 @@ function extractReceipt(workDir) {
   const toolCallCount = toolCalls.length;
   const toolCallDenied = toolCalls.filter((l) => / decision=deny /.test(l)).length;
 
+  const integrity = integrityReport(workDir, state);
   return {
+    integrity: integrity.integrity,
+    historyGap: integrity.historyGap,
     workId: state.work_id || path.basename(workDir),
     task: state.task || '',
     track: state.pipeline && state.pipeline.track ? state.pipeline.track : 'unknown',

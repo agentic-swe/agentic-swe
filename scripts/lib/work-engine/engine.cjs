@@ -5,6 +5,7 @@ const path = require('node:path');
 const { checkBudgets } = require('./budget.cjs');
 const { loadMergedBudgetThresholds, getCounterCaps, projectRootFromWorkDir } = require('./budget-config.cjs');
 const { counterMismatches, decideSpawn, rejectionCapBlock } = require('./counters.cjs');
+const { assertProjection, commitState } = require('./journal.cjs');
 const { decideTransition } = require('./decide.cjs');
 const { runPostTransitionHooks } = require('./post-transition.cjs');
 const { assertTransition } = require('./transitions.cjs');
@@ -82,6 +83,8 @@ function assertEvidenceRefs(workDir, refs) {
  */
 function validateTransition(params) {
   const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval } = params;
+  const projection = assertProjection(workDir, state);
+  if (!projection.ok) return projection;
 
   // A recorded human approval may close the item even when the agent's budget is spent;
   // changes_requested still needs budget because it starts more agent work.
@@ -202,12 +205,13 @@ function applyTransition(opts) {
   const { withWriteLockSync } = require('./state-lock.cjs');
   try {
     withWriteLockSync(opts.workDir, () => {
-      fs.writeFileSync(tmp, JSON.stringify(next, null, 2) + '\n', 'utf8');
+      const snapshot = commitState(opts.workDir, next, { type: 'transition', expectCurrent: from });
+      fs.writeFileSync(tmp, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
       fs.renameSync(tmp, statePath);
     });
   } catch (e) {
-    if (e && e.code === 'LOCK_TIMEOUT') {
-      return { ok: false, code: 'LOCK_TIMEOUT', message: String(e.message) };
+    if (e && (e.code === 'LOCK_TIMEOUT' || e.code === 'INTEGRITY_FAILED')) {
+      return { ok: false, code: e.code, message: String(e.message) };
     }
     try {
       fs.unlinkSync(tmp);
@@ -251,6 +255,8 @@ function applyTransition(opts) {
 function validateWorkDir(workDir, pluginRoot = getDefaultPluginRoot()) {
   const loaded = loadWorkItem(workDir, pluginRoot);
   if (!loaded.ok) return loaded;
+  const projection = assertProjection(workDir, loaded.state);
+  if (!projection.ok) return projection;
   const b = checkBudgets(loaded.state, { pluginRoot, workDir });
   if (!b.ok) {
     return { ok: false, code: 'BUDGET_STOP', message: b.errors.join('; '), budget: b, state: loaded.state };
@@ -284,11 +290,16 @@ function recordSpawn(opts) {
   const { withWriteLockSync } = require('./state-lock.cjs');
   try {
     withWriteLockSync(opts.workDir, () => {
-      fs.writeFileSync(tmp, JSON.stringify(next, null, 2) + '\n', 'utf8');
+      const snapshot = commitState(opts.workDir, next, {
+        type: 'spawn',
+        expectCurrent: loaded.state.current_state,
+      });
+      fs.writeFileSync(tmp, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
       fs.renameSync(tmp, loaded.statePath);
     });
   } catch (e) {
     try { fs.unlinkSync(tmp); } catch { /* ignore */ }
+    if (e && e.code === 'INTEGRITY_FAILED') return { ok: false, code: e.code, message: String(e.message) };
     return { ok: false, code: 'WRITE_ERROR', message: String(e.message) };
   }
   return { ok: true, state: JSON.parse(fs.readFileSync(loaded.statePath, 'utf8')) };

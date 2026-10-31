@@ -84,19 +84,23 @@ describe('code_iter cap', () => {
     fs.mkdirSync(workDir, { recursive: true });
     fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(workItem('rigorous', 'code-review'), null, 2));
     fs.writeFileSync(path.join(workDir, 'review-pass.md'), '# pass\n');
+    fs.writeFileSync(path.join(workDir, 'implementation.md'), '# impl\n');
+    fs.writeFileSync(path.join(workDir, 'self-review.md'), '# review\n');
 
     for (let i = 0; i < 5; i++) {
-      const r = applyTransition({
+      const rejected = applyTransition({
         workDir,
         pluginRoot,
         to: 'implementation',
         actor: 'test',
         skipMuscleMemory: true,
       });
-      assert.strictEqual(r.ok, true, r.message || JSON.stringify(r));
-      const raw = JSON.parse(fs.readFileSync(path.join(workDir, 'state.json'), 'utf8'));
-      raw.current_state = 'code-review';
-      fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(raw, null, 2));
+      assert.strictEqual(rejected.ok, true, rejected.message || JSON.stringify(rejected));
+      if (i === 4) break;
+      const back = applyTransition({ workDir, pluginRoot, to: 'self-review', actor: 'test', skipMuscleMemory: true });
+      assert.strictEqual(back.ok, true, back.message || JSON.stringify(back));
+      const again = applyTransition({ workDir, pluginRoot, to: 'code-review', actor: 'test', skipMuscleMemory: true });
+      assert.strictEqual(again.ok, true, again.message || JSON.stringify(again));
     }
 
     const loaded = loadWorkItem(workDir, pluginRoot);
