@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { annotateTrust, promoteTrust } = require('../memory/trust.cjs');
+const { writeJsonAtomic } = require('./atomic-json.cjs');
 
 const DEFAULT_STORE = '.agentic-swe/procedures.json';
 
@@ -17,9 +18,7 @@ function loadStore(projectRoot) {
 }
 
 function saveStore(projectRoot, data) {
-  const p = path.join(projectRoot, DEFAULT_STORE);
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, JSON.stringify(data, null, 2));
+  writeJsonAtomic(path.join(projectRoot, DEFAULT_STORE), data);
 }
 
 /**
