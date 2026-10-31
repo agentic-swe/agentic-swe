@@ -39,7 +39,8 @@ Read the active `.worklogs/<id>/state.json` and check:
    - `counters.lean_iter` must be ≤ configured cap (default 2)
    - `counters.design_iter` must be ≤ 3 or ≤ high-risk cap if `risk.score` meets **`design_iter_high_risk_min_score`** (defaults 3 / 4 / score ≥ 4)
    - `counters.code_iter`, `merge_iter`, `approval_iter`, `self_review_iter`, `test_adequacy_iter` — each ≤ its cap in config
-   - `counters.panel_runs` and `counters.subagent_spawns` — enforced when using the programmatic engine with a valid work dir (defaults 8 and 60)
+   - `work transition` increments the counter for a rejection edge: `self-review → implementation` (`self_review_iter`); `code-review → implementation` and `validation → implementation` (`code_iter`, or `lean_iter` when `pipeline.track` is `lean`); `design-review → design` and `verification → design` (`design_iter`). `plan-transition` returns `BUDGET_STOP` when that edge would pass the cap. `approval_iter` is incremented only by `work approve` when changes are requested.
+   - `counters.panel_runs` and `counters.subagent_spawns` change only through `work record-spawn --role <id>` (`panel` or `panel:…` counts as a panel run; anything else counts as a subagent spawn). In in-host mode nothing records a spawn automatically, so the cap applies only to spawns the session records. Defaults are 8 and 60.
 
 **Output:** iteration budget `<remaining>/<total>`, cost budget `$<used>/$<total>`, loop counters with effective ceilings, verdict: `PROCEED` or `STOP`.
 
