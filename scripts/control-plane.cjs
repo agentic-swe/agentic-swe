@@ -6,7 +6,7 @@ const path = require('node:path');
 const { scanSurfaces } = require('./lib/agent-surface/scan.cjs');
 const { listInstalled, repair, updateInstalled, uninstall } = require('./lib/install-state/lifecycle.cjs');
 const { sha256File } = require('./lib/install-state/hash.cjs');
-const { PORTABLE_ENTRIES } = require('./setup.cjs');
+const { PORTABLE_ENTRIES } = require('./lib/install-state/hosts.cjs');
 
 const packRoot = path.resolve(__dirname, '..');
 

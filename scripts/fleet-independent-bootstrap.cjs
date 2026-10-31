@@ -14,7 +14,7 @@ const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { mergeClaudePolicy } = require('./merge-claude-policy.js');
 const { runFleetOnboard } = require('./fleet-onboard.cjs');
 const { buildSubmissionReadiness } = require('./lib/fleet/submission-readiness.cjs');
-const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 const { isKnownMaintainerDogfoodConsumer } = require('./lib/fleet/dogfood-consumers.cjs');
 const { writeFleetStatusSnapshot } = require('./lib/fleet/fleet-status-snapshot.cjs');
 

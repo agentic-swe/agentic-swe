@@ -3,11 +3,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { detectHosts, PORTABLE_ENTRIES } = require('./setup.cjs');
+const { detectHosts, PORTABLE_ENTRIES } = require('./lib/install-state/hosts.cjs');
 const { reportHostParity } = require('./lib/host-parity/report.cjs');
 const { readManifest, classifyDestination } = require('./lib/install-state/manifest.cjs');
 const { sha256File } = require('./lib/install-state/hash.cjs');
-const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 const { verifyCriticalPackFiles } = require('./lib/doctor/verify-pack.cjs');
 const { summarizeRedactionHits } = require('./lib/hooks/redaction-summary.cjs');
 

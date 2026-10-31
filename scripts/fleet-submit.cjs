@@ -15,7 +15,7 @@ const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { collectFleetEvidence } = require('./fleet-evidence-bundle.cjs');
 const { normalizeFleetEvidenceClass } = require('./lib/fleet/seed-organic-work.cjs');
 const { writeFleetStatusSnapshot } = require('./lib/fleet/fleet-status-snapshot.cjs');
-const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 
 function parseArgs(argv) {
   const out = { json: false };

@@ -3,11 +3,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { checkBudgets } = require('./budget.cjs');
-const {
-  loadMergedBudgetThresholds,
-  applyTrackBudgetProfile,
-  projectRootFromWorkDir,
-} = require('./budget-config.cjs');
+const { loadMergedBudgetThresholds, projectRootFromWorkDir } = require('./budget-config.cjs');
+const { decideTransition } = require('./decide.cjs');
+const { runPostTransitionHooks } = require('./post-transition.cjs');
 const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
@@ -131,6 +129,8 @@ function validateTransition(params) {
  * @param {boolean} [opts.decrementIterationBudget=true]
  * @param {boolean} [opts.dryRun]
  * @param {string} [opts.setPipelineTrack] when leaving lean-track-check, set pipeline.track before applying profile
+ * @param {boolean} [opts.skipMuscleMemory] skip post-transition hooks (descent + procedure capture)
+ * @param {string[]} [opts.postTransitionHooks] override DEFAULT_POST_TRANSITION_HOOKS
  */
 function applyTransition(opts) {
   const pluginRoot = opts.pluginRoot || getDefaultPluginRoot();
@@ -167,46 +167,24 @@ function applyTransition(opts) {
     if (!acceptanceVerify.ok) return acceptanceVerify;
   }
 
-  const next = structuredClone(state);
-  next.current_state = to;
-  next.updated_at = new Date().toISOString();
-
-  if (opts.setPipelineTrack || acceptanceCommand) {
-    next.pipeline = next.pipeline || {};
-  }
-  if (opts.setPipelineTrack) {
-    next.pipeline.track = opts.setPipelineTrack;
-  }
-  if (acceptanceCommand) {
-    next.pipeline.acceptance_command = acceptanceCommand;
-  }
-  if (acceptanceVerify && acceptanceVerify.ok && acceptanceVerify.verify) {
-    next.metrics = next.metrics || {};
-    next.metrics.tests_passed = true;
-  }
-
-  if (from === 'lean-track-check' && next.pipeline && next.pipeline.track) {
-    const projectRoot = projectRootFromWorkDir(opts.workDir);
-    const merged = loadMergedBudgetThresholds(pluginRoot, projectRoot);
-    applyTrackBudgetProfile(next, next.pipeline.track, merged, { updateMoney: true });
-  }
-
-  if (opts.decrementIterationBudget !== false && typeof next.budget?.budget_remaining === 'number') {
-    next.budget.budget_remaining = Math.max(0, next.budget.budget_remaining - 1);
-  }
-
-  const entry = {
-    at: next.updated_at,
-    actor: opts.actor || 'unknown',
+  const leavingLeanCheck = from === 'lean-track-check' && Boolean(opts.setPipelineTrack || state.pipeline?.track);
+  const { next } = decideTransition({
+    state,
     from,
     to,
-  };
-  if (opts.reason) entry.reason = opts.reason;
-  if (opts.evidence_refs && opts.evidence_refs.length) entry.evidence_refs = opts.evidence_refs;
-  if (opts.assigned_subagent) entry.assigned_subagent = opts.assigned_subagent;
-
-  if (!Array.isArray(next.history)) next.history = [];
-  next.history.push(entry);
+    now: new Date().toISOString(),
+    actor: opts.actor,
+    reason: opts.reason,
+    evidence_refs: opts.evidence_refs,
+    assigned_subagent: opts.assigned_subagent,
+    setPipelineTrack: opts.setPipelineTrack,
+    acceptanceCommand,
+    testsPassed: Boolean(acceptanceVerify && acceptanceVerify.ok && acceptanceVerify.verify),
+    budgetThresholds: leavingLeanCheck
+      ? loadMergedBudgetThresholds(pluginRoot, projectRootFromWorkDir(opts.workDir))
+      : undefined,
+    decrementIterationBudget: opts.decrementIterationBudget,
+  });
 
   if (opts.dryRun) {
     return { ok: true, dryRun: true, nextState: next };
@@ -231,64 +209,13 @@ function applyTransition(opts) {
     return { ok: false, code: 'WRITE_ERROR', message: String(e.message) };
   }
 
-  if (
-    !opts.skipMuscleMemory &&
-    !opts.dryRun &&
-    (to === 'implementation' || to === 'lean-track-implementation')
-  ) {
-    try {
-      const { spawnSync } = require('node:child_process');
-      spawnSync(
-        process.execPath,
-        [
-          path.join(pluginRoot, 'scripts', 'implementation-descent.cjs'),
-          '--work-dir',
-          opts.workDir,
-          '--plugin-root',
-          pluginRoot,
-          '--json',
-        ],
-        { encoding: 'utf8', timeout: 180000 }
-      );
-    } catch {
-      /* best-effort pre-implementation descent */
-    }
-  }
-
-  if (
-    !opts.skipMuscleMemory &&
-    !opts.dryRun &&
-    from === 'validation' &&
-    (to === 'pr-creation' || to === 'completed')
-  ) {
-    try {
-      const { spawnSync } = require('node:child_process');
-      spawnSync(
-        process.execPath,
-        [
-          path.join(pluginRoot, 'scripts', 'validation-descent.cjs'),
-          '--work-dir',
-          opts.workDir,
-          '--plugin-root',
-          pluginRoot,
-          '--json',
-        ],
-        { encoding: 'utf8', timeout: 180000 }
-      );
-    } catch {
-      /* best-effort descent tier recording */
-    }
-    try {
-      const { captureProcedureFromWork } = require('../descent/capture-procedure.cjs');
-      const proj = projectRootFromWorkDir(opts.workDir) || pluginRoot;
-      captureProcedureFromWork({
-        workDir: opts.workDir,
-        projectRoot: proj,
-        storeRoot: opts.procedureStoreRoot || proj || pluginRoot,
-      });
-    } catch {
-      /* best-effort muscle memory capture */
-    }
+  let postTransition = null;
+  if (!opts.skipMuscleMemory) {
+    postTransition = runPostTransitionHooks({
+      pluginRoot,
+      hooks: opts.postTransitionHooks,
+      ctx: { workDir: opts.workDir, pluginRoot, from, to, procedureStoreRoot: opts.procedureStoreRoot },
+    });
   }
 
   const finalState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
@@ -303,7 +230,9 @@ function applyTransition(opts) {
       'tier_totals missing after validation transition — run validation-descent or descent-try before fleet submission';
   }
 
-  return { ok: true, state: finalState, muscle_memory_warning: muscleMemoryWarning };
+  const result = { ok: true, state: finalState, muscle_memory_warning: muscleMemoryWarning };
+  if (postTransition && postTransition.errors.length) result.post_transition_errors = postTransition.errors;
+  return result;
 }
 
 /**

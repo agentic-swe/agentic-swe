@@ -16,7 +16,7 @@ const {
 } = require('./lib/bench/production-tier-totals.cjs');
 const { aggregateOrganicSessionUsd } = require('./lib/bench/session-usd-portfolio.cjs');
 const { summarizeProcedures } = require('./lib/skills/procedure-ritual-skills.cjs');
-const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 const { buildSubmissionReadiness } = require('./lib/fleet/submission-readiness.cjs');
 const { listArchivedSubmissions, summarizeFleetSubmissions } = require('./ingest-fleet-submission.cjs');
 const { summarizeFleetArchiveEntries } = require('./lib/fleet/archive-summaries.cjs');

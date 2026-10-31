@@ -2,9 +2,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { PORTABLE_ENTRIES } = require('./hosts.cjs');
 
 function portableEntries() {
-  return require('../../setup.cjs').PORTABLE_ENTRIES;
+  return PORTABLE_ENTRIES;
 }
 
 const MINIMAL_ENTRIES = [

@@ -5,7 +5,7 @@
  * Usage:
  *   node scripts/work-engine.cjs --work-dir .worklogs/<id> validate [--json]
  *   node scripts/work-engine.cjs --work-dir .worklogs/<id> budget [--json]
- *   node scripts/work-engine.cjs --work-dir .worklogs/<id> transition --to <state> --actor <id> [--from <state>] [--reason str] [--evidence rel/a,rel/b] [--dry-run] [--no-decrement-budget] [--json]
+ *   node scripts/work-engine.cjs --work-dir .worklogs/<id> transition --to <state> --actor <id> [--from <state>] [--reason str] [--evidence rel/a,rel/b] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
  *   node scripts/work-engine.cjs init --id <id> --task "description" [--work-root <dir>] [--plugin-root <pack>] [--json]
  */
 'use strict';
@@ -34,6 +34,7 @@ function parseArgs(argv) {
     if (a === '--json') out.json = true;
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--no-decrement-budget') out.noDecrementBudget = true;
+    else if (a === '--skip-muscle-memory') out.skipMuscleMemory = true;
     else if (a === '--work-dir') out.workDir = argv[++i];
     else if (a === '--plugin-root') out.pluginRoot = argv[++i];
     else if (a === '--work-root') out.workRoot = argv[++i];
@@ -147,7 +148,7 @@ Commands:
   approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--json]
       Human-only: refuses agent sessions and non-TTY stdin, shows risk flags, asks you to type the work id.
       Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
-  transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--json]
+  transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
       validation → pr-creation runs pipeline.acceptance_command (or --acceptance-command) and refuses a non-zero exit.
   record-cost --transcript-path <abs.jsonl> [--work-dir <.worklogs/id>] [--project-root <abs>] [--cwd <project>] [--dry-run] [--json]
       (omit --work-dir to use AGENTIC_SWE_WORK_DIR or discover under project root: --project-root, AGENTIC_SWE_PROJECT_ROOT, --cwd, then pwd)
@@ -211,7 +212,7 @@ Commands:
     }
     const schemaOk = !activeWorkDir || (loadResult && loadResult.ok);
     const budgetOk = !activeWorkDir || (budgetCheck && budgetCheck.ok);
-    const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+    const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
     const muscleMemory = checkMuscleMemoryReadiness({
       projectRoot,
       pluginRoot: pluginRootResolved,
@@ -557,6 +558,7 @@ Commands:
       setPipelineTrack: args.setPipelineTrack,
       acceptanceCommand: args.acceptanceCommand,
       acceptanceCwd: args.acceptanceCwd,
+      skipMuscleMemory: args.skipMuscleMemory,
     });
 
     if (!r.ok) {

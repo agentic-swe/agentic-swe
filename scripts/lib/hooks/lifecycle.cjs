@@ -2,7 +2,7 @@
 
 const path = require('node:path');
 const { runIncrementalIndex } = require('../memory/incremental-index.cjs');
-const { writeLessons } = require('../../memory-reflect.cjs');
+const { writeLessons } = require('../memory/lessons.cjs');
 const { buildStyleProfile, writeStyleProfile } = require('../memory/style-profile.cjs');
 const { quarantineProcedures } = require('../descent/procedure-hygiene.cjs');
 const { writeHookReceipt, readHookNotice } = require('./hook-receipt.cjs');

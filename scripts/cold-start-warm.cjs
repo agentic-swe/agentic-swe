@@ -16,7 +16,7 @@ const {
   ingestProjectSkills,
 } = require('./lib/memory/ingest-scopes.cjs');
 const { captureOrganicWorklogs } = require('./lib/descent/capture-organic-worklogs.cjs');
-const { writeLessons } = require('./memory-reflect.cjs');
+const { writeLessons } = require('./lib/memory/lessons.cjs');
 const { ingestTranscripts } = require('./lib/memory/session-ingest.cjs');
 const { discoverTranscriptSources } = require('./lib/memory/discover-transcripts.cjs');
 const { seedCorpusProcedures } = require('./lib/descent/corpus-seed.cjs');

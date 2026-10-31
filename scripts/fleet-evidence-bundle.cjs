@@ -11,7 +11,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
-const { checkMuscleMemoryReadiness } = require('./lib/work-engine/muscle-memory-doctor.cjs');
+const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 const { suggestSkillEvalFromProcedures } = require('./lib/skills/skill-eval-suggestions.cjs');
 const { summarizeProcedures } = require('./lib/skills/procedure-ritual-skills.cjs');
 const {
