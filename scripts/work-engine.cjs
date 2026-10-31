@@ -19,6 +19,7 @@ const {
   validateTransition,
   applyTransition,
   loadWorkItem,
+  recordSpawn,
 } = require('./lib/work-engine/engine.cjs');
 const {
   loadMergedBudgetThresholds,
@@ -43,6 +44,7 @@ function parseArgs(argv) {
     else if (a === '--to') out.to = argv[++i];
     else if (a === '--from') out.from = argv[++i];
     else if (a === '--actor') out.actor = argv[++i];
+    else if (a === '--role') out.role = argv[++i];
     else if (a === '--reason') out.reason = argv[++i];
     else if (a === '--evidence') out.evidence = argv[++i];
     else if (a === '--transcript-path') out.transcriptPath = argv[++i];
@@ -141,6 +143,8 @@ Commands:
   status [--project-root <abs>] [--work-dir <.worklogs/id>]
       One-block status: work id, track, state, last verify exit.
   validate --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
+  record-spawn --work-dir <.worklogs/id> --role <id> [--actor <id>] [--json]
+      Only writer of counters.panel_runs (role "panel" or "panel:…") and counters.subagent_spawns.
   budget   --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
   plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--json]
   risk-flags [--base origin/main] [--cwd <repo>] [--work-dir <dir>] [--write] [--json]
@@ -516,6 +520,21 @@ Commands:
     const out = { ok: true, verdict: 'VALID', current_state: r.state.current_state };
     if (args.json) printJson(out);
     else console.log('VALID', r.state.current_state);
+    return;
+  }
+
+  if (cmd === 'record-spawn') {
+    if (!args.role) fail('record-spawn requires --role', 2);
+    const r = recordSpawn({ workDir, pluginRoot, role: args.role, actor: args.actor || 'work-engine' });
+    if (!r.ok) {
+      if (args.json) printJson(r);
+      else fail(r.message || 'record-spawn failed', 1, r);
+      process.exit(1);
+    }
+    const counters = r.state.counters || {};
+    const out = { ok: true, role: args.role, panel_runs: counters.panel_runs || 0, subagent_spawns: counters.subagent_spawns || 0 };
+    if (args.json) printJson(out);
+    else console.log('RECORDED', args.role, JSON.stringify(out));
     return;
   }
 

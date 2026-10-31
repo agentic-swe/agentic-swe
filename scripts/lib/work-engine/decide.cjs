@@ -1,6 +1,7 @@
 'use strict';
 
 const { applyTrackBudgetProfile } = require('./budget-config.cjs');
+const { bump, rejectionCounter } = require('./counters.cjs');
 
 /**
  * Compute the next work-item state for a validated transition. Pure: no fs, clock, or
@@ -49,7 +50,13 @@ function decideTransition(input) {
     next.budget.budget_remaining = Math.max(0, next.budget.budget_remaining - 1);
   }
 
+  const track = next.pipeline && next.pipeline.track;
+  const counter = rejectionCounter(from, to, track);
+  // approval_iter is written by `work approve` after this transition.
+  if (counter && counter !== 'approval_iter') bump(next, counter);
+
   const entry = { at: now, actor: input.actor || 'unknown', from, to };
+  if (counter) entry.counter = counter;
   if (input.reason) entry.reason = input.reason;
   if (input.evidence_refs && input.evidence_refs.length) entry.evidence_refs = input.evidence_refs;
   if (input.assigned_subagent) entry.assigned_subagent = input.assigned_subagent;

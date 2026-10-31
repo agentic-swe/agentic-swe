@@ -3,7 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { checkBudgets } = require('./budget.cjs');
-const { loadMergedBudgetThresholds, projectRootFromWorkDir } = require('./budget-config.cjs');
+const { loadMergedBudgetThresholds, getCounterCaps, projectRootFromWorkDir } = require('./budget-config.cjs');
+const { counterMismatches, decideSpawn, rejectionCapBlock } = require('./counters.cjs');
 const { decideTransition } = require('./decide.cjs');
 const { runPostTransitionHooks } = require('./post-transition.cjs');
 const { assertTransition } = require('./transitions.cjs');
@@ -100,6 +101,13 @@ function validateTransition(params) {
   if (!tr.ok) {
     return { ok: false, code: tr.code || 'TRANSITION_INVALID', message: tr.message };
   }
+
+  let caps = null;
+  if (pluginRoot && workDir) {
+    caps = getCounterCaps(loadMergedBudgetThresholds(pluginRoot, projectRootFromWorkDir(workDir)), state);
+  }
+  const capped = rejectionCapBlock(state, from, to, caps);
+  if (capped && !humanClose) return capped;
 
   const art = assertArtifactsForTransition(workDir, from, to, state);
   if (!art.ok) {
@@ -247,7 +255,43 @@ function validateWorkDir(workDir, pluginRoot = getDefaultPluginRoot()) {
   if (!b.ok) {
     return { ok: false, code: 'BUDGET_STOP', message: b.errors.join('; '), budget: b, state: loaded.state };
   }
+  const mismatches = counterMismatches(loaded.state);
+  if (mismatches.length) {
+    const detail = mismatches
+      .map((m) => `counters.${m.key}=${m.stored} but history implies ${m.expected}`)
+      .join('; ');
+    return { ok: false, code: 'COUNTER_MISMATCH', message: detail, mismatches, state: loaded.state };
+  }
   return { ok: true, state: loaded.state };
+}
+
+/**
+ * Record one panel run or subagent spawn. This is the only writer of
+ * `panel_runs` and `subagent_spawns`.
+ * @param {{ workDir: string, pluginRoot?: string, role: string, actor?: string }} opts
+ */
+function recordSpawn(opts) {
+  const pluginRoot = opts.pluginRoot || getDefaultPluginRoot();
+  const loaded = loadWorkItem(opts.workDir, pluginRoot);
+  if (!loaded.ok) return loaded;
+  if (!opts.role) return { ok: false, code: 'MISSING_ROLE', message: 'record-spawn requires --role' };
+  const { next } = decideSpawn(loaded.state, {
+    role: opts.role,
+    actor: opts.actor,
+    now: new Date().toISOString(),
+  });
+  const tmp = `${loaded.statePath}.tmp.${process.pid}`;
+  const { withWriteLockSync } = require('./state-lock.cjs');
+  try {
+    withWriteLockSync(opts.workDir, () => {
+      fs.writeFileSync(tmp, JSON.stringify(next, null, 2) + '\n', 'utf8');
+      fs.renameSync(tmp, loaded.statePath);
+    });
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch { /* ignore */ }
+    return { ok: false, code: 'WRITE_ERROR', message: String(e.message) };
+  }
+  return { ok: true, state: JSON.parse(fs.readFileSync(loaded.statePath, 'utf8')) };
 }
 
 module.exports = {
@@ -256,5 +300,6 @@ module.exports = {
   validateTransition,
   applyTransition,
   validateWorkDir,
+  recordSpawn,
   assertEvidenceRefs,
 };
