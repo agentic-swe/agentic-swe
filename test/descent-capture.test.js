@@ -9,7 +9,7 @@ const {
   extractVerifyCommands,
   captureProcedureFromWork,
 } = require('../scripts/lib/descent/capture-procedure.cjs');
-const { promoteOrDemote, loadStore } = require('../scripts/lib/descent/promotion.cjs');
+const { promoteOrDemote, loadStore, approveProcedure, migrateUnattestedApprovals } = require('../scripts/lib/descent/promotion.cjs');
 const { buildFingerprint } = require('../scripts/lib/descent/fingerprint.cjs');
 
 describe('capture-procedure', () => {
@@ -88,6 +88,65 @@ describe('capture-procedure', () => {
     });
     assert.strictEqual(r2.record.tier, 'L0');
     assert.strictEqual(r2.record.success_count, 2);
+    assert.strictEqual(r2.record.auto_confirmed, true);
+    assert.notStrictEqual(r2.record.human_approved, true);
+  });
+});
+
+describe('procedure human approval', () => {
+  const { spawnSync } = require('node:child_process');
+  const os = require('node:os');
+
+  it('records human_approved only through approveProcedure', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'descent-approve-'));
+    const fp = 'fp-approve';
+    promoteOrDemote({
+      projectRoot: root,
+      fingerprint: fp,
+      procedure: { verify: [{ type: 'RUN', command: 'npm test' }] },
+      evalPassed: true,
+      successCapture: true,
+    });
+    const approved = approveProcedure({ projectRoot: root, fingerprint: fp, actor: 'user:founder@example' });
+    assert.strictEqual(approved.ok, true);
+    assert.strictEqual(approved.record.human_approved, true);
+    assert.strictEqual(approved.record.approved_by, 'user:founder@example');
+    const migrated = migrateUnattestedApprovals(root);
+    assert.strictEqual(migrated.migrated, 0);
+    assert.strictEqual(loadStore(root).procedures[0].human_approved, true);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('migrates a stored human_approved flag that has no audit line', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'descent-migrate-'));
+    const { saveStore } = require('../scripts/lib/descent/promotion.cjs');
+    saveStore(root, {
+      procedures: [{ fingerprint: 'old', tier: 'L0', human_approved: true, procedure: { verify: [] } }],
+    });
+    const result = migrateUnattestedApprovals(root);
+    assert.strictEqual(result.migrated, 1);
+    const rec = loadStore(root).procedures[0];
+    assert.strictEqual(rec.human_approved, false);
+    assert.strictEqual(rec.auto_confirmed, true);
+    assert.strictEqual(rec.migrated, true);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('refuses descent approve from an agent session', () => {
+    const script = path.join(__dirname, '..', 'scripts', 'descent.cjs');
+    const r = spawnSync(process.execPath, [script, 'approve', '--fingerprint', 'fp'], {
+      encoding: 'utf8',
+      env: { ...process.env, CURSOR_AGENT: '1' },
+    });
+    assert.strictEqual(r.status, 3);
+    assert.match(r.stderr, /agent session detected/);
+  });
+  it('keeps an auto-confirmed L0 procedure at L0 when it is captured again', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'descent-recapture-'));
+    const opts = { projectRoot: root, fingerprint: 'fp-recapture', procedure: {}, evalPassed: true, humanApproved: true };
+    assert.strictEqual(promoteOrDemote(opts).record.tier, 'L0');
+    assert.strictEqual(promoteOrDemote(opts).record.tier, 'L0');
+    fs.rmSync(root, { recursive: true, force: true });
   });
 });
 

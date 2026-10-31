@@ -7,7 +7,8 @@
 const path = require('node:path');
 const { buildFingerprint } = require('./lib/descent/fingerprint.cjs');
 const { replayProcedure } = require('./lib/descent/replay.cjs');
-const { promoteOrDemote, tierHitRates, loadStore } = require('./lib/descent/promotion.cjs');
+const { promoteOrDemote, tierHitRates, loadStore, approveProcedure } = require('./lib/descent/promotion.cjs');
+const { detectAgentContext, resolveUserIdentity } = require('./lib/approval/human-approval.cjs');
 
 function parseArgs(argv) {
   const out = { json: false };
@@ -72,11 +73,38 @@ function main() {
         actions: [],
       },
       evalPassed: true,
-      humanApproved: args.humanApproved,
       verifyFailed: args.verifyFailed,
     });
+    if (args.humanApproved) {
+      console.error('`--human-approved` does not record a human approval. Run `descent approve --fingerprint <fp>` from your own terminal.');
+    }
     if (args.json) console.log(JSON.stringify(r, null, 2));
     else console.log(`tier=${r.record.tier} failures=${r.record.failures}`);
+    return;
+  }
+
+  if (cmd === 'approve') {
+    const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
+    if (refusal) {
+      console.error(refusal);
+      process.exit(3);
+    }
+    if (!args.fingerprint) {
+      console.error('approve requires --fingerprint');
+      process.exit(1);
+    }
+    const identity = resolveUserIdentity({ cwd: projectRoot });
+    const r = approveProcedure({
+      projectRoot,
+      fingerprint: args.fingerprint,
+      actor: identity && identity.actor,
+    });
+    if (!r.ok) {
+      console.error(r.code);
+      process.exit(1);
+    }
+    if (args.json) console.log(JSON.stringify(r, null, 2));
+    else console.log(`approved fingerprint=${args.fingerprint} actor=${identity.actor}`);
     return;
   }
 
@@ -90,7 +118,8 @@ function main() {
   console.log(`Usage:
   descent.cjs fingerprint --files a.js,b.js --verify "npm test"
   descent.cjs replay [--fingerprint <hash>] [--project-root dir]
-  descent.cjs promote --files ... --verify "..." [--human-approved]
+  descent.cjs promote --files ... --verify "..."
+  descent.cjs approve --fingerprint <fp> [--project-root dir]
   descent.cjs tier-rates`);
 }
 
