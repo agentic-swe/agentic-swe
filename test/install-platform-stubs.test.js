@@ -195,14 +195,18 @@ describe('multi-platform stubs: Cursor plugin', () => {
     const p = path.join(repoRoot, 'hooks', 'hooks-cursor.json');
     assert.ok(fs.existsSync(p), 'missing hooks/hooks-cursor.json');
     const j = readJson(p);
-    assert.ok(Array.isArray(j.hooks) && j.hooks.length > 0);
-    for (const hook of j.hooks) {
-      assert.ok(typeof hook.event === 'string' && hook.event.length > 0);
-      assert.ok(typeof hook.command === 'string');
-      assert.ok(typeof hook.description === 'string');
-      const rel = hook.command.replace(/^\.\//, '');
-      const target = path.join(repoRoot, rel);
-      assert.ok(fs.existsSync(target), `hook command missing: ${hook.command} -> ${target}`);
+    assert.equal(j.version, 1);
+    assert.ok(j.hooks && typeof j.hooks === 'object' && !Array.isArray(j.hooks), 'hooks must be an event map');
+    assert.deepEqual(Object.keys(j.hooks).sort(), ['preToolUse', 'sessionStart', 'stop']);
+    for (const [event, entries] of Object.entries(j.hooks)) {
+      assert.ok(Array.isArray(entries) && entries.length > 0, `${event} has no hooks`);
+      for (const hook of entries) {
+        assert.ok(typeof hook.command === 'string', `${event} hook has no command`);
+        const script = hook.command.split(/\s+/).find((part) => part.startsWith('./'));
+        assert.ok(script, `${event} command names no ./ script: ${hook.command}`);
+        const target = path.join(repoRoot, script.replace(/^\.\//, ''));
+        assert.ok(fs.existsSync(target), `hook command missing: ${hook.command} -> ${target}`);
+      }
     }
   });
 

@@ -26,7 +26,7 @@ function main() {
   }
   console.log('Host parity');
   for (const row of rows) {
-    console.log(`  ${row.host}: ${row.status}`);
+    console.log(`  ${row.host}: ${row.status}, policy hook ${row.policy_hook ? 'registered' : 'absent'}`);
   }
 }
 

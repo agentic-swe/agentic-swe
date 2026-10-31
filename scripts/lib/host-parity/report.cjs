@@ -13,7 +13,13 @@ function reportHostParity() {
   return SUPPORTED_HOSTS.map((host) => {
     const coverage = COVERAGE[host];
     if (!coverage) throw new Error(`unknown host parity: ${host}`);
-    return { host, status: statusFor(coverage), reason: coverage.reason };
+    return {
+      host,
+      status: statusFor(coverage),
+      reason: coverage.reason,
+      policy_hook: coverage.policy_hook === true,
+      policy_hook_reason: coverage.policy_hook_reason,
+    };
   });
 }
 

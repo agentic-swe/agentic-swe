@@ -3,6 +3,40 @@
   "track_rules": [],
   "mandatory_subagents": [],
   "banned_tools": [],
+  "banned_commands": [
+    {
+      "id": "baseline-force-push-protected",
+      "pattern": "\\bgit\\b[^;&|\\n]*\\spush\\b(?=[^;&|\\n]*(?:\\s--force(?:-with-lease|-if-includes)?(?:=\\S*)?(?=\\s|$)|\\s-[A-Za-z]*f[A-Za-z]*(?=\\s|$)|\\s\\+\\S))(?=[^;&|\\n]*(?:\\s|:|\\+)(?:refs/heads/)?(?:main|master|release/\\S+)(?=\\s|$))",
+      "reason": "Force-pushing a protected branch (main, master, release/*) is never an agent action"
+    },
+    {
+      "id": "baseline-npm-publish",
+      "pattern": "(?:^|[\\s;&|(])(?:(?:npm|pnpm)\\s+(?:[^;&|\\n]*\\s)?publish|yarn\\s+(?:npm\\s+)?publish)(?=\\s|$|[;&|)])",
+      "reason": "Publishing a package is a human release step"
+    },
+    {
+      "id": "baseline-rm-root",
+      "pattern": "(?:^|[\\s;&|(])rm\\s+(?:-\\S*\\s+)*(?:/|/\\*)(?=\\s|$|[;&|)])",
+      "reason": "Never delete the filesystem root"
+    },
+    {
+      "id": "baseline-integrity-files-shell",
+      "pattern": "(?:>|\\btee\\b|\\bsed\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\bperl\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\b(?:mv|cp|rm|truncate|dd|ln|install)\\s|\\b(?:node|python3?|ruby|perl|deno|bun)\\b[^;&|\\n]*\\s-(?:e|c|p)\\b)[^;&|\\n]*(?:journal\\.jsonl|approval-record\\.json)",
+      "reason": "journal.jsonl and approval-record.json are written only by the engine and human approval commands"
+    }
+  ],
+  "protected_paths": [
+    {
+      "id": "baseline-journal",
+      "pattern": "**/.worklogs/**/journal.jsonl",
+      "reason": "The work journal is append-only and written only by the engine"
+    },
+    {
+      "id": "baseline-approval-record",
+      "pattern": "**/.worklogs/**/approval-record.json",
+      "reason": "Approval records are written only by human approval commands"
+    }
+  ],
   "required_artifacts": {},
   "budget_overrides": {}
 }
