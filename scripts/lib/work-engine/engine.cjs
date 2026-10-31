@@ -11,6 +11,7 @@ const { runPostTransitionHooks } = require('./post-transition.cjs');
 const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
+const { assertSetPipelineTrack } = require('./track-guard.cjs');
 const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
 const { resolveEvidenceRef } = require('./paths.cjs');
 const { validateWorkItemSchemaAtRoot } = require('./validate-schema.cjs');
@@ -80,9 +81,10 @@ function assertEvidenceRefs(workDir, refs) {
  * @param {string} params.to
  * @param {string[]} [params.evidence_refs]
  * @param {{ record: string }} [params.humanApproval] set only by `work approve`
+ * @param {string} [params.setPipelineTrack]
  */
 function validateTransition(params) {
-  const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval } = params;
+  const { workDir, pluginRoot, state, from, to, evidence_refs, humanApproval, setPipelineTrack } = params;
   const projection = assertProjection(workDir, state);
   if (!projection.ok) return projection;
 
@@ -122,6 +124,9 @@ function validateTransition(params) {
     return { ok: false, code: perm.code, message: perm.message };
   }
 
+  const trackGuard = assertSetPipelineTrack({ from, state, setPipelineTrack });
+  if (!trackGuard.ok) return trackGuard;
+
   const ev = assertEvidenceRefs(workDir, evidence_refs);
   if (!ev.ok) return ev;
 
@@ -160,6 +165,7 @@ function applyTransition(opts) {
     to,
     evidence_refs: opts.evidence_refs,
     humanApproval: opts.humanApproval,
+    setPipelineTrack: opts.setPipelineTrack,
   });
   if (!v.ok) return v;
 

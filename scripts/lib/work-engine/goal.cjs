@@ -9,6 +9,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./engine.cjs');
+const { assertProjection, commitState } = require('./journal.cjs');
+const { withWriteLockSync } = require('./state-lock.cjs');
+
+const GOAL_DECISION_TARGET = {
+  approved: 'goal-met',
+  changes_requested: 'goal-execute',
+};
+const GOAL_RECORD_FILE = 'approval-record.json';
 
 /** @type {Map<string, {edges: Set<string>, terminal: Set<string>, gates: Set<string>}>} */
 const cache = new Map();
@@ -91,16 +99,69 @@ function loadGoal(goalDir) {
   return { ok: true, goal, goalPath };
 }
 
-function writeGoalAtomic(goalPath, goal) {
-  const tmp = `${goalPath}.tmp.${process.pid}`;
-  fs.writeFileSync(tmp, `${JSON.stringify(goal, null, 2)}\n`, 'utf8');
-  fs.renameSync(tmp, goalPath);
+function assertGoalBudget(goal) {
+  const budget = (goal && goal.budget) || {};
+  const used = (key) => (typeof budget[key] === 'number' ? budget[key] : 0);
+  const cap = (key) => (typeof budget[key] === 'number' ? budget[key] : Infinity);
+  const errors = [];
+  if (used('loop_turns_used') >= cap('max_loop_turns')) errors.push('loop_turns_used >= max_loop_turns');
+  if (used('child_items_used') >= cap('max_child_items')) errors.push('child_items_used >= max_child_items');
+  if (used('cost_used') >= cap('cost_budget_usd')) errors.push('cost_used >= cost_budget_usd');
+  if (!errors.length) return { ok: true };
+  return { ok: false, code: 'GOAL_BUDGET_STOP', message: errors.join('; ') };
+}
+
+function readJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Leaving goal-approval requires an approval record written by `goal approve`.
+ */
+function assertGoalHumanApproval({ goalDir, from, to, goal, humanApproval }) {
+  if (from !== 'goal-approval') return { ok: true };
+  const deny = (why) => ({
+    ok: false,
+    code: 'HUMAN_APPROVAL_REQUIRED',
+    message: `goal-approval → ${to} needs a human decision: ${why}. A human must run \`agentic-swe goal approve --goal-dir ${goalDir} --decision approved|changes_requested\` in their own terminal.`,
+  });
+  if (!humanApproval || !humanApproval.record) return deny('no approval record supplied');
+  const rec = readJson(path.join(goalDir, path.basename(humanApproval.record)));
+  if (!rec) return deny(`${humanApproval.record} missing or unreadable`);
+  if (GOAL_DECISION_TARGET[rec.decision] !== to) return deny(`record decision "${rec.decision}" does not lead to ${to}`);
+  const iter = (goal && goal.counters && goal.counters.approval_iter) || 0;
+  if (rec.approval_iter !== iter) return deny(`record is from approval round ${rec.approval_iter}, current round is ${iter}`);
+  if (typeof rec.actor !== 'string' || !rec.actor.startsWith('user:')) return deny('record actor is not a user identity');
+  return { ok: true, record: rec };
+}
+
+/**
+ * Fsync a journal event, then replace goal.json, under the work-dir write lock.
+ * @param {string} goalDir
+ * @param {object} goal
+ * @param {{ type: string, at?: string, expectCurrent?: string }} meta
+ * @param {{ maxAttempts?: number, baseDelayMs?: number }} [lockOpts]
+ */
+function commitGoal(goalDir, goal, meta, lockOpts) {
+  return withWriteLockSync(goalDir, () => {
+    const snapshot = commitState(goalDir, goal, meta);
+    const goalPath = goalPathFor(goalDir);
+    const tmp = `${goalPath}.tmp.${process.pid}`;
+    fs.writeFileSync(tmp, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
+    fs.renameSync(tmp, goalPath);
+    return snapshot;
+  }, lockOpts);
 }
 
 /**
  * Validate + apply an outer goal transition.
  * @param {{goalDir:string, pluginRoot?:string, to:string, from?:string, actor:string,
- *          reason?:string, evidence_refs?:string[], dryRun?:boolean}} opts
+ *          reason?:string, evidence_refs?:string[], dryRun?:boolean,
+ *          humanApproval?: { record: string }, lock?: object }} opts
  */
 function applyGoalTransition(opts) {
   const { goalDir, to, actor } = opts;
@@ -113,19 +174,25 @@ function applyGoalTransition(opts) {
   const goal = loaded.goal;
   const from = opts.from || goal.current_state;
 
+  const projection = assertProjection(goalDir, goal, { stateFile: 'goal.json' });
+  if (!projection.ok) return projection;
+
   const edge = assertGoalEdge(pluginRoot, from, to);
   if (!edge.ok) return edge;
 
-  const nowIso = new Date().toISOString();
-  const entry = {
-    at: nowIso,
-    actor,
+  const budget = assertGoalBudget(goal);
+  if (!budget.ok) return budget;
+
+  const human = assertGoalHumanApproval({
+    goalDir,
     from,
     to,
-    reason: opts.reason || null,
-    evidence_refs: Array.isArray(opts.evidence_refs) ? opts.evidence_refs : [],
-  };
+    goal,
+    humanApproval: opts.humanApproval,
+  });
+  if (!human.ok) return human;
 
+  const nowIso = new Date().toISOString();
   if (opts.dryRun) {
     return { ok: true, dryRun: true, from, to, nextState: { current_state: to } };
   }
@@ -135,16 +202,46 @@ function applyGoalTransition(opts) {
   goal.budget = goal.budget || {};
   goal.budget.loop_turns_used = (goal.budget.loop_turns_used || 0) + 1;
   goal.history = Array.isArray(goal.history) ? goal.history : [];
-  goal.history.push(entry);
-  writeGoalAtomic(loaded.goalPath, goal);
-  return { ok: true, goal, from, to };
+  goal.history.push({
+    at: nowIso,
+    actor,
+    from,
+    to,
+    reason: opts.reason || null,
+    evidence_refs: Array.isArray(opts.evidence_refs) ? opts.evidence_refs : [],
+  });
+
+  try {
+    const snapshot = commitGoal(
+      goalDir,
+      goal,
+      { type: 'transition', at: nowIso, expectCurrent: from },
+      opts.lock
+    );
+    fs.appendFileSync(
+      path.join(goalDir, 'audit.log'),
+      `${nowIso} actor=${actor} action=transition from=${from} to=${to}\n`,
+      'utf8'
+    );
+    return { ok: true, goal: snapshot, from, to };
+  } catch (e) {
+    if (e && (e.code === 'LOCK_TIMEOUT' || e.code === 'INTEGRITY_FAILED')) {
+      return { ok: false, code: e.code, message: String(e.message) };
+    }
+    return { ok: false, code: 'WRITE_ERROR', message: String(e.message) };
+  }
 }
 
 module.exports = {
+  GOAL_DECISION_TARGET,
+  GOAL_RECORD_FILE,
   loadGoalEdges,
   assertGoalEdge,
   validateGoalShape,
+  assertGoalBudget,
+  assertGoalHumanApproval,
   loadGoal,
+  commitGoal,
   applyGoalTransition,
   goalPathFor,
 };

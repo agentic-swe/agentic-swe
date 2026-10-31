@@ -67,9 +67,9 @@ function verifyJournalText(text) {
   return { ok: true, events, head: prev };
 }
 
-function readStateOrNull(workDir) {
+function readStateOrNull(workDir, stateFile = 'state.json') {
   try {
-    return JSON.parse(fs.readFileSync(path.join(workDir, 'state.json'), 'utf8'));
+    return JSON.parse(fs.readFileSync(path.join(workDir, stateFile), 'utf8'));
   } catch {
     return null;
   }
@@ -85,10 +85,10 @@ function readJournal(workDir) {
  * Chain check plus the on-disk seq. Deleting the last line leaves a valid prefix;
  * state.json still names the removed seq, which fails here.
  */
-function verifyWorkJournal(workDir) {
+function verifyWorkJournal(workDir, { stateFile = 'state.json' } = {}) {
   const chain = readJournal(workDir);
   if (!chain.ok) return chain;
-  const state = readStateOrNull(workDir);
+  const state = readStateOrNull(workDir, stateFile);
   const recorded = state && state.journal && state.journal.seq;
   const last = chain.events.length ? chain.events[chain.events.length - 1].seq : 0;
   if (typeof recorded === 'number' && recorded !== last) {
@@ -105,8 +105,8 @@ function projectedState(chain) {
 /**
  * @returns {{ ok: true } | { ok: false, code: 'INTEGRITY_FAILED', message: string, seq?: number }}
  */
-function assertProjection(workDir, state) {
-  const chain = verifyWorkJournal(workDir);
+function assertProjection(workDir, state, opts) {
+  const chain = verifyWorkJournal(workDir, opts);
   if (!chain.ok) {
     return { ok: false, code: 'INTEGRITY_FAILED', message: `journal FAILED at seq ${chain.seq}`, seq: chain.seq };
   }
@@ -139,8 +139,8 @@ function historyGap(state) {
   return null;
 }
 
-function integrityReport(workDir, state) {
-  const chain = verifyWorkJournal(workDir);
+function integrityReport(workDir, state, opts) {
+  const chain = verifyWorkJournal(workDir, opts);
   const gap = historyGap(state);
   if (!chain.ok) return { integrity: `FAILED at seq ${chain.seq}`, historyGap: gap };
   if (chain.missing || chain.events.some((event) => event.integrity === 'unverified-import')) {
@@ -206,14 +206,14 @@ function commitState(workDir, state, meta) {
   return snapshot;
 }
 
-function recoverState(workDir) {
+function recoverState(workDir, { stateFile = 'state.json' } = {}) {
   const chain = readJournal(workDir);
   if (!chain.ok) {
     return { ok: false, code: 'INTEGRITY_FAILED', message: `journal FAILED at seq ${chain.seq}`, seq: chain.seq };
   }
   const state = projectedState(chain);
   if (!state) return { ok: false, code: 'JOURNAL_EMPTY', message: 'journal has no events to recover' };
-  fs.writeFileSync(path.join(workDir, 'state.json'), `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(path.join(workDir, stateFile), `${JSON.stringify(state, null, 2)}\n`, 'utf8');
   return { ok: true, state };
 }
 

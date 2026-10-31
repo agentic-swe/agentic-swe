@@ -42,7 +42,7 @@ goal-escalated -> goal-execute | goal-failed
 | `goal-execute` | Pick the next queued item; run it through the **existing** pipeline via `/work` (no inner changes). On child `completed` → `goal-verify`. If the child parks at a human gate → `goal-gate`. On unrecoverable child failure/escalation → `goal-escalated`. Increment `budget.child_items_used`. |
 | `goal-verify` | Delegate to `${CLAUDE_PLUGIN_ROOT}/agents/goal-verifier-agent.md` to evaluate `completion_criteria` against repo reality — evidence-backed, distinct from per-item validation. Met → `goal-approval`. Not met, more to do → `goal-execute`. Non-converging → `goal-escalated`. |
 | `goal-gate` | A child is waiting on a human. Pause, surface it, resume to `goal-execute` when resolved (or `goal-failed` if abandoned). |
-| `goal-approval` | Human confirms the objective is genuinely met. Approved → `goal-met`. "Not really done" → `goal-execute`. |
+| `goal-approval` | Human confirms the objective is genuinely met. Approved → `goal-met`. "Not really done" → `goal-execute`. Record it with `goal-engine approve --decision approved\|changes_requested`. `transition --to goal-met` without that record is rejected. |
 | `goal-escalated` | Human decision required. → `goal-execute` (with guidance) or `goal-failed`. |
 | `goal-met` / `goal-failed` | Terminal. |
 
@@ -57,7 +57,7 @@ Every path ends at the `goal-approval` human gate before `goal-met`: the machine
 
 ### Budgets & stall detection (outer)
 
-Read/enforce `goal.json.budget`: `max_child_items`, `max_loop_turns`, aggregate `cost_budget_usd`. On each loop turn increment `loop_turns_used`. If `goal-verify` returns the same `convergence.last_failure_category` for `consecutive_same_category >= 2`, transition to `goal-escalated` — do not burn the whole budget on one failure mode. If a budget ceiling is reached, stop and surface to the human.
+Read/enforce `goal.json.budget`: `max_child_items`, `max_loop_turns`, aggregate `cost_budget_usd`. On each loop turn increment `loop_turns_used`. The engine rejects the transition when `loop_turns_used >= max_loop_turns`, `child_items_used >= max_child_items`, or `cost_used >= cost_budget_usd` (`GOAL_BUDGET_STOP`). Every goal transition takes the write lock and appends a hash-chained event to `journal.jsonl` before replacing `goal.json`. If `goal-verify` returns the same `convergence.last_failure_category` for `consecutive_same_category >= 2`, transition to `goal-escalated` — do not burn the whole budget on one failure mode. If a budget ceiling is reached, stop and surface to the human.
 
 ### Operating loop
 
