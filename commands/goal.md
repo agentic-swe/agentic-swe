@@ -84,6 +84,13 @@ Read/enforce `goal.json.budget`: `max_child_items`, `max_loop_turns`, aggregate 
 5. **Resume** an interrupted child (its `state.json` is missing or behind its journal): `dispatch resume --goal-dir <dir> --item <id> --actor hypervisor` rebuilds `state.json` from the journal. Completed predecessors are not touched. A `pipeline-failed` or `escalate-*` child is a human decision, not a resume.
 6. `dispatch status --goal-dir <dir>` is read-only: each child is pending, blocked, ready, active, interrupted, completed, failed, or escalated.
 
+### Founder control
+
+`agentic-swe founder` (`scripts/founder.cjs`) is the human's interface. It refuses agent sessions and non-interactive stdin, so never run it yourself; point the human to it.
+
+- `founder status [--project-root dir] [--json]`: goals and dispatch progress; items at `approval-wait`, `goal-approval`, a gate, or an escalation; unresolved high/critical review findings; cost per item labeled `estimated` (transcript tokens × local pricing table) or `provider-reported`; journal integrity per item. Reads local files only. `--github` also checks each `approval-wait` GitHub PR with the read-only token.
+- `founder approve --work-dir <dir> | --goal-dir <dir> --decision approved|changes_requested [--note "…"]` runs `work approve` or `goal approve`, which record and journal the decision.
+
 ### First-slice limits (current build)
 
 Single active child item at a time; `completion_criteria` types `command` and `checklist`; discovery sources explicit + failing-tests + TODO scan. Parallel children (worktrees) and connector-based discovery (issues/CI/review comments) are later slices.

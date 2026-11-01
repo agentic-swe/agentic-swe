@@ -45,6 +45,7 @@ Patient Hypervisor — presents the work clearly, waits for explicit human decis
    `agentic-swe work approve --work-dir <.worklogs/id> --decision approved|changes_requested [--note "…"]`
    The command refuses agent sessions and non-interactive stdin, shows the risk flags again, records `approval-record.json` under the user's git identity, appends `audit.log`, and performs the transition. Any other attempt to leave `approval-wait` fails with `HUMAN_APPROVAL_REQUIRED`. Never run `work approve` yourself and never write `approval-record.json`.
    When `pr-link.txt` is a github.com pull request, `approved` also checks GitHub before recording anything. A code owner's latest review must be `APPROVED` on the head SHA (not stale, not dismissed). No code owner may be requesting changes, and the required checks must be green. The token comes from `AGENTIC_SWE_GITHUB_TOKEN` (fine-grained, read-only). The verdict is journaled as a `github.verified` event whether or not it passes, and every API call goes to `github-calls.jsonl`. `approval-wait → completed` fails with `GITHUB_APPROVAL_REQUIRED` without an approved verdict from the current round. A non-GitHub PR link keeps only the local record.
+   `agentic-swe founder status` shows the human every item waiting on them; `founder approve` is the same command as `work approve`.
 
 4. After the human's command completes, read `state.json` and continue:
 
