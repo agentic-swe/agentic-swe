@@ -16,6 +16,8 @@ const { bump, rejectionCounter } = require('./counters.cjs');
  * @param {string[]} [input.evidence_refs]
  * @param {string} [input.assigned_subagent]
  * @param {string} [input.setPipelineTrack]
+ * @param {string[]} [input.changedPaths] appended (deduplicated) to pipeline.changed_paths
+ * @param {string} [input.baseSha] recorded as pipeline.base_sha
  * @param {string} [input.acceptanceCommand]
  * @param {boolean} [input.testsPassed]
  * @param {object} [input.budgetThresholds] merged thresholds, required when leaving lean-track-check with a track
@@ -28,8 +30,15 @@ function decideTransition(input) {
   next.current_state = to;
   next.updated_at = now;
 
-  if (input.setPipelineTrack || input.acceptanceCommand) {
+  const changed = (input.changedPaths || []).filter(Boolean);
+  if (input.setPipelineTrack || input.acceptanceCommand || changed.length || input.baseSha) {
     next.pipeline = next.pipeline || {};
+  }
+  if (changed.length) {
+    next.pipeline.changed_paths = [...new Set([...(next.pipeline.changed_paths || []), ...changed])];
+  }
+  if (input.baseSha) {
+    next.pipeline.base_sha = input.baseSha;
   }
   if (input.setPipelineTrack) {
     next.pipeline.track = input.setPipelineTrack;

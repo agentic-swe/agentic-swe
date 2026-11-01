@@ -5,7 +5,7 @@
  * Usage:
  *   node scripts/work-engine.cjs --work-dir .worklogs/<id> validate [--json]
  *   node scripts/work-engine.cjs --work-dir .worklogs/<id> budget [--json]
- *   node scripts/work-engine.cjs --work-dir .worklogs/<id> transition --to <state> --actor <id> [--from <state>] [--reason str] [--evidence rel/a,rel/b] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
+ *   node scripts/work-engine.cjs --work-dir .worklogs/<id> transition --to <state> --actor <id> [--from <state>] [--reason str] [--evidence rel/a,rel/b] [--changed-paths a,b] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
  *   node scripts/work-engine.cjs init --id <id> --task "description" [--work-root <dir>] [--plugin-root <pack>] [--json]
  */
 'use strict';
@@ -47,6 +47,7 @@ function parseArgs(argv) {
     else if (a === '--role') out.role = argv[++i];
     else if (a === '--reason') out.reason = argv[++i];
     else if (a === '--evidence') out.evidence = argv[++i];
+    else if (a === '--changed-paths') out.changedPaths = argv[++i];
     else if (a === '--transcript-path') out.transcriptPath = argv[++i];
     else if (a === '--cwd') out.cwd = argv[++i];
     else if (a === '--project-root') out.projectRoot = argv[++i];
@@ -68,6 +69,10 @@ function parseArgs(argv) {
   }
   out.command = rest[0];
   return out;
+}
+
+function splitList(v) {
+  return v ? String(v).split(',').map((s) => s.trim()).filter(Boolean) : [];
 }
 
 function printJson(obj) {
@@ -152,7 +157,7 @@ Commands:
   record-spawn --work-dir <.worklogs/id> --role <id> [--actor <id>] [--json]
       Only writer of counters.panel_runs (role "panel" or "panel:…") and counters.subagent_spawns.
   budget   --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
-  plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--json]
+  plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--changed-paths a,b] [--json]
   risk-flags [--base origin/main] [--cwd <repo>] [--work-dir <dir>] [--write] [--json]
       Flag security-sensitive paths, new dependencies and permission changes in base...HEAD.
   approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--json]
@@ -160,8 +165,10 @@ Commands:
       Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
   waive-track --work-dir <dir> --reason "…" [--json]
       Human-only. Records pipeline.track_waiver { actor: "user:…", reason, at } so a later transition may set a lower track.
-  transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
+  transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--changed-paths a,b] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
       validation → pr-creation runs pipeline.acceptance_command (or --acceptance-command) and refuses a non-zero exit.
+      --changed-paths a,b appends repo-relative paths to pipeline.changed_paths; policy track_rules and
+      mandatory_subagents match them plus files changed since pipeline.base_sha (recorded leaving lean-track-check).
   record-cost --transcript-path <abs.jsonl> [--work-dir <.worklogs/id>] [--project-root <abs>] [--cwd <project>] [--dry-run] [--json]
       (omit --work-dir to use AGENTIC_SWE_WORK_DIR or discover under project root: --project-root, AGENTIC_SWE_PROJECT_ROOT, --cwd, then pwd)
   init … [--budget-profile lean|standard|rigorous]  (sets iteration/cost ceilings + budget.policy from config; optional early pipeline.track)
@@ -651,6 +658,7 @@ Commands:
     const evidence_refs = args.evidence
       ? args.evidence.split(',').map((s) => s.trim()).filter(Boolean)
       : [];
+    const changedPaths = splitList(args.changedPaths);
 
     const loadedBefore = loadWorkItem(workDir, pluginRoot);
     const fromState =
@@ -667,6 +675,7 @@ Commands:
       dryRun: args.dryRun,
       decrementIterationBudget: !args.noDecrementBudget,
       setPipelineTrack: args.setPipelineTrack,
+      changedPaths,
       acceptanceCommand: args.acceptanceCommand,
       acceptanceCwd: args.acceptanceCwd,
       skipMuscleMemory: args.skipMuscleMemory,
@@ -773,6 +782,7 @@ Commands:
       from,
       to,
       setPipelineTrack: args.setPipelineTrack,
+      changedPaths: splitList(args.changedPaths),
       evidence_refs: args.evidence
         ? args.evidence.split(',').map((s) => s.trim()).filter(Boolean)
         : [],

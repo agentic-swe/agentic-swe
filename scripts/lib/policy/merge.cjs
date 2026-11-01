@@ -101,7 +101,8 @@ function readPolicySource(label, filePath, errors) {
 
 /**
  * Like resolvePolicy, but reports every unreadable or schema-invalid source instead of
- * silently dropping it. The merged result is validated too.
+ * silently dropping it. The merged result is validated too. A null repoRoot skips the
+ * repo policy.
  * @returns {{ policy: object, errors: string[] }}
  */
 function resolvePolicyChecked(repoRoot, packRoot) {
@@ -110,7 +111,9 @@ function resolvePolicyChecked(repoRoot, packRoot) {
   const packFile = path.join(packConfig, 'default-policy.json');
   if (!fs.existsSync(packFile)) errors.push(`pack default policy ${packFile} is missing`);
   const packDefault = readPolicySource('pack', packFile, errors) || {};
-  const repoPolicy = readPolicySource('repo', path.join(repoRoot, '.agentic-swe', 'policy.json'), errors);
+  const repoPolicy = repoRoot
+    ? readPolicySource('repo', path.join(repoRoot, '.agentic-swe', 'policy.json'), errors)
+    : null;
   const orgPath = process.env.AGENTIC_SWE_POLICY;
   if (orgPath && !fs.existsSync(orgPath)) errors.push(`org policy ${orgPath} (AGENTIC_SWE_POLICY) does not exist`);
   const orgPolicy = readPolicySource('org', orgPath, errors);
@@ -119,6 +122,15 @@ function resolvePolicyChecked(repoRoot, packRoot) {
   const merged = validatePolicy(policy);
   if (!merged.ok) errors.push(`merged policy is invalid: ${merged.errors.join('; ')}`);
   return { policy, errors };
+}
+
+/**
+ * Policy path glob. A pattern without '/' matches the basename at any depth ('*.sql').
+ */
+function matchesPolicyPattern(filePath, pattern) {
+  if (typeof pattern !== 'string' || pattern.length === 0 || pattern.length > 512) return false;
+  const { minimatch } = require('minimatch');
+  return minimatch(filePath, pattern, { dot: true, matchBase: true });
 }
 
 /**
@@ -131,9 +143,8 @@ function checkTrackRules(filePaths, policy) {
   let maxOrder = -1;
 
   for (const rule of (policy.track_rules || [])) {
-    const { minimatch } = require('minimatch');
     for (const fp of filePaths) {
-      if (typeof rule.pattern === 'string' && rule.pattern.length > 0 && rule.pattern.length <= 512 && minimatch(fp, rule.pattern)) {
+      if (matchesPolicyPattern(fp, rule.pattern)) {
         const order = trackOrder[rule.minimum_track] || 0;
         if (order > maxOrder) {
           maxOrder = order;
@@ -146,4 +157,11 @@ function checkTrackRules(filePaths, policy) {
   return maxTrack;
 }
 
-module.exports = { loadPolicy, mergePolicies, resolvePolicy, resolvePolicyChecked, checkTrackRules };
+module.exports = {
+  loadPolicy,
+  mergePolicies,
+  resolvePolicy,
+  resolvePolicyChecked,
+  checkTrackRules,
+  matchesPolicyPattern,
+};

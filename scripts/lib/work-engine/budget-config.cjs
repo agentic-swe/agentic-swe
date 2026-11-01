@@ -46,7 +46,30 @@ function loadMergedBudgetThresholds(pluginRoot, projectRoot) {
     if (local) merged = deepMerge(merged, local);
   }
 
-  return merged;
+  const { resolvePolicyChecked } = require('../policy/merge.cjs');
+  const { policy } = resolvePolicyChecked(projectRoot || null, pluginRoot);
+  return applyPolicyBudgetOverrides(merged, policy.budget_overrides);
+}
+
+/**
+ * Policy `budget_overrides` replace every track's ceilings; they win over budget-threshold files.
+ * `max_doubt_cycles` has no counter and is ignored.
+ * @param {object} merged
+ * @param {{ max_cost_usd?: number, max_iterations?: number }} [overrides]
+ */
+function applyPolicyBudgetOverrides(merged, overrides) {
+  if (!overrides) return merged;
+  const cost = Number.isFinite(overrides.max_cost_usd) ? overrides.max_cost_usd : null;
+  const iters = Number.isInteger(overrides.max_iterations) ? overrides.max_iterations : null;
+  if (cost == null && iters == null) return merged;
+  const out = { ...merged, tracks: { ...(merged.tracks || {}) } };
+  for (const track of ['lean', 'standard', 'rigorous']) {
+    const t = { ...(out.tracks[track] || {}) };
+    if (cost != null) t.cost_budget_usd = cost;
+    if (iters != null) t.iteration_budget = iters;
+    out.tracks[track] = t;
+  }
+  return out;
 }
 
 /**
@@ -143,6 +166,7 @@ function projectRootFromWorkDir(workDir) {
 
 module.exports = {
   loadMergedBudgetThresholds,
+  applyPolicyBudgetOverrides,
   trackBudgetDefaults,
   applyTrackBudgetProfile,
   getCounterCaps,

@@ -16,7 +16,7 @@ See `${CLAUDE_PLUGIN_ROOT}/schemas/agentic-swe-policy.schema.json`.
 
 ### Track Rules
 
-Force minimum track depth based on file patterns:
+Force a minimum track for work that touches matching paths:
 
 ```json
 {
@@ -26,6 +26,8 @@ Force minimum track depth based on file patterns:
   ]
 }
 ```
+
+The work engine checks these when leaving `lean-track-check` and on any later `--set-pipeline-track` (including a waived downgrade). A track below the highest matching minimum fails with `TRACK_POLICY`. When rules exist and no changed paths are known, a `lean` or `standard` track fails with `POLICY_PATHS_REQUIRED`; `rigorous` always passes. A pattern without `/` matches the file name at any depth.
 
 ### Mandatory Subagents
 
@@ -38,6 +40,34 @@ Require specific specialist reviewers for sensitive areas:
   ]
 }
 ```
+
+When a changed path matches, the work item's `history` must hold a spawn record for that subagent, written by `work record-spawn --role security-auditor` (the role is the file name without `.md`). The engine checks this when leaving `phase` (the spawn must be recorded in that phase) and, for every rule, before `validation` → `pr-creation` (anywhere in history). This also covers tracks that skip the rule's phase. A missing record fails with `MANDATORY_SUBAGENT_MISSING`.
+
+A spawn record shows the agent recorded the spawn; it does not prove what the subagent reviewed.
+
+### Changed paths
+
+Path rules (`track_rules`, `mandatory_subagents`) match the union of:
+
+- paths declared with `work transition --changed-paths a,b` (stored in `pipeline.changed_paths`), and
+- files that differ from `pipeline.base_sha` in the project work tree (`git diff --name-only` plus untracked files). The engine records `base_sha` as `HEAD` when leaving `lean-track-check` if the policy has path rules and the project is a git repo.
+
+`.worklogs/` paths are ignored. If `base_sha` is set but git cannot list changes, the transition fails with `POLICY_PATHS_UNAVAILABLE`. Without git, only declared paths count.
+
+### Required Artifacts
+
+Add files that must exist (non-empty) in `.worklogs/<id>/` before leaving a state, on top of the built-in table:
+
+```json
+{
+  "required_artifacts": {
+    "design": ["threat-model.md"],
+    "validation": ["perf-results.md|perf-waiver.md"]
+  }
+}
+```
+
+`a.md|b.md` accepts either file. Missing files fail the transition with `ARTIFACTS_INCOMPLETE`.
 
 ### Banned Tools
 
@@ -125,17 +155,18 @@ Neither setting can turn a fail-closed case into fail-open. Rules from valid pol
 
 ### Budget Overrides
 
-Adjust cost and iteration limits:
+Replace every track's cost and iteration ceilings:
 
 ```json
 {
   "budget_overrides": {
     "max_cost_usd": 10.0,
-    "max_iterations": 15,
-    "max_doubt_cycles": 5
+    "max_iterations": 15
   }
 }
 ```
+
+`budget-config` applies them on top of `config/budget-thresholds.default.json`, `.agentic-swe/budget-thresholds.json` and `AGENTIC_SWE_BUDGET_THRESHOLDS`, so they set `budget.cost_budget_usd` and `budget.iteration_budget` at `work init` and when a track is set leaving `lean-track-check`. `max_doubt_cycles` is accepted by the schema but ignored: there is no doubt-cycle counter.
 
 ## Commands
 
@@ -143,6 +174,6 @@ Adjust cost and iteration limits:
 - `/policy explain <state>` — show what's enforced for a state
 - `/policy check` — validate policy schema
 
-## CI Enforcement
+## Work engine enforcement
 
-`work-engine` reads the merged policy during `/check` commands. Invalid policies fail with structured errors.
+`work transition` and `work plan-transition` load and validate the merged policy on every transition. An unreadable or schema-invalid source fails the transition with `POLICY_INVALID`; there is no fail-open mode here.
