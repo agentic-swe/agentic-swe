@@ -29,7 +29,7 @@ jobs:
     outputs:
       changed: ${{ steps.freshness.outputs.changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: ${{ env.SITE_REPO }}
           ref: main
@@ -48,7 +48,7 @@ jobs:
           fi
           echo "head=${head}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         if: steps.freshness.outputs.changed == 'true'
         with:
           node-version: '22'
@@ -81,7 +81,7 @@ jobs:
           VITE_BASE: /${{ github.event.repository.name }}/
         run: npm run audit
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         if: steps.freshness.outputs.changed == 'true'
         with:
           path: site/dist
@@ -94,5 +94,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/deploy-pages@v5
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         id: deployment

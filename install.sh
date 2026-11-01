@@ -1,11 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# A release sets DEFAULT_REF to its tag and DEFAULT_SHA256 to that tag's .tar.gz checksum together.
+DEFAULT_REF="main"
+DEFAULT_SHA256=""
+
 REPO="${AGENTIC_SWE_REPO:-agentic-swe/agentic-swe}"
-REF="${AGENTIC_SWE_REF:-main}"
+REF="${AGENTIC_SWE_REF:-$DEFAULT_REF}"
 INSTALL_DIR="${AGENTIC_SWE_HOME:-$HOME/.local/share/agentic-swe}"
 BIN_DIR="${AGENTIC_SWE_BIN_DIR:-$HOME/.local/bin}"
 ARCHIVE_URL="${AGENTIC_SWE_ARCHIVE_URL:-https://github.com/${REPO}/archive/${REF}.tar.gz}"
+if [[ -n "${AGENTIC_SWE_SHA256:-}" ]]; then
+  EXPECTED_SHA256="$AGENTIC_SWE_SHA256"
+elif [[ "$REF" == "$DEFAULT_REF" && "$REPO" == "agentic-swe/agentic-swe" && -z "${AGENTIC_SWE_ARCHIVE_URL:-}" ]]; then
+  EXPECTED_SHA256="$DEFAULT_SHA256"
+else
+  EXPECTED_SHA256=""
+fi
 
 if ! command -v node >/dev/null 2>&1; then
   echo "error: Agentic SWE requires Node.js 18 or newer: https://nodejs.org/" >&2
@@ -27,8 +38,34 @@ TMP="$(mktemp -d "${TMPDIR:-/tmp}/agentic-swe.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/pack"
 
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | cut -d' ' -f1
+  else return 1
+  fi
+}
+
 echo "Downloading Agentic SWE (${REF})..."
-curl -fsSL "$ARCHIVE_URL" | tar -xz --strip-components=1 -C "$TMP/pack"
+curl -fsSL -o "$TMP/archive.tar.gz" "$ARCHIVE_URL"
+
+if [[ -n "$EXPECTED_SHA256" ]]; then
+  if ! ACTUAL_SHA256="$(sha256_of "$TMP/archive.tar.gz")"; then
+    echo "error: sha256sum or shasum is required to verify the download" >&2
+    exit 1
+  fi
+  EXPECTED_LOWER="$(printf '%s' "$EXPECTED_SHA256" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$ACTUAL_SHA256" != "$EXPECTED_LOWER" ]]; then
+    echo "error: SHA-256 mismatch for $ARCHIVE_URL" >&2
+    echo "  expected $EXPECTED_LOWER" >&2
+    echo "  actual   $ACTUAL_SHA256" >&2
+    exit 1
+  fi
+  echo "Verified SHA-256 $ACTUAL_SHA256"
+else
+  echo "warning: download not verified; set AGENTIC_SWE_SHA256 to the archive's SHA-256 to check it" >&2
+fi
+
+tar -xzf "$TMP/archive.tar.gz" --strip-components=1 -C "$TMP/pack"
 
 if [[ ! -f "$TMP/pack/bin/agentic-swe.cjs" ]]; then
   echo "error: downloaded archive is not an Agentic SWE tool release" >&2
