@@ -74,6 +74,43 @@ describe('set-pipeline-track guard', () => {
     assert.strictEqual(r.code, 'TRACK_GUARD');
   });
 
+  describe('leaving lean-track-check (AE-R17)', () => {
+    function atCheck(track) {
+      const dir = workDirAt('lean-track-check', track);
+      fs.writeFileSync(path.join(dir, 'lean-track-check.md'), '# lean-track-check\n');
+      return dir;
+    }
+
+    it('checks the exit edge against the track being set', () => {
+      const dir = atCheck('lean');
+      const r = transition(dir, { to: 'design', setPipelineTrack: 'rigorous' });
+      assert.strictEqual(r.ok, true, r.message);
+      const st = loadWorkItem(dir, pluginRoot).state;
+      assert.deepStrictEqual([st.current_state, st.pipeline.track], ['design', 'rigorous']);
+
+      const down = atCheck('rigorous');
+      const l = transition(down, { to: 'lean-track-implementation', setPipelineTrack: 'lean' });
+      assert.strictEqual(l.ok, true, l.message);
+      assert.strictEqual(loadWorkItem(down, pluginRoot).state.pipeline.track, 'lean');
+    });
+
+    it('still rejects an exit edge the new track forbids', () => {
+      const dir = atCheck('lean');
+      const r = transition(dir, { to: 'lean-track-implementation', setPipelineTrack: 'rigorous' });
+      assert.strictEqual(r.ok, false);
+      assert.strictEqual(r.code, 'EDGE_FORBIDDEN_FOR_TRACK');
+      assert.match(r.message, /effective track: rigorous/);
+      const st = loadWorkItem(dir, pluginRoot).state;
+      assert.deepStrictEqual([st.current_state, st.pipeline.track], ['lean-track-check', 'lean']);
+    });
+
+    it('uses the stored track when no track is set', () => {
+      const r = transition(atCheck('lean'), { to: 'design' });
+      assert.strictEqual(r.ok, false);
+      assert.strictEqual(r.code, 'EDGE_FORBIDDEN_FOR_TRACK');
+    });
+  });
+
   it('CLI waive-track refuses an agent session', () => {
     const dir = workDirAt('feasibility', 'rigorous');
     const r = spawnSync(
