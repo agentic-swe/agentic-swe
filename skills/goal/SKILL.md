@@ -47,7 +47,7 @@ goal-escalated -> goal-execute | goal-failed
 | State | What you do |
 |-------|-------------|
 | `goal-discovery` | Enumerate + triage work from `completion_criteria` and `discovery.sources` (explicit sub-goals, failing tests, `TODO`/`FIXME` scan). Queue child work items into `goal.json.discovery.queue`. If nothing to do and criteria already hold → `goal-approval`; if infeasible → `goal-failed`. |
-| `goal-execute` | Pick the next queued item; run it through the **existing** pipeline via `/work` (no inner changes). On child `completed` → `goal-verify`. If the child parks at a human gate → `goal-gate`. On unrecoverable child failure/escalation → `goal-escalated`. Increment `budget.child_items_used`. |
+| `goal-execute` | Start the next ready item with `dispatch start`; run it through the **existing** pipeline via `/work` (no inner changes). On child `completed` → `goal-verify`. If the child parks at a human gate → `goal-gate`. On unrecoverable child failure/escalation → `goal-escalated`. Increment `budget.child_items_used`. |
 | `goal-verify` | Delegate to `${CLAUDE_PLUGIN_ROOT}/agents/goal-verifier-agent.md` to evaluate `completion_criteria` against repo reality — evidence-backed, distinct from per-item validation. Met → `goal-approval`. Not met, more to do → `goal-execute`. Non-converging → `goal-escalated`. |
 | `goal-gate` | A child is waiting on a human. Pause, surface it, resume to `goal-execute` when resolved (or `goal-failed` if abandoned). |
 | `goal-approval` | Human confirms the objective is genuinely met. Approved → `goal-met`. "Not really done" → `goal-execute`. Record it with `goal-engine approve --decision approved\|changes_requested`. `transition --to goal-met` without that record is rejected. |
@@ -76,10 +76,21 @@ Read/enforce `goal.json.budget`: `max_child_items`, `max_loop_turns`, aggregate 
    node ${CLAUDE_PLUGIN_ROOT}/scripts/goal-engine.cjs transition --goal-dir .worklogs/goals/<id> --to <state> --actor hypervisor --reason "<why>"
    ```
    (Use `--dry-run` to check an edge without committing it. Invalid edges exit non-zero.)
-4. **Execute children** via `/work` in `goal-execute`; record each in `goal.json.children` with `{ work_id, status, contribution }`.
+4. **Execute children** through the dispatcher in `goal-execute` (see **Dispatcher** below), then drive each child via `/work`. The dispatcher records each child in `goal.json.children` with `{ work_id, item_id, status, contribution, track, role }`.
 5. **Verify** via the goal-verifier in `goal-verify`; integrate its verdict (it is input, not automatic truth).
 6. **Halt** at any gate/budget/stall and surface to the human. Append every transition to `goal.json.history` and `audit.log`.
 7. Repeat until `goal-met` or `goal-failed`.
+
+### Dispatcher
+
+`agentic-swe dispatch` (`scripts/dispatch.cjs`) turns `discovery.queue` into ordered child work items. Every decision, including a refusal, is a `dispatch.*` event in the goal journal and a line in `audit.log`.
+
+1. **Queue** in `goal-discovery`: `dispatch enqueue --goal-dir <dir> --id <item> --type <type> --title "…" [--depends-on a,b] [--paths a,b] --actor hypervisor`. Queued items are immutable.
+2. **Approve** (human-only, own terminal): `dispatch approve --goal-dir <dir> --item a,b`. The approval is bound to the item's content hash, so editing an item voids it. Unapproved items are skipped by the plan.
+3. **Plan**: `dispatch plan --goal-dir <dir> --dry-run` shows the DAG and writes nothing; `--actor hypervisor` stores it in `goal.json.dispatch.plan`. Routing by type: `docs`/`test` → lean, `feature`/`bugfix`/`refactor` → standard, `policy`/`security` → rigorous with the design-panel reviewers. Repo policy `track_rules` matching an item's `--paths` can only raise the track. Cycles, unknown dependencies, and dependencies on unapproved items are rejected.
+4. **Start** in `goal-execute`: `dispatch start --goal-dir <dir> --actor hypervisor [--item <id>]` creates the next ready child (`.worklogs/<goal>--<item>/`, initialised at the routed track). It refuses while any predecessor is not `completed` (`DISPATCH_BLOCKED`), another child is still open (`DISPATCH_BUSY`), or the goal budget is spent (`GOAL_BUDGET_STOP`).
+5. **Resume** an interrupted child (its `state.json` is missing or behind its journal): `dispatch resume --goal-dir <dir> --item <id> --actor hypervisor` rebuilds `state.json` from the journal. Completed predecessors are not touched. A `pipeline-failed` or `escalate-*` child is a human decision, not a resume.
+6. `dispatch status --goal-dir <dir>` is read-only: each child is pending, blocked, ready, active, interrupted, completed, failed, or escalated.
 
 ### First-slice limits (current build)
 
