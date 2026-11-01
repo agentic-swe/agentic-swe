@@ -63,6 +63,7 @@ gh pr create --base <base-branch> --title "<title>" --body "<body>"
 - do not invent PR URLs
 - if `gh pr create` would require implicit push behavior you do not want, push explicitly first
 - if auth or permissions fail, preserve branch state and report the exact blocker
+- PR writes (`gh pr create|merge|edit|comment|review|update-branch`, GitHub MCP PR tools) are privileged: the policy hook denies them until a human runs `agentic-swe work authorize --action github.pr.write`. If denied, report the blocker; never write `authorization-record.json` yourself.
 
 ## Output Format
 

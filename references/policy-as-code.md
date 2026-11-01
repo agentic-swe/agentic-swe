@@ -121,7 +121,7 @@ When repo and org policies both list a state, only tools present in both lists a
 
 1. Resolves the project root from the hook's `cwd` (then Cursor `workspace_roots[0]`, `CURSOR_PROJECT_DIR`, `CLAUDE_PROJECT_DIR`, the process cwd) and the work item from `AGENTIC_SWE_WORK_DIR` or `.worklogs/` discovery.
 2. Loads the pack default, repo and org policies and validates each, and the merged result, against `schemas/agentic-swe-policy.schema.json`.
-3. Evaluates `banned_tools` → `banned_commands` → `protected_paths` → `phase_tool_allowlist` against the current state.
+3. Evaluates `banned_tools` → `banned_commands` → `protected_paths` → `phase_tool_allowlist` against the current state, then the caller's [agent role](#agent-roles).
 4. Appends one line to the work item's `audit.log`:
    `<ISO> actor=agent action=tool_call tool=<name> decision=allow|deny state=<state> [rule=<rule>] input="<redacted, ≤160 chars>" | evidence: PreToolUse policy hook`
 5. Exits `2` with the reason on stderr to deny, `0` to allow. With `--host cursor` it also prints `{"permission":"allow"|"deny",...}`.
@@ -137,14 +137,48 @@ Repo and org policy are enforced even without an active work item; audit lines a
 | `banned_commands[baseline-force-push-protected]` | `git push` with `--force`, `-f`, `--force-with-lease` or a `+refspec` naming `main`, `master` or `release/*` |
 | `banned_commands[baseline-npm-publish]` | `npm publish`, `pnpm publish`, `yarn publish`, `yarn npm publish` |
 | `banned_commands[baseline-rm-root]` | `rm` of `/` or `/*` |
-| `banned_commands[baseline-integrity-files-shell]` | shell writes (`>`, `tee`, `sed -i`, `mv`, `cp`, `rm`, inline `node -e` / `python -c`, ...) naming `journal.jsonl` or `approval-record.json` |
-| `protected_paths[baseline-journal]`, `protected_paths[baseline-approval-record]` | Write / Edit / `apply_patch` / Delete targets under `.worklogs/**/journal.jsonl` or `.worklogs/**/approval-record.json` |
+| `banned_commands[baseline-integrity-files-shell]` | shell writes (`>`, `tee`, `sed -i`, `mv`, `cp`, `rm`, inline `node -e` / `python -c`, ...) naming `journal.jsonl`, `approval-record.json` or `authorization-record.json` |
+| `protected_paths[baseline-journal]`, `protected_paths[baseline-approval-record]`, `protected_paths[baseline-authorization-record]` | Write / Edit / `apply_patch` / Delete targets under `.worklogs/**/journal.jsonl`, `.worklogs/**/approval-record.json` or `.worklogs/**/authorization-record.json` |
 
 `protected_paths` entries are globs matched against every path an edit-capable tool would modify (tool names containing write, edit, replace, patch, delete, create, move, rename or notebook; `apply_patch` file headers are parsed).
 
+### Agent roles
+
+`config/roles/*.json` (schema `schemas/role-definition.schema.json`, checked by `npm run catalog:lint`) defines one role per file:
+
+| Role | Agent | Tools | Privileged actions |
+|------|-------|-------|--------------------|
+| `hypervisor` | main session | all | `github.branch.push`, `github.pr.write` |
+| `developer` | `developer-agent` | read, search, edit, shell, spawn, plan | none |
+| `architecture-reviewer` | `architect-reviewer` | read, search, plan | none |
+| `security-reviewer` | `security-reviewer` | read, search, plan | none |
+| `adversarial-reviewer` | `adversarial-reviewer` | read, search, plan | none |
+| `git-operations` | `git-operations-agent` | read, search, edit, shell, plan | `github.branch.push` |
+| `pr-manager` | `pr-manager-agent` | read, search, edit, shell, mcp, plan | `github.pr.write` |
+| `goal-verifier` | `goal-verifier-agent` | read, search, shell, plan | none |
+
+Tool classes are defined in `scripts/lib/policy/roles.cjs` (`TOOL_CLASSES`); for example `edit` covers `Write`, `Edit`, `MultiEdit`, `StrReplace`, `Delete` and `apply_patch`, and `mcp` covers `mcp__*`. A role entry may also be a tool-name glob.
+
+**Who is calling.** `AGENTIC_SWE_ROLE=<id>` if set (an unknown id is a hook error); otherwise the hook input's `agent_type` with any `<plugin>:` prefix removed, matched against each role's `agent_types`; otherwise `hypervisor` while a work item is active. With no work item and no agent identity, no role check runs. An agent whose type matches no role keeps its tools but may take no privileged action.
+
+**Tools.** A call to a tool outside the role's list is denied as `role[<id>].tools`.
+
+**Privileged actions.** Detected from shell text (`git push` other than `--dry-run`; `gh pr create|merge|edit|close|reopen|comment|review|ready|update-branch`; `gh api` writes to `/pulls`, `/issues`, `/git/refs`, `/contents`, ...; `npm|pnpm|yarn publish`) and from MCP tool names (`push_files`, `create_branch`, `create_or_update_file`, `create_pull_request`, `merge_pull_request`, ...). A privileged action is denied as `privileged[<action>]` unless the role lists it **and** the work item's `authorization-record.json` grants it. Only a human can write that record:
+
+```bash
+agentic-swe work authorize --work-dir .worklogs/<id> --action github.branch.push [--note "…"]
+agentic-swe work authorize --work-dir .worklogs/<id> --action github.branch.push --revoke
+```
+
+`work authorize` refuses agent sessions and non-TTY stdin and asks you to type the work id, like `work approve`; each grant and revocation is appended to `audit.log`. No role lists `npm.publish`, so publishing is denied for every agent.
+
+`budget`, `review` and `escalation` in a role file are recorded for the dispatcher and review gate; the hook does not enforce them.
+
+**Limits.** Cursor and Codex `preToolUse` input carries no subagent identity, so on those hosts every call in a work item is checked as `hypervisor` unless `AGENTIC_SWE_ROLE` is set. Tool classes restrict tools, not what a shell command does: a role with `shell` can still write files through it.
+
 ### Hook errors
 
-A hook error is bad stdin, a missing `tool_name`, an unreadable or schema-invalid policy file, a missing `AGENTIC_SWE_POLICY` file, or a crash. It is logged as `action=tool_call_hook_error ... mode=fail-closed|fail-open`, and:
+A hook error is bad stdin, a missing `tool_name`, an unreadable or schema-invalid policy file, a missing `AGENTIC_SWE_POLICY` file, an invalid role file or unknown `AGENTIC_SWE_ROLE`, an unreadable `authorization-record.json`, or a crash. It is logged as `action=tool_call_hook_error ... mode=fail-closed|fail-open`, and:
 
 - **denies** the call when the active work item's `pipeline.track` is `rigorous` or missing, or its state is unreadable;
 - in `lean` / `standard`, or with no work item, **denies** only when `.agentic-swe/runtime.json` contains `{ "policy": { "fail_closed": true } }` (or the file is unreadable) or `AGENTIC_SWE_POLICY_FAIL_CLOSED=1`; otherwise it warns on stderr and allows.

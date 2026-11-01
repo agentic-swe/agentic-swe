@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "developer",
+  "description": "Bounded code changes in implementation phases.",
+  "agents": [
+    "agents/developer-agent.md"
+  ],
+  "agent_types": [
+    "developer-agent"
+  ],
+  "tools": [
+    "read",
+    "search",
+    "edit",
+    "shell",
+    "spawn",
+    "plan"
+  ],
+  "privileged_actions": [],
+  "budget": {
+    "max_spawns_per_phase": 1
+  },
+  "review": {
+    "required": true,
+    "by": [
+      "hypervisor"
+    ]
+  },
+  "escalation": {
+    "to": "hypervisor",
+    "when": [
+      "blocked",
+      "scope-change"
+    ]
+  }
+}

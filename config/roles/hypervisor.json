@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "hypervisor",
+  "description": "Main session: owns the state machine, transitions, human gates and delegation.",
+  "agents": [],
+  "agent_types": [],
+  "tools": [
+    "*"
+  ],
+  "privileged_actions": [
+    "github.branch.push",
+    "github.pr.write"
+  ],
+  "budget": {
+    "max_spawns_per_phase": 2
+  },
+  "review": {
+    "required": false
+  },
+  "escalation": {
+    "to": "human",
+    "when": [
+      "ambiguity-wait",
+      "approval-wait",
+      "escalate-code",
+      "escalate-validation",
+      "budget-stop"
+    ]
+  }
+}

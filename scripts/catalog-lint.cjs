@@ -2,6 +2,7 @@
 /**
  * Lint subagent catalog: frontmatter, unique names, model enum, purpose overlap,
  * invocation cues in description, tools present, name matches filename.
+ * Also validates config/roles/*.json (AGENTIC_SWE_ROLES_DIR overrides the directory).
  */
 'use strict';
 
@@ -44,6 +45,38 @@ function jaccardTokens(a, b) {
   }
   const uni = A.size + B.size - inter;
   return uni === 0 ? 0 : inter / uni;
+}
+
+/** Role files: schema, agent prompt files exist and their frontmatter name is a listed agent_type, references resolve. */
+function lintRoles(errors) {
+  const { loadRoles } = require('./lib/policy/roles.cjs');
+  const rolesDir = path.resolve(process.env.AGENTIC_SWE_ROLES_DIR || path.join(root, 'config', 'roles'));
+  const { roles, errors: loadErrors } = loadRoles(rolesDir);
+  errors.push(...loadErrors.map((e) => `roles: ${e}`));
+  const typeOwner = new Map();
+  for (const role of roles.values()) {
+    const rel = `config/roles/${role.id}.json`;
+    for (const t of role.agent_types) {
+      if (typeOwner.has(t)) errors.push(`${rel}: agent_type "${t}" is also claimed by ${typeOwner.get(t)}`);
+      else typeOwner.set(t, rel);
+    }
+    for (const agentRel of role.agents || []) {
+      const abs = path.join(root, agentRel);
+      if (!fs.existsSync(abs)) {
+        errors.push(`${rel}: agent file ${agentRel} does not exist`);
+        continue;
+      }
+      const ex = extractFrontmatter(fs.readFileSync(abs, 'utf8'));
+      const name = ex ? String(parseSimpleFields(ex.block).name || '').trim() : '';
+      if (!name) errors.push(`${rel}: ${agentRel} has no frontmatter name`);
+      else if (!role.agent_types.includes(name)) errors.push(`${rel}: ${agentRel} is named "${name}", which is not in agent_types`);
+    }
+    const refs = [...((role.review && role.review.by) || []), role.escalation.to];
+    for (const ref of refs) {
+      if (ref !== 'human' && !roles.has(ref)) errors.push(`${rel}: references unknown role "${ref}"`);
+    }
+  }
+  return roles.size;
 }
 
 function lint() {
@@ -135,11 +168,13 @@ function lint() {
     }
   }
 
+  const roleCount = lintRoles(errors);
+
   if (errors.length) {
     console.error('catalog-lint: FAILED\n' + errors.map((e) => `  - ${e}`).join('\n'));
     process.exit(1);
   }
-  console.log(`catalog-lint: OK (${files.length} agents under ${path.relative(root, subagentsDir) || '.'})`);
+  console.log(`catalog-lint: OK (${files.length} agents under ${path.relative(root, subagentsDir) || '.'}; ${roleCount} roles)`);
 }
 
 lint();

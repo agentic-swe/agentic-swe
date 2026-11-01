@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "pr-manager",
+  "description": "Pull request creation and lifecycle.",
+  "agents": [
+    "agents/pr-manager-agent.md"
+  ],
+  "agent_types": [
+    "pr-manager-agent"
+  ],
+  "tools": [
+    "read",
+    "search",
+    "edit",
+    "shell",
+    "mcp",
+    "plan"
+  ],
+  "privileged_actions": [
+    "github.pr.write"
+  ],
+  "budget": {
+    "max_spawns_per_phase": 0
+  },
+  "review": {
+    "required": false
+  },
+  "escalation": {
+    "to": "hypervisor",
+    "when": [
+      "ci-failure",
+      "review-requested-changes"
+    ]
+  }
+}

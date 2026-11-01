@@ -64,6 +64,8 @@ function parseArgs(argv) {
     else if (a === '--note') out.note = argv[++i];
     else if (a === '--base') out.base = argv[++i];
     else if (a === '--write') out.write = true;
+    else if (a === '--action') out.action = argv[++i];
+    else if (a === '--revoke') out.revoke = true;
     else if (a === '--journal') out.journal = true;
     else if (!a.startsWith('-')) rest.push(a);
   }
@@ -135,6 +137,36 @@ async function runApprove(args, pluginRoot) {
   else console.log('OK', r.decision, '→', r.current_state, 'by', identity.actor);
 }
 
+async function runAuthorize(args, pluginRoot) {
+  const { detectAgentContext, resolveUserIdentity } = require('./lib/approval/human-approval.cjs');
+  const { PRIVILEGED_ACTIONS, recordAuthorization } = require('./lib/policy/roles.cjs');
+
+  const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
+  if (refusal) fail(`refusing authorization: ${refusal}`, 3, { code: 'AGENT_CONTEXT' });
+
+  const wdArg = args.workDir || process.env.AGENTIC_SWE_WORK_DIR;
+  if (!wdArg) fail('authorize requires --work-dir (or AGENTIC_SWE_WORK_DIR)', 2);
+  if (!PRIVILEGED_ACTIONS.includes(args.action)) fail(`authorize requires --action ${PRIVILEGED_ACTIONS.join('|')}`, 2);
+  const workDir = path.resolve(wdArg);
+  const loaded = loadWorkItem(workDir, pluginRoot);
+  if (!loaded.ok) fail(loaded.message, 1, loaded);
+  const identity = resolveUserIdentity({ cwd: path.resolve(args.cwd || projectRootFromWorkDir(workDir)) });
+  if (!identity) fail('cannot resolve your identity (set git user.email)', 1, { code: 'NO_IDENTITY' });
+
+  const verb = args.revoke ? 'revoke' : 'grant';
+  process.stderr.write(`\nWork item: ${loaded.state.work_id}\nAction: ${args.action} (${verb})\nBy: ${identity.actor}\n\n`);
+  const readline = require('node:readline/promises');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
+  const typed = await rl.question(`Type the work id to ${verb} ${args.action}: `);
+  rl.close();
+  if (typed.trim() !== loaded.state.work_id) fail('confirmation did not match the work id; nothing recorded', 1, { code: 'NOT_CONFIRMED' });
+
+  const r = recordAuthorization({ workDir, action: args.action, identity, note: args.note, revoke: Boolean(args.revoke) });
+  if (!r.ok) fail(r.message, 1, r);
+  if (args.json) printJson(r);
+  else console.log('OK', args.revoke ? 'revoked' : 'authorized', args.action, 'by', identity.actor);
+}
+
 function main() {
   const args = parseArgs(process.argv);
   const pluginRoot = args.pluginRoot || getDefaultPluginRoot();
@@ -163,6 +195,9 @@ Commands:
   approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--json]
       Human-only: refuses agent sessions and non-TTY stdin, shows risk flags, asks you to type the work id.
       Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
+  authorize --work-dir <dir> --action github.branch.push|github.pr.write|npm.publish [--revoke] [--note "…"] [--json]
+      Human-only (same checks as approve). Writes authorization-record.json; the pre-tool hook denies a
+      privileged action unless the caller's role (config/roles) lists it and this record grants it.
   waive-track --work-dir <dir> --reason "…" [--json]
       Human-only. Records pipeline.track_waiver { actor: "user:…", reason, at } so a later transition may set a lower track.
   transition --work-dir <dir> --to <state> --actor <id> [--from …] [--reason …] [--evidence …] [--changed-paths a,b] [--acceptance-command "…"] [--dry-run] [--no-decrement-budget] [--skip-muscle-memory] [--json]
@@ -553,6 +588,11 @@ Commands:
 
   if (cmd === 'approve') {
     runApprove(args, pluginRoot).catch((e) => fail(String(e && e.message ? e.message : e), 1));
+    return;
+  }
+
+  if (cmd === 'authorize') {
+    runAuthorize(args, pluginRoot).catch((e) => fail(String(e && e.message ? e.message : e), 1));
     return;
   }
 
