@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentic-swe.github.io/schemas/role-definition.schema.json",
+  "title": "Agentic SWE agent role",
+  "description": "One file per role under config/roles/. The pre-tool policy hook enforces tools and privileged_actions; budget, review and escalation are recorded for the dispatcher and review gates.",
+  "type": "object",
+  "required": ["schema_version", "id", "description", "agent_types", "tools", "privileged_actions", "budget", "review", "escalation"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "Role id; must match the file name without .json." },
+    "description": { "type": "string", "minLength": 1 },
+    "agents": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^agents/.+\\.md$" },
+      "uniqueItems": true,
+      "description": "Prompt files that act in this role. Each file's frontmatter name must be listed in agent_types."
+    },
+    "agent_types": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "Host agent names for this role, matched against the hook's agent_type with any '<plugin>:' prefix removed. Empty for the main session (hypervisor)."
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "Allowed tools: class names (read, search, edit, shell, web, spawn, mcp, plan) or tool-name globs. Any other tool is denied for this role."
+    },
+    "privileged_actions": {
+      "type": "array",
+      "items": { "enum": ["github.branch.push", "github.pr.write", "npm.publish"] },
+      "uniqueItems": true,
+      "description": "Privileged actions this role may take, each only while an authorization record for it exists. Unlisted actions are always denied."
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_spawns_per_phase": { "type": "integer", "minimum": 0 },
+        "max_cost_usd_per_phase": { "type": "number", "minimum": 0 }
+      },
+      "description": "Per-phase limits for the dispatcher (AE-014). Not enforced by the hook."
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required"],
+      "properties": {
+        "required": { "type": "boolean", "description": "Whether this role's output needs independent review before it is accepted." },
+        "by": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Role ids that may review it." }
+      },
+      "description": "Review requirement for the review gate (AE-016). Not enforced by the hook."
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["to"],
+      "properties": {
+        "to": { "type": "string", "description": "A role id, or \"human\"." },
+        "when": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    }
+  }
+}

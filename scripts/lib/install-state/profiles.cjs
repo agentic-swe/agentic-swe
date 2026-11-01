@@ -23,6 +23,7 @@ const MINIMAL_ENTRIES = [
   'scripts/hook-pre-tool-policy.cjs',
   'scripts/lib/policy',
   'config/default-policy.json',
+  'config/roles',
   'scripts/session-capture.cjs',
   'scripts/host-lifecycle.cjs',
   'scripts/mcp-memory-server.cjs',

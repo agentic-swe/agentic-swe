@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "adversarial-reviewer",
+  "description": "Design-panel adversarial review; read-only.",
+  "agents": [
+    "agents/panel/adversarial-reviewer.md"
+  ],
+  "agent_types": [
+    "adversarial-reviewer"
+  ],
+  "tools": [
+    "read",
+    "search",
+    "plan"
+  ],
+  "privileged_actions": [],
+  "budget": {
+    "max_spawns_per_phase": 0
+  },
+  "review": {
+    "required": false
+  },
+  "escalation": {
+    "to": "hypervisor",
+    "when": [
+      "blocking-finding"
+    ]
+  }
+}

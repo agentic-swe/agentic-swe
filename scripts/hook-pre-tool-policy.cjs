@@ -114,6 +114,28 @@ function main() {
     errors.push(String(e && e.message ? e.message : e));
   }
 
+  if (toolName && verdict && verdict.decision !== 'deny') {
+    try {
+      const roles = require('./lib/policy/roles.cjs');
+      const loaded = roles.loadRoles(process.env.AGENTIC_SWE_ROLES_DIR || undefined);
+      errors.push(...loaded.errors);
+      const actor = roles.resolveActor({ roles: loaded.roles, agentType: input.agent_type, hasWorkItem: Boolean(workDir) });
+      if (actor.error) errors.push(actor.error);
+      const auth = roles.readAuthorizations(workDir);
+      if (auth.error) errors.push(auth.error);
+      const roleVerdict = roles.evaluateRoleCall({
+        roles: loaded.roles,
+        actor,
+        toolName,
+        toolInput: input.tool_input,
+        authorized: auth.actions,
+      });
+      if (roleVerdict.decision === 'deny') verdict = { ...verdict, ...roleVerdict };
+    } catch (e) {
+      errors.push(`role check failed (${e && e.message ? e.message : e})`);
+    }
+  }
+
   const { formatAuditLine } = require('./lib/policy/runtime.cjs');
   if (verdict && verdict.decision === 'deny') {
     appendAudit(workDir, formatAuditLine({ toolName, decision: 'deny', state: currentState, rule: verdict.rule, input: summary }));

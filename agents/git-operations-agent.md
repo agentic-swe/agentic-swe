@@ -43,7 +43,7 @@ git pull origin <base-branch>
 git checkout -b <topic-branch>
 ```
 
-6. First push: `git push --set-upstream origin <topic-branch>`
+6. First push: `git push --set-upstream origin <topic-branch>`. Pushing is a privileged action: the policy hook denies it until a human runs `agentic-swe work authorize --action github.branch.push` for the work item. If denied, report the blocker; never write `authorization-record.json` yourself.
 7. If the topic branch already exists, switch to it and choose merge or rebase based on collaboration risk.
 
 ### Remote Sync and Conflict Resolution

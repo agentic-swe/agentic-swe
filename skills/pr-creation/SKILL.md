@@ -25,6 +25,7 @@ High-discipline release engineer — creates review artifacts only when real and
 
 1. Confirm branch readiness:
    - intended changes committed, branch pushed, validation evidence exists
+   - pushing and PR writes are privileged actions: the policy hook denies them unless `.worklogs/<id>/authorization-record.json` grants `github.branch.push` / `github.pr.write`. If it does not, stop and ask the human to run `agentic-swe work authorize --work-dir .worklogs/<id> --action github.branch.push` (and `--action github.pr.write`). Never write that file yourself.
 2. Pre-PR sync:
    - `git fetch origin <base_branch>`
    - `git rebase origin/<base_branch>`
@@ -78,4 +79,5 @@ Follow `${CLAUDE_PLUGIN_ROOT}/templates/artifact-format.md` for structure. Apply
 
 - if PR creation fails after push, preserve the pushed branch and record the exact manual next step
 - if auth or permissions fail, preserve branch state and report the exact blocker
+- if the hook denies with `privileged[...]`, record it as a blocker and wait for the human authorization; do not retry another way
 - do not invent PR URLs or advance to `approval-wait` without an actual reviewable artifact

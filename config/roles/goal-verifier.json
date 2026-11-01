@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "goal-verifier",
+  "description": "Checks a goal's completion criteria against the repository; runs verify commands, edits nothing.",
+  "agents": [
+    "agents/goal-verifier-agent.md"
+  ],
+  "agent_types": [
+    "goal-verifier-agent"
+  ],
+  "tools": [
+    "read",
+    "search",
+    "shell",
+    "plan"
+  ],
+  "privileged_actions": [],
+  "budget": {
+    "max_spawns_per_phase": 0
+  },
+  "review": {
+    "required": false
+  },
+  "escalation": {
+    "to": "hypervisor",
+    "when": [
+      "criteria-unverifiable"
+    ]
+  }
+}

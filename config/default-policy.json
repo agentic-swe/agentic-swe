@@ -21,8 +21,8 @@
     },
     {
       "id": "baseline-integrity-files-shell",
-      "pattern": "(?:>|\\btee\\b|\\bsed\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\bperl\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\b(?:mv|cp|rm|truncate|dd|ln|install)\\s|\\b(?:node|python3?|ruby|perl|deno|bun)\\b[^;&|\\n]*\\s-(?:e|c|p)\\b)[^;&|\\n]*(?:journal\\.jsonl|approval-record\\.json)",
-      "reason": "journal.jsonl and approval-record.json are written only by the engine and human approval commands"
+      "pattern": "(?:>|\\btee\\b|\\bsed\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\bperl\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\b(?:mv|cp|rm|truncate|dd|ln|install)\\s|\\b(?:node|python3?|ruby|perl|deno|bun)\\b[^;&|\\n]*\\s-(?:e|c|p)\\b)[^;&|\\n]*(?:journal\\.jsonl|approval-record\\.json|authorization-record\\.json)",
+      "reason": "journal.jsonl, approval-record.json and authorization-record.json are written only by the engine and human-only commands"
     }
   ],
   "protected_paths": [
@@ -35,6 +35,11 @@
       "id": "baseline-approval-record",
       "pattern": "**/.worklogs/**/approval-record.json",
       "reason": "Approval records are written only by human approval commands"
+    },
+    {
+      "id": "baseline-authorization-record",
+      "pattern": "**/.worklogs/**/authorization-record.json",
+      "reason": "Authorization records are written only by `work authorize`, a human-only command"
     }
   ],
   "required_artifacts": {},

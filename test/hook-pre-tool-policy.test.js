@@ -174,7 +174,13 @@ describe('PreToolUse policy hook', () => {
   });
 
   describe('baseline policy (no repo policy)', () => {
-    beforeEach(() => fs.rmSync(path.join(repo, '.agentic-swe', 'policy.json')));
+    beforeEach(() => {
+      fs.rmSync(path.join(repo, '.agentic-swe', 'policy.json'));
+      fs.writeFileSync(
+        path.join(workDir, 'authorization-record.json'),
+        JSON.stringify({ grants: [{ action: 'github.branch.push', actor: 'user:test@example.com', at: '2026-01-01T00:00:00Z' }] })
+      );
+    });
     const bash = (command) => ({ tool_name: 'Bash', tool_input: { command } });
     const cases = [
       ['force-push to main', () => bash('git push --force origin main'), 'banned_commands\\[baseline-force-push-protected\\]'],
