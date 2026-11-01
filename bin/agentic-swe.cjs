@@ -27,6 +27,7 @@ function usage() {
   process.stderr.write(`  agentic-swe work [args]         Work engine (init, status, transition, descent, record-cost)\n`);
   process.stderr.write(`  agentic-swe receipt [args]      Render a receipt for a worklog (passes args to scripts/render-receipt.cjs)\n`);
   process.stderr.write(`  agentic-swe goal [args]         Run the goal-loop engine (passes args to scripts/goal-engine.cjs)\n`);
+  process.stderr.write(`  agentic-swe dispatch [args]     Plan, start, and resume a goal's child work items in dependency order\n`);
   process.stderr.write(`  agentic-swe context-budget [args]  Estimate always-loaded context tokens for the install profile\n`);
   process.stderr.write(`  agentic-swe host-parity [args]     Report stable / partial / instruction-only status per supported host\n`);
   process.stderr.write(`  agentic-swe scan [args]          Scan a destination for agent-surface findings\n`);
@@ -75,6 +76,12 @@ if (cmd === 'receipt') {
 
 if (cmd === 'goal') {
   const script = path.join(root, 'scripts', 'goal-engine.cjs');
+  const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
+if (cmd === 'dispatch') {
+  const script = path.join(root, 'scripts', 'dispatch.cjs');
   const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
   process.exit(res.status == null ? 1 : res.status);
 }
