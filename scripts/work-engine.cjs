@@ -20,6 +20,7 @@ const {
   applyTransition,
   loadWorkItem,
   recordSpawn,
+  recordReview,
 } = require('./lib/work-engine/engine.cjs');
 const {
   loadMergedBudgetThresholds,
@@ -66,6 +67,14 @@ function parseArgs(argv) {
     else if (a === '--write') out.write = true;
     else if (a === '--action') out.action = argv[++i];
     else if (a === '--revoke') out.revoke = true;
+    else if (a === '--reviewer') out.reviewer = argv[++i];
+    else if (a === '--model') out.model = argv[++i];
+    else if (a === '--implementer-model') out.implementerModel = argv[++i];
+    else if (a === '--run-id') out.runId = argv[++i];
+    else if (a === '--verdict') out.verdict = argv[++i];
+    else if (a === '--findings') out.findings = argv[++i];
+    else if (a === '--failed') out.failed = true;
+    else if (a === '--error') out.error = argv[++i];
     else if (a === '--journal') out.journal = true;
     else if (!a.startsWith('-')) rest.push(a);
   }
@@ -186,8 +195,14 @@ Commands:
       Rebuild state.json from the journal when the state file is corrupt.
   migrate --journal --work-dir <.worklogs/id> [--json]
       Genesis history.imported event for a work item that predates the journal.
-  record-spawn --work-dir <.worklogs/id> --role <id> [--actor <id>] [--json]
+  record-spawn --work-dir <.worklogs/id> --role <id> [--model <id>] [--actor <id>] [--json]
       Only writer of counters.panel_runs (role "panel" or "panel:…") and counters.subagent_spawns.
+      --model on a developer spawn is the implementer model that record-review compares against.
+  record-review --work-dir <dir> --reviewer <role> --model <id> --run-id <id> --verdict approved|rejected|escalated [--findings file.json] [--implementer-model <id>] [--json]
+  record-review --work-dir <dir> --reviewer <role> --model <id> --run-id <id> --failed --error "…" [--json]
+      Journals review.recorded / review.failed in state.reviews. findings: [{ id, severity: info|low|medium|high|critical,
+      summary, evidence_refs: [..], resolved? }]. code-review → permissions-check is rejected while this round has no review,
+      a spawned reviewer without a result, a failed or non-approved latest run, or an unresolved high/critical finding.
   budget   --work-dir <.worklogs/id> [--plugin-root <pack>] [--json]
   plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--changed-paths a,b] [--json]
   risk-flags [--base origin/main] [--cwd <repo>] [--work-dir <dir>] [--write] [--json]
@@ -469,12 +484,21 @@ Commands:
         verifyExit = 'unreadable';
       }
     }
-    const summary = [
+    const { reviewSummary } = require('./lib/work-engine/reviews.cjs');
+    const reviews = reviewSummary(state);
+    const lines = [
       `Active work: ${state.work_id || path.basename(workDirResolved)}`,
       `Track: ${(state.pipeline && state.pipeline.track) || 'unset'}`,
       `State: ${state.current_state}`,
       `Last verify exit: ${verifyExit}`,
-    ].join('\n');
+    ];
+    if (reviews.recorded || reviews.failed) {
+      lines.push(`Reviews: ${reviews.recorded} recorded, ${reviews.failed} failed, ${reviews.unresolved_blocking.length} unresolved high/critical`);
+      if (reviews.same_model.length) {
+        lines.push(`Same-model reviews: ${reviews.same_model.map((r) => `${r.reviewer} (${r.model})`).join(', ')}`);
+      }
+    }
+    const summary = lines.join('\n');
     if (args.json) {
       printJson({
         ok: true,
@@ -483,6 +507,7 @@ Commands:
         track: (state.pipeline && state.pipeline.track) || null,
         current_state: state.current_state,
         verify_exit: verifyExit,
+        reviews,
         summary,
       });
     } else {
@@ -664,7 +689,7 @@ Commands:
 
   if (cmd === 'record-spawn') {
     if (!args.role) fail('record-spawn requires --role', 2);
-    const r = recordSpawn({ workDir, pluginRoot, role: args.role, actor: args.actor || 'work-engine' });
+    const r = recordSpawn({ workDir, pluginRoot, role: args.role, actor: args.actor || 'work-engine', model: args.model });
     if (!r.ok) {
       if (args.json) printJson(r);
       else fail(r.message || 'record-spawn failed', 1, r);
@@ -674,6 +699,39 @@ Commands:
     const out = { ok: true, role: args.role, panel_runs: counters.panel_runs || 0, subagent_spawns: counters.subagent_spawns || 0 };
     if (args.json) printJson(out);
     else console.log('RECORDED', args.role, JSON.stringify(out));
+    return;
+  }
+
+  if (cmd === 'record-review') {
+    let findings;
+    if (args.findings) {
+      const file = path.resolve(args.findings);
+      try {
+        findings = JSON.parse(fs.readFileSync(file, 'utf8'));
+      } catch (e) {
+        fail(`--findings ${args.findings}: ${e.message}`, 2, { code: 'REVIEW_INVALID' });
+      }
+    }
+    const r = recordReview({
+      workDir,
+      pluginRoot,
+      reviewer: args.reviewer,
+      model: args.model,
+      runId: args.runId,
+      verdict: args.verdict,
+      findings,
+      failed: Boolean(args.failed),
+      error: args.error,
+      implementerModel: args.implementerModel,
+      actor: args.actor || 'work-engine',
+    });
+    if (!r.ok) {
+      if (args.json) printJson(r);
+      else fail(r.message || 'record-review failed', 1, r);
+      process.exit(1);
+    }
+    if (args.json) printJson({ ok: true, review: r.review });
+    else console.log('RECORDED', r.review.type, r.review.reviewer, r.review.run_id, `independence=${r.review.independence}`);
     return;
   }
 

@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { applyTransition, loadWorkItem, recordSpawn, validateTransition } = require('../scripts/lib/work-engine/engine.cjs');
+const { applyTransition, loadWorkItem, recordReview, recordSpawn, validateTransition } = require('../scripts/lib/work-engine/engine.cjs');
 const { loadMergedBudgetThresholds } = require('../scripts/lib/work-engine/budget-config.cjs');
 const { recordTrackWaiver } = require('../scripts/lib/work-engine/track-guard.cjs');
 const { checkTrackRules } = require('../scripts/lib/policy/merge.cjs');
@@ -237,6 +237,7 @@ describe('policy track_rules', () => {
 
 describe('policy mandatory_subagents', () => {
   const rule = { pattern: 'src/payments/**', subagent: 'quality-security/security-auditor.md', phase: 'code-review' };
+  const approve = (dir, reviewer) => recordReview({ workDir: dir, pluginRoot, reviewer, model: 'm', runId: `${reviewer}-1`, verdict: 'approved' });
 
   it('blocks leaving the phase until the spawn is recorded in it', () => {
     writePolicy({ mandatory_subagents: [rule] });
@@ -250,6 +251,7 @@ describe('policy mandatory_subagents', () => {
     assert.match(blocked.message, /security-auditor\.md for src\/payments\/\*\* in code-review/);
 
     assert.strictEqual(recordSpawn({ workDir: dir, pluginRoot, role: 'security-auditor', actor: 'test' }).ok, true);
+    assert.strictEqual(approve(dir, 'security-auditor').ok, true);
     const r = go(dir, 'permissions-check');
     assert.strictEqual(r.ok, true, r.message);
   });
@@ -285,6 +287,7 @@ describe('policy mandatory_subagents', () => {
       files: ['review-pass.md'],
       pipeline: { changed_paths: ['docs/guide.md'] },
     });
+    assert.strictEqual(approve(dir, 'code-reviewer').ok, true);
     assert.strictEqual(go(dir, 'permissions-check').ok, true);
   });
 });

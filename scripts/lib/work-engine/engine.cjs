@@ -11,6 +11,7 @@ const { runPostTransitionHooks } = require('./post-transition.cjs');
 const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
+const { assertReviewGate, decideReview } = require('./reviews.cjs');
 const { assertSetPipelineTrack } = require('./track-guard.cjs');
 const { loadTransitionPolicy, assertPolicyForTransition, needsPaths, gitHead } = require('../policy/enforce.cjs');
 const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
@@ -145,6 +146,9 @@ function validateTransition(params) {
     changedPaths,
   });
   if (!policyRules.ok) return policyRules;
+
+  const review = assertReviewGate({ state, from, to });
+  if (!review.ok) return review;
 
   const ev = assertEvidenceRefs(workDir, evidence_refs);
   if (!ev.ok) return ev;
@@ -308,7 +312,7 @@ function validateWorkDir(workDir, pluginRoot = getDefaultPluginRoot()) {
 /**
  * Record one panel run or subagent spawn. This is the only writer of
  * `panel_runs` and `subagent_spawns`.
- * @param {{ workDir: string, pluginRoot?: string, role: string, actor?: string }} opts
+ * @param {{ workDir: string, pluginRoot?: string, role: string, actor?: string, model?: string }} opts
  */
 function recordSpawn(opts) {
   const pluginRoot = opts.pluginRoot || getDefaultPluginRoot();
@@ -318,6 +322,7 @@ function recordSpawn(opts) {
   const { next } = decideSpawn(loaded.state, {
     role: opts.role,
     actor: opts.actor,
+    model: opts.model,
     now: new Date().toISOString(),
   });
   const tmp = `${loaded.statePath}.tmp.${process.pid}`;
@@ -339,6 +344,48 @@ function recordSpawn(opts) {
   return { ok: true, state: JSON.parse(fs.readFileSync(loaded.statePath, 'utf8')) };
 }
 
+/**
+ * Record one reviewer result (or failed run) in state.reviews as a review.recorded /
+ * review.failed journal event, and append an audit line.
+ * @param {object} opts see decideReview; plus workDir, pluginRoot
+ */
+function recordReview(opts) {
+  const pluginRoot = opts.pluginRoot || getDefaultPluginRoot();
+  const loaded = loadWorkItem(opts.workDir, pluginRoot);
+  if (!loaded.ok) return loaded;
+  const projection = assertProjection(opts.workDir, loaded.state);
+  if (!projection.ok) return projection;
+  const decided = decideReview(loaded.state, { ...opts, now: new Date().toISOString() });
+  if (!decided.ok) return decided;
+  const { next, review } = decided;
+  const tmp = `${loaded.statePath}.tmp.${process.pid}`;
+  const { withWriteLockSync } = require('./state-lock.cjs');
+  try {
+    withWriteLockSync(opts.workDir, () => {
+      const snapshot = commitState(opts.workDir, next, { type: review.type, at: review.at, expectCurrent: loaded.state.current_state });
+      fs.writeFileSync(tmp, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
+      fs.renameSync(tmp, loaded.statePath);
+    });
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch { /* ignore */ }
+    if (e && (e.code === 'INTEGRITY_FAILED' || e.code === 'LOCK_TIMEOUT')) return { ok: false, code: e.code, message: String(e.message) };
+    return { ok: false, code: 'WRITE_ERROR', message: String(e.message) };
+  }
+  const blocking = (review.findings || []).filter((f) => (f.severity === 'high' || f.severity === 'critical') && !f.resolved).length;
+  const detail = review.type === 'review.failed'
+    ? `error="${review.error.replace(/"/g, "'")}"`
+    : `verdict=${review.verdict} findings=${review.findings.length} blocking=${blocking}`;
+  try {
+    fs.appendFileSync(
+      path.join(opts.workDir, 'audit.log'),
+      `${review.at} actor=${review.actor} action=${review.type.replace('.', '_')} phase=${review.phase} reviewer=${review.reviewer} model=${review.model} run=${review.run_id} ${detail} independence=${review.independence} | evidence: journal.jsonl\n`
+    );
+  } catch {
+    /* the journal event is the record; audit is best-effort */
+  }
+  return { ok: true, review, state: JSON.parse(fs.readFileSync(loaded.statePath, 'utf8')) };
+}
+
 module.exports = {
   getDefaultPluginRoot,
   loadWorkItem,
@@ -346,5 +393,6 @@ module.exports = {
   applyTransition,
   validateWorkDir,
   recordSpawn,
+  recordReview,
   assertEvidenceRefs,
 };

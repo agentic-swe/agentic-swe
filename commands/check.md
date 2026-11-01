@@ -55,6 +55,7 @@ Given `from_state` and `to_state`, check against the state machine in `CLAUDE.md
 1. Is the transition `from_state → to_state` in the allowed transition set?
 2. What artifacts are required for the destination state?
 3. Are there any loop budget constraints that apply?
+4. For `code-review → permissions-check`: does `state.reviews` hold, for this code-review round, at least one review, a result for every recorded spawn, no failed or non-approved latest run, and no unresolved `high`/`critical` finding? (`work plan-transition` reports `REVIEW_MISSING`, `REVIEW_FAILED`, `REVIEW_REJECTED` or `REVIEW_BLOCKING_FINDINGS`.)
 
 **Output:** transition `<from> → <to>`, allowed: `true`/`false`, required artifacts for destination, applicable budget constraints, verdict: `VALID` or `INVALID`.
 
