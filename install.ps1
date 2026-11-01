@@ -1,13 +1,24 @@
 $ErrorActionPreference = "Stop"
 
+# A release sets $DefaultRef to its tag and $DefaultSha256 to that tag's .zip checksum together.
+$DefaultRef = "main"
+$DefaultSha256 = ""
+
 $Repo = if ($env:AGENTIC_SWE_REPO) { $env:AGENTIC_SWE_REPO } else { "agentic-swe/agentic-swe" }
-$Ref = if ($env:AGENTIC_SWE_REF) { $env:AGENTIC_SWE_REF } else { "main" }
+$Ref = if ($env:AGENTIC_SWE_REF) { $env:AGENTIC_SWE_REF } else { $DefaultRef }
 $InstallDir = if ($env:AGENTIC_SWE_HOME) { $env:AGENTIC_SWE_HOME } else { Join-Path $HOME ".local\share\agentic-swe" }
 $BinDir = if ($env:AGENTIC_SWE_BIN_DIR) { $env:AGENTIC_SWE_BIN_DIR } else { Join-Path $HOME ".local\bin" }
 $ArchiveUrl = if ($env:AGENTIC_SWE_ARCHIVE_URL) {
     $env:AGENTIC_SWE_ARCHIVE_URL
 } else {
     "https://github.com/$Repo/archive/$Ref.zip"
+}
+$ExpectedSha256 = if ($env:AGENTIC_SWE_SHA256) {
+    $env:AGENTIC_SWE_SHA256
+} elseif ($Ref -eq $DefaultRef -and $Repo -eq "agentic-swe/agentic-swe" -and -not $env:AGENTIC_SWE_ARCHIVE_URL) {
+    $DefaultSha256
+} else {
+    ""
 }
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -29,6 +40,15 @@ try {
     New-Item -ItemType Directory -Force -Path $Extracted | Out-Null
     Write-Host "Downloading Agentic SWE ($Ref)..."
     Invoke-WebRequest -Uri $ArchiveUrl -OutFile $Archive
+    if ($ExpectedSha256) {
+        $ActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $Archive).Hash.ToLowerInvariant()
+        if ($ActualSha256 -ne $ExpectedSha256.ToLowerInvariant()) {
+            throw "SHA-256 mismatch for $ArchiveUrl`n  expected $($ExpectedSha256.ToLowerInvariant())`n  actual   $ActualSha256"
+        }
+        Write-Host "Verified SHA-256 $ActualSha256"
+    } else {
+        Write-Warning "Download not verified; set AGENTIC_SWE_SHA256 to the archive's SHA-256 to check it"
+    }
     Expand-Archive -Path $Archive -DestinationPath $Extracted
     $Pack = Get-ChildItem -Path $Extracted -Directory | Select-Object -First 1
     if (-not $Pack -or -not (Test-Path (Join-Path $Pack.FullName "bin\agentic-swe.cjs"))) {

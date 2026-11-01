@@ -38,6 +38,33 @@ irm https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/install.ps1 |
 
 The installers download the requested Git ref, install production dependencies under the user's home directory, and create a durable `agentic-swe` command. Publishing requires only merging the verified changes to `main`; it does not require npm credentials. Before merging, run `npm run verify`, `npm test`, and the installer tests.
 
+### Verified installs
+
+Both installers check a SHA-256 of the downloaded archive before extracting it, and stop on a mismatch:
+
+- `AGENTIC_SWE_SHA256` checks any download (the `.tar.gz` for `install.sh`, the `.zip` for `install.ps1`).
+- Without it, the installer checks the built-in `DEFAULT_SHA256` / `$DefaultSha256` when installing its default ref, and otherwise warns that the download is not verified.
+
+```bash
+AGENTIC_SWE_REF=v3.4.0 \
+AGENTIC_SWE_SHA256=670fe955f33cd25303738cb69a6d2e1f9ac14f09b4577ccda11c795508991bbf \
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/install.sh)"
+```
+
+The default ref is still `main`, which has no fixed checksum. To make a release the default, set both values in the same change and let `test/tool-install.test.js` check them:
+
+```bash
+TAG=vX.Y.Z
+curl -fsSL "https://github.com/agentic-swe/agentic-swe/archive/$TAG.tar.gz" | shasum -a 256   # install.sh DEFAULT_SHA256
+curl -fsSL "https://github.com/agentic-swe/agentic-swe/archive/$TAG.zip" | shasum -a 256      # install.ps1 $DefaultSha256
+```
+
+Set `DEFAULT_REF="$TAG"` in `install.sh` and `$DefaultRef = "$TAG"` in `install.ps1`.
+
+### Workflow actions
+
+Every `uses:` in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z` comment; `test/workflow-pinning.test.js` fails otherwise. To update an action, resolve the tag with `gh api repos/<owner>/<action>/commits/<tag> --jq .sha` and replace both the SHA and the comment.
+
 ## npm — `@agentic-swe/agentic-swe` (optional mirror)
 
 **New maintainers — read this first:** [First time on npm: create the scope](#first-time-on-npm-create-the-scope). The **`@agentic-swe`** org must exist on [npmjs.com](https://www.npmjs.com/) before the first **`npm publish`**; otherwise you get **`404 Scope not found`**.
