@@ -1,0 +1,80 @@
+{
+  "description": "Recorded GitHub REST responses (trimmed to the fields the connector reads) for acme/widgets#42: two code-owner approvals on the head SHA and green required checks.",
+  "responses": {
+    "GET /repos/acme/widgets/pulls/42": {
+      "status": 200,
+      "data": {
+        "number": 42,
+        "state": "open",
+        "merged": false,
+        "title": "Add widget docs",
+        "user": { "login": "contributor" },
+        "head": { "ref": "feat/widget-docs", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" },
+        "base": { "ref": "main", "sha": "0f0e0d0c0b0a09080706050403020100ffeeddcc" }
+      }
+    },
+    "GET /repos/acme/widgets/pulls/42/files": {
+      "status": 200,
+      "data": [
+        { "filename": "src/index.js", "status": "modified", "additions": 4, "deletions": 1 },
+        { "filename": "docs/guide.md", "status": "added", "additions": 30, "deletions": 0 }
+      ]
+    },
+    "GET /repos/acme/widgets/contents/.github/CODEOWNERS": {
+      "status": 200,
+      "data": {
+        "type": "file",
+        "path": ".github/CODEOWNERS",
+        "encoding": "base64",
+        "content": "IyBkZWZhdWx0IG93bmVycwoqICAgICAgIEBmb3VuZGVyCi9kb2NzLyAgQGRvY3MtbGVhZCBAYWNtZS9kb2NzCg=="
+      }
+    },
+    "GET /repos/acme/widgets/pulls/42/reviews": {
+      "status": 200,
+      "data": [
+        {
+          "id": 9001,
+          "user": { "login": "founder" },
+          "state": "APPROVED",
+          "commit_id": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+          "submitted_at": "2026-10-31T10:00:00Z"
+        },
+        {
+          "id": 9002,
+          "user": { "login": "docs-lead" },
+          "state": "APPROVED",
+          "commit_id": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+          "submitted_at": "2026-10-31T10:05:00Z"
+        }
+      ]
+    },
+    "GET /repos/acme/widgets/rules/branches/main": {
+      "status": 200,
+      "data": [
+        { "type": "pull_request", "parameters": { "require_code_owner_review": true, "required_approving_review_count": 1 } },
+        {
+          "type": "required_status_checks",
+          "parameters": { "required_status_checks": [{ "context": "test (20)" }, { "context": "test (22)" }] }
+        }
+      ]
+    },
+    "GET /repos/acme/widgets/commits/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/check-runs": {
+      "status": 200,
+      "data": {
+        "total_count": 2,
+        "check_runs": [
+          { "id": 501, "name": "test (20)", "status": "completed", "conclusion": "success" },
+          { "id": 502, "name": "test (22)", "status": "completed", "conclusion": "success" }
+        ]
+      }
+    },
+    "GET /repos/acme/widgets/commits/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/status": {
+      "status": 200,
+      "data": { "state": "pending", "statuses": [] }
+    },
+    "GET /repos/acme/widgets/issues/7": {
+      "status": 200,
+      "data": { "number": 7, "state": "open", "title": "Widgets crash on empty input", "labels": [{ "name": "bug" }] }
+    }
+  }
+}

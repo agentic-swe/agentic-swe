@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "api_base": "https://api.github.com",
+  "token_env": ["AGENTIC_SWE_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"],
+  "authorization": {
+    "github_write": false
+  },
+  "permissions": {
+    "read": [
+      "metadata:read",
+      "contents:read",
+      "issues:read",
+      "pull_requests:read",
+      "checks:read",
+      "statuses:read",
+      "members:read"
+    ],
+    "write": [
+      "contents:write",
+      "pull_requests:write",
+      "issues:write",
+      "checks:write"
+    ]
+  },
+  "codeowners_paths": [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"]
+}

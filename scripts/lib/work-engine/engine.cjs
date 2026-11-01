@@ -15,6 +15,7 @@ const { assertReviewGate, decideReview } = require('./reviews.cjs');
 const { assertSetPipelineTrack } = require('./track-guard.cjs');
 const { loadTransitionPolicy, assertPolicyForTransition, needsPaths, gitHead } = require('../policy/enforce.cjs');
 const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
+const { assertGitHubVerification } = require('../github/verification.cjs');
 const { resolveEvidenceRef } = require('./paths.cjs');
 const { validateWorkItemSchemaAtRoot } = require('./validate-schema.cjs');
 
@@ -97,6 +98,10 @@ function validateTransition(params) {
   if (from === 'approval-wait') {
     const human = assertHumanApprovalGate({ workDir, from, to, state, humanApproval });
     if (!human.ok) return human;
+    if (to === 'completed') {
+      const github = assertGitHubVerification({ workDir, state });
+      if (!github.ok) return github;
+    }
     humanClose = to === 'completed';
   }
 
