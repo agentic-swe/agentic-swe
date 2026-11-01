@@ -21,7 +21,7 @@
     },
     {
       "id": "baseline-integrity-files-shell",
-      "pattern": "(?:>|\\btee\\b|\\bsed\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\bperl\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\b(?:mv|cp|rm|truncate|dd|ln|install)\\s|\\b(?:node|python3?|ruby|perl|deno|bun)\\b[^;&|\\n]*\\s-(?:e|c|p)\\b)[^;&|\\n]*(?:journal\\.jsonl|approval-record\\.json|authorization-record\\.json)",
+      "pattern": "(?:>|\\btee\\b|\\bsed\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\bperl\\b[^;&|\\n]*\\s-[A-Za-z]*i|\\b(?:mv|cp|rm|truncate|dd|ln|install)\\s|\\b(?:node|python3?|ruby|perl|deno|bun)\\b[^;&|\\n]*\\s-(?:e|c|p)\\b)[^;&|\\n]*(?:journal\\.jsonl|approval-record\\.json|authorization-record\\.json|github-calls\\.jsonl|\\.agentic-swe/github\\.json)",
       "reason": "journal.jsonl, approval-record.json and authorization-record.json are written only by the engine and human-only commands"
     }
   ],
@@ -40,6 +40,16 @@
       "id": "baseline-authorization-record",
       "pattern": "**/.worklogs/**/authorization-record.json",
       "reason": "Authorization records are written only by `work authorize`, a human-only command"
+    },
+    {
+      "id": "baseline-github-calls",
+      "pattern": "**/.worklogs/**/github-calls.jsonl",
+      "reason": "The GitHub call journal is written only by the connector"
+    },
+    {
+      "id": "baseline-github-write-authorization",
+      "pattern": "**/.agentic-swe/github.json",
+      "reason": "authorization.github_write is a human setting; agents never enable GitHub writes"
     }
   ],
   "required_artifacts": {},

@@ -191,6 +191,9 @@ describe('PreToolUse policy hook', () => {
       ['Write to journal', () => ({ tool_name: 'Write', tool_input: { file_path: path.join(repo, '.worklogs', 'w1', 'journal.jsonl') } }), 'protected_paths\\[baseline-journal\\]'],
       ['Edit of approval record', () => ({ tool_name: 'Edit', tool_input: { file_path: '.worklogs/w1/approval-record.json' } }), 'protected_paths\\[baseline-approval-record\\]'],
       ['apply_patch to goal journal', () => ({ tool_name: 'apply_patch', tool_input: { command: '*** Begin Patch\n*** Update File: .worklogs/goals/g/journal.jsonl\n*** End Patch' } }), 'protected_paths\\[baseline-journal\\]'],
+      ['Write enabling GitHub writes', () => ({ tool_name: 'Write', tool_input: { file_path: '.agentic-swe/github.json' } }), 'protected_paths\\[baseline-github-write-authorization\\]'],
+      ['shell edit of GitHub write flag', () => bash("sed -i '' s/false/true/ .agentic-swe/github.json"), 'banned_commands\\[baseline-integrity-files-shell\\]'],
+      ['Edit of GitHub call journal', () => ({ tool_name: 'Edit', tool_input: { file_path: '.worklogs/w1/github-calls.jsonl' } }), 'protected_paths\\[baseline-github-calls\\]'],
     ];
     for (const [name, call, rule] of cases) {
       it(`denies ${name}`, () => {

@@ -137,8 +137,9 @@ Repo and org policy are enforced even without an active work item; audit lines a
 | `banned_commands[baseline-force-push-protected]` | `git push` with `--force`, `-f`, `--force-with-lease` or a `+refspec` naming `main`, `master` or `release/*` |
 | `banned_commands[baseline-npm-publish]` | `npm publish`, `pnpm publish`, `yarn publish`, `yarn npm publish` |
 | `banned_commands[baseline-rm-root]` | `rm` of `/` or `/*` |
-| `banned_commands[baseline-integrity-files-shell]` | shell writes (`>`, `tee`, `sed -i`, `mv`, `cp`, `rm`, inline `node -e` / `python -c`, ...) naming `journal.jsonl`, `approval-record.json` or `authorization-record.json` |
+| `banned_commands[baseline-integrity-files-shell]` | shell writes (`>`, `tee`, `sed -i`, `mv`, `cp`, `rm`, inline `node -e` / `python -c`, ...) naming `journal.jsonl`, `approval-record.json`, `authorization-record.json`, `github-calls.jsonl` or `.agentic-swe/github.json` |
 | `protected_paths[baseline-journal]`, `protected_paths[baseline-approval-record]`, `protected_paths[baseline-authorization-record]` | Write / Edit / `apply_patch` / Delete targets under `.worklogs/**/journal.jsonl`, `.worklogs/**/approval-record.json` or `.worklogs/**/authorization-record.json` |
+| `protected_paths[baseline-github-calls]`, `protected_paths[baseline-github-write-authorization]` | The GitHub call journal `.worklogs/**/github-calls.jsonl` and `.agentic-swe/github.json`, which holds `authorization.github_write` |
 
 `protected_paths` entries are globs matched against every path an edit-capable tool would modify (tool names containing write, edit, replace, patch, delete, create, move, rename or notebook; `apply_patch` file headers are parsed).
 

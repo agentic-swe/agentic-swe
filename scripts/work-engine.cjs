@@ -64,6 +64,7 @@ function parseArgs(argv) {
     else if (a === '--decision') out.decision = argv[++i];
     else if (a === '--note') out.note = argv[++i];
     else if (a === '--base') out.base = argv[++i];
+    else if (a === '--head-sha') out.headSha = argv[++i];
     else if (a === '--write') out.write = true;
     else if (a === '--action') out.action = argv[++i];
     else if (a === '--revoke') out.revoke = true;
@@ -133,6 +134,30 @@ async function runApprove(args, pluginRoot) {
   const prLink = fs.existsSync(prLinkPath) ? fs.readFileSync(prLinkPath, 'utf8').trim() : '(no pr-link.txt)';
   process.stderr.write(`\nWork item: ${loaded.state.work_id}\nPR: ${prLink}\nApprover: ${identity.actor}\n`);
   process.stderr.write(risk.ok ? `\n${formatRiskFlags(risk)}\n\n` : `\nRisk flags unavailable: ${risk.message}\n\n`);
+
+  const { parsePrLink, verifyAndJournal } = require('./lib/github/verification.cjs');
+  const ghLink = parsePrLink(workDir);
+  if (!ghLink) {
+    process.stderr.write('PR link is not a github.com pull request; only the local approval record applies.\n\n');
+  } else if (args.decision === 'approved') {
+    const { loadGitHubConfig, resolveToken, createGitHubConnector } = require('./lib/github/connector.cjs');
+    const { fileCallJournal } = require('./lib/github/call-journal.cjs');
+    const { createApprovalService } = require('./lib/github/approval-service.cjs');
+    const config = loadGitHubConfig({ pluginRoot, projectRoot: cwd });
+    const token = resolveToken(config);
+    if (!token) {
+      fail(`${ghLink.url} needs GitHub verification; set ${config.token_env[0]} to a fine-grained read-only token`, 1, { code: 'GITHUB_TOKEN_MISSING' });
+    }
+    const journal = fileCallJournal(workDir);
+    const connector = createGitHubConnector({ token, journal, config });
+    const service = createApprovalService({ connector, config });
+    const v = await verifyAndJournal({ workDir, service, link: ghLink, actor: identity.actor, headSha: args.headSha, calls: journal.calls });
+    const lines = v.verification.reasons.map((r) => `  - ${r.code}: ${r.detail}`);
+    process.stderr.write(`GitHub verification for ${ghLink.repo}#${ghLink.pr} @ ${v.verification.head_sha}: ${v.verification.verdict}\n${lines.join('\n')}${lines.length ? '\n' : ''}\n`);
+    if (!v.approved) {
+      fail('GitHub does not show an approved PR; nothing recorded (verdict journaled)', 1, { code: 'GITHUB_NOT_APPROVED', reasons: v.verification.reasons });
+    }
+  }
 
   const readline = require('node:readline/promises');
   const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
@@ -207,9 +232,12 @@ Commands:
   plan-transition --work-dir <dir> --to <state> [--from <state>] [--evidence a,b] [--changed-paths a,b] [--json]
   risk-flags [--base origin/main] [--cwd <repo>] [--work-dir <dir>] [--write] [--json]
       Flag security-sensitive paths, new dependencies and permission changes in base...HEAD.
-  approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--json]
+  approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--base ref] [--head-sha sha] [--json]
       Human-only: refuses agent sessions and non-TTY stdin, shows risk flags, asks you to type the work id.
       Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
+      When pr-link.txt is a github.com PR, "approved" first checks GitHub (code-owner approval on the head
+      SHA, not dismissed, required checks green; token from AGENTIC_SWE_GITHUB_TOKEN) and journals the verdict.
+      approval-wait → completed fails with GITHUB_APPROVAL_REQUIRED without an approved verdict.
   authorize --work-dir <dir> --action github.branch.push|github.pr.write|npm.publish [--revoke] [--note "…"] [--json]
       Human-only (same checks as approve). Writes authorization-record.json; the pre-tool hook denies a
       privileged action unless the caller's role (config/roles) lists it and this record grants it.
