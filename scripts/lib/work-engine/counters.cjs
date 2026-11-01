@@ -121,7 +121,7 @@ function counterMismatches(state) {
  * Pure spawn record. Keeps the history chain contiguous by using the current
  * state as both ends; `kind: 'spawn'` keeps it out of the rejection tally.
  * @param {object} state
- * @param {{ role: string, actor?: string, now: string }} input
+ * @param {{ role: string, actor?: string, model?: string, now: string }} input
  */
 function decideSpawn(state, input) {
   const next = structuredClone(state);
@@ -137,6 +137,7 @@ function decideSpawn(state, input) {
     role: input.role,
     counter,
   };
+  if (input.model) entry.model = input.model;
   if (!Array.isArray(next.history)) next.history = [];
   next.history.push(entry);
   return { next, entry };

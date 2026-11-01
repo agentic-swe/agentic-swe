@@ -20,8 +20,8 @@ Demanding senior reviewer — correctness outranks style, regressions outrank el
      - Performance-sensitive code → `performance-engineer` (background)
      - Accessibility changes → `accessibility-tester` (background)
      - Infrastructure changes → `security-engineer` (background)
-   - Spawn selected subagent(s) in **background** with the changed files and implementation context.
-   - They run in parallel with the main review — do NOT wait for them before proceeding.
+   - Record each spawn with `work record-spawn --role <subagent>` and spawn it in **background** with the changed files and implementation context.
+   - They run in parallel with the main review. Every recorded spawn needs a result (step 9) before the work item can leave `code-review` for `permissions-check`.
    - If `budget.budget_remaining` is below **`budget.policy.subagent_skip_below_budget_remaining`** (when set; else **3**), skip specialist spawning.
 
 ### Main Review
@@ -42,12 +42,17 @@ Demanding senior reviewer — correctness outranks style, regressions outrank el
    - **Complexity**: proportionality to problem (1=unnecessary complexity, 2=acceptable, 3=simplest viable)
 8. Verdict rule: any dimension scored 1 → rejected. All 2+ → approved.
 
-### Integrate Specialist Findings
+### Record Reviews
 
-9. If background specialist reviewers have returned, append their findings to the review artifact under `## Specialist Review Findings`.
-10. If any specialist finding is severity `high` or `critical`, flag it in the verdict rationale — but the main rubric scores still control the transition.
-11. If specialists have not returned yet, proceed with main verdict. Specialist findings arriving later are noted in the artifact but do not retroactively change the verdict.
-12. Log all specialist spawns and results in `audit.log`.
+9. Record every reviewer result — the main review and each specialist — with the reviewer's own model id:
+   ```bash
+   agentic-swe work record-review --work-dir .worklogs/<id> --reviewer <role> --model <model-id> --run-id <unique-id> \
+     --verdict approved|rejected|escalated [--findings findings.json]
+   ```
+   `findings.json` is `[{ "id", "severity": "info|low|medium|high|critical", "summary", "evidence_refs": ["path:line", ...] }]`. If a reviewer errors, times out or returns nothing, record `--failed --error "<what happened>"`; never record a missing review as approved.
+10. Append specialist findings to the review artifact under `## Specialist Review Findings`.
+11. The engine rejects `code-review → permissions-check` while, in this code-review round, there is no recorded review, a recorded spawn has no result, the latest run of any reviewer failed or did not approve, or a high/critical finding is unresolved. Fix the code (→ `implementation`) and have the same reviewer run again; its new run marks the finding `"resolved": true` once verified. Wait for background specialists instead of proceeding without them.
+12. Independence: record the implementer's model on its spawn (`work record-spawn --role developer-agent --model <id>`) or pass `--implementer-model`. On the rigorous track at least one reviewer should use a different model; a review on the implementer's model is flagged `independence: "same_model"` in the journal and in `work status`.
 
 ## Reflection on Rejection
 
@@ -113,6 +118,8 @@ Increment `state.json.counters.doubt_cycles` for each cycle. Anti-doubt-theater:
 - Review artifact scores all dimensions 2+ but provides no evidence citations for any score.
 - Rubric scores and verdict were decided before `/diff-review` was invoked.
 - Specialist reviewers returned high-severity findings that are acknowledged but not reflected in the verdict rationale.
+- A reviewer run that failed or never returned was not recorded with `work record-review --failed`.
+- Every recorded review has `independence: "same_model"`.
 - The review approves code that deviates from `design.md` without documenting why the deviation is acceptable.
 - Reflection log shows the same root-cause category in consecutive entries, but the review does not flag the pattern.
 - Review feedback consists entirely of style or formatting suggestions with no correctness or safety analysis.
