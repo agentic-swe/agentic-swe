@@ -12,7 +12,7 @@ const { assertTransition } = require('./transitions.cjs');
 const { assertArtifactsForTransition } = require('./artifacts.cjs');
 const { assertPermissionsGate } = require('./permissions-gate.cjs');
 const { assertReviewGate, decideReview } = require('./reviews.cjs');
-const { assertSetPipelineTrack } = require('./track-guard.cjs');
+const { assertSetPipelineTrack, TRACK_RANK } = require('./track-guard.cjs');
 const { loadTransitionPolicy, assertPolicyForTransition, needsPaths, gitHead } = require('../policy/enforce.cjs');
 const { assertHumanApprovalGate } = require('../approval/human-approval.cjs');
 const { assertGitHubVerification } = require('../github/verification.cjs');
@@ -110,7 +110,10 @@ function validateTransition(params) {
     return { ok: false, code: 'BUDGET_STOP', message: b.errors.join('; '), budget: b };
   }
 
-  const tr = assertTransition(pluginRoot, from, to, state.pipeline && state.pipeline.track);
+  // Leaving lean-track-check chooses the track, so the exit edge must satisfy the track being set.
+  const settingTrack = from === 'lean-track-check' && Object.prototype.hasOwnProperty.call(TRACK_RANK, setPipelineTrack);
+  const edgeTrack = settingTrack ? setPipelineTrack : state.pipeline && state.pipeline.track;
+  const tr = assertTransition(pluginRoot, from, to, edgeTrack);
   if (!tr.ok) {
     return { ok: false, code: tr.code || 'TRANSITION_INVALID', message: tr.message };
   }
