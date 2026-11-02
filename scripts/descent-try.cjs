@@ -17,6 +17,7 @@ function parseArgs(argv) {
     else if (a === '--verify') out.verify = argv[++i];
     else if (a === '--work-dir') out.workDir = path.resolve(argv[++i]);
     else if (a === '--project-root') out.projectRoot = path.resolve(argv[++i]);
+    else if (a === '--store-root') out.storeRoot = path.resolve(argv[++i]);
     else if (a === '--plugin-root') out.pluginRoot = path.resolve(argv[++i]);
     else if (a === '--files') out.files = argv[++i];
   }
@@ -39,7 +40,7 @@ async function main() {
     (args.workDir ? projectRootFromWorkDir(args.workDir) : null) ||
     process.env.AGENTIC_SWE_PROJECT_ROOT ||
     process.cwd();
-  const storeRoot = path.resolve(process.env.AGENTIC_SWE_PROCEDURE_STORE || projectRoot);
+  const storeRoot = path.resolve(args.storeRoot || process.env.AGENTIC_SWE_PROCEDURE_STORE || projectRoot);
 
   let verify = args.verify;
   let files;
@@ -60,6 +61,7 @@ async function main() {
     projectRoot,
     pluginRoot,
     storeRoot,
+    telemetryRoot: storeRoot,
     verifyCommand: verify || 'npm test',
     files,
     cwd: projectRoot,

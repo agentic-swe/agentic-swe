@@ -154,7 +154,7 @@ function captureProcedureFromWork(opts) {
   try {
     const { appendLocalEvent } = require('../sync/git-sync.cjs');
     appendLocalEvent({
-      projectRoot,
+      projectRoot: storeRoot,
       event: {
         kind: 'procedure-capture',
         label: `${workId}:${verifyCommand.slice(0, 80)}`,

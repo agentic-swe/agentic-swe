@@ -14,6 +14,7 @@ function parseArgs(argv) {
     else if (a === '--work-dir') out.workDir = path.resolve(argv[++i]);
     else if (a === '--plugin-root') out.pluginRoot = path.resolve(argv[++i]);
     else if (a === '--project-root') out.projectRoot = path.resolve(argv[++i]);
+    else if (a === '--store-root') out.storeRoot = path.resolve(argv[++i]);
   }
   return out;
 }
@@ -30,6 +31,7 @@ async function main() {
     workDir: args.workDir,
     pluginRoot,
     projectRoot,
+    procedureStoreRoot: args.storeRoot,
   });
   if (args.json) console.log(JSON.stringify(r, null, 2));
   else if (r.ok) console.log('DESCENT', r.tier, r.verifyCommand);

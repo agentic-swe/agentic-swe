@@ -7,6 +7,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { discoverActiveWorkDir } = require('./lib/work-engine/discover-workdir.cjs');
@@ -56,7 +57,7 @@ function ingestTranscriptTailChunks(db, transcriptPath, maxLines = 80) {
   const raw = fs.readFileSync(transcriptPath, 'utf8');
   const lines = raw.split('\n');
   const tailLines = lines.slice(-maxLines).join('\n');
-  const tmpPath = path.join(path.dirname(transcriptPath), `.tail-${process.pid}.jsonl`);
+  const tmpPath = path.join(os.tmpdir(), `.agentic-swe-tail-${process.pid}.jsonl`);
   fs.writeFileSync(tmpPath, tailLines, 'utf8');
   try {
     const sessionId = path.basename(transcriptPath, '.jsonl');

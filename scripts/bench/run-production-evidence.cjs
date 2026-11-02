@@ -74,13 +74,13 @@ function setupWorkItem(worklogsRoot, taskId, verifyCommand) {
   );
   fs.writeFileSync(
     path.join(workDir, 'implementation.md'),
-    `# Implementation\n\nHoldout bench task \`${taskId}\`.\n\n\`\`\`bash\n${verifyCommand}\n\`\`\`\n`,
+    `# Implementation\n\nHoldout bench task \`${taskId}\`.\n`,
     'utf8'
   );
   return workDir;
 }
 
-function runDescentTry(pluginRoot, workDir, verifyCommand, fileKey) {
+function runDescentTry(pluginRoot, workDir, verifyCommand, fileKey, storeRoot) {
   const extra = [];
   if (fileKey) extra.push('--files', fileKey);
   const r = spawnSync(
@@ -95,6 +95,8 @@ function runDescentTry(pluginRoot, workDir, verifyCommand, fileKey) {
       pluginRoot,
       '--project-root',
       pluginRoot,
+      '--store-root',
+      storeRoot,
       ...extra,
       '--json',
     ],
@@ -133,8 +135,13 @@ function main() {
       ? process.argv[outIdx + 1]
       : path.join(pluginRoot, 'bench', 'results', `production-evidence-${date}.json`);
   const persistFixtures = process.argv.includes('--persist-fixtures');
+  const storeIdx = process.argv.indexOf('--store-root');
+  const storeRoot =
+    storeIdx >= 0
+      ? path.resolve(process.argv[storeIdx + 1])
+      : fs.mkdtempSync(path.join(os.tmpdir(), 'prod-evidence-store-'));
 
-  accumulateDeliveredHoldout({ pluginRoot, projectRoot: pluginRoot, purge: true });
+  accumulateDeliveredHoldout({ pluginRoot, projectRoot: storeRoot, purge: true });
 
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'prod-evidence-'));
   const worklogsRoot = path.join(tmpRoot, '.worklogs');
@@ -145,7 +152,7 @@ function main() {
 
   for (const task of holdoutTasks) {
     const workDir = setupWorkItem(worklogsRoot, task.id, task.verify);
-    const descent = runDescentTry(pluginRoot, workDir, task.verify, task.id);
+    const descent = runDescentTry(pluginRoot, workDir, task.verify, task.id, storeRoot);
     const transition = applyTransition({
       workDir,
       pluginRoot,
@@ -153,6 +160,7 @@ function main() {
       to: 'pr-creation',
       actor: 'production-evidence-bench',
       reason: 'holdout validation approved',
+      procedureStoreRoot: storeRoot,
     });
     runs.push({
       task: task.id,

@@ -6,12 +6,10 @@ const { projectRootFromWorkDir } = require('../work-engine/budget-config.cjs');
 
 const DESCENT_TIMEOUT_MS = 180000;
 
-function runDescentScript(pluginRoot, script, workDir) {
-  spawnSync(
-    process.execPath,
-    [path.join(pluginRoot, 'scripts', script), '--work-dir', workDir, '--plugin-root', pluginRoot, '--json'],
-    { encoding: 'utf8', timeout: DESCENT_TIMEOUT_MS }
-  );
+function runDescentScript(pluginRoot, script, workDir, storeRoot) {
+  const args = [path.join(pluginRoot, 'scripts', script), '--work-dir', workDir, '--plugin-root', pluginRoot, '--json'];
+  if (storeRoot) args.push('--store-root', storeRoot);
+  spawnSync(process.execPath, args, { encoding: 'utf8', timeout: DESCENT_TIMEOUT_MS });
 }
 
 /**
@@ -27,7 +25,7 @@ function afterTransition(ctx) {
   }
   if (from === 'validation' && (to === 'pr-creation' || to === 'completed')) {
     try {
-      runDescentScript(pluginRoot, 'validation-descent.cjs', workDir);
+      runDescentScript(pluginRoot, 'validation-descent.cjs', workDir, ctx.procedureStoreRoot);
     } catch {
       /* tier recording is best-effort; capture still runs */
     }

@@ -18,6 +18,7 @@ function checkMuscleMemoryReadiness(opts) {
   const checks = [];
 
   const agenticDir = path.join(projectRoot, '.agentic-swe');
+  const createdDir = !fs.existsSync(agenticDir);
   let memoryWritable = false;
   try {
     fs.mkdirSync(agenticDir, { recursive: true });
@@ -27,6 +28,13 @@ function checkMuscleMemoryReadiness(opts) {
     memoryWritable = true;
   } catch {
     memoryWritable = false;
+  }
+  if (createdDir && memoryWritable) {
+    try {
+      fs.rmdirSync(agenticDir);
+    } catch {
+      /* a concurrent writer left files; keep the directory */
+    }
   }
   checks.push({ id: 'memory_store_writable', ok: memoryWritable });
 

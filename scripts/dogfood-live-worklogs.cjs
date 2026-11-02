@@ -63,7 +63,7 @@ async function main() {
   const outIdx = process.argv.indexOf('--out');
   const outPath = outIdx >= 0 ? process.argv[outIdx + 1] : null;
 
-  accumulateDeliveredHoldout({ pluginRoot, projectRoot: pluginRoot, purge: true });
+  accumulateDeliveredHoldout({ pluginRoot, projectRoot, purge: true });
 
   const worklogsRoot = path.join(projectRoot, '.worklogs');
   fs.mkdirSync(worklogsRoot, { recursive: true });
@@ -97,6 +97,8 @@ async function main() {
         pluginRoot,
         '--project-root',
         pluginRoot,
+        '--store-root',
+        projectRoot,
         '--files',
         task.id,
         '--json',
@@ -117,6 +119,7 @@ async function main() {
       to: 'pr-creation',
       actor: 'dogfood-live-worklogs',
       reason: 'validation approved',
+      procedureStoreRoot: projectRoot,
     });
 
     runs.push({

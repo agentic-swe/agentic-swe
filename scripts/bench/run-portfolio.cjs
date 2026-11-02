@@ -3,7 +3,7 @@
  * Production portfolio benchmark — live procedure store + full descent ladder.
  *
  * Usage:
- *   node scripts/bench/run-portfolio.cjs [--out bench/results/portfolio-<date>.json]
+ *   node scripts/bench/run-portfolio.cjs [--store-root dir] [--out bench/results/portfolio-<date>.json]
  */
 'use strict';
 
@@ -89,7 +89,8 @@ async function measureCorpus(pluginRoot, storeRoot, filter) {
 
 async function main() {
   const pluginRoot = getDefaultPluginRoot();
-  const storeRoot = pluginRoot;
+  const storeIdx = process.argv.indexOf('--store-root');
+  const storeRoot = storeIdx >= 0 ? path.resolve(process.argv[storeIdx + 1]) : pluginRoot;
   const date = new Date().toISOString().slice(0, 10);
   const outIdx = process.argv.indexOf('--out');
   const outPath =
@@ -115,7 +116,7 @@ async function main() {
     coldPolicy + holdout.summary.cold_tokens_per_delivered;
 
   const combinedMultiplier = warmPortfolio / coldPortfolio;
-  const production = aggregateProductionTierTotals(storeRoot);
+  const production = aggregateProductionTierTotals(pluginRoot);
   const prodPortfolio = productionPortfolioMultiplier(production, {
     policyCold: coldPolicy,
     policyWarm: warmPolicy,

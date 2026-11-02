@@ -36,6 +36,46 @@ describe('project-scoped transcript discovery', () => {
     assert.ok(r.files.some((f) => f.endsWith('extra.jsonl')));
     fs.rmSync(tmp, { recursive: true, force: true });
   });
+
+  it('reads host transcripts only for this project, and only when opted in', () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'disc-home-'));
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), 'disc-proj-'));
+    const parent = path.dirname(project);
+    function writeHost(slug) {
+      const dir = path.join(home, '.cursor', 'projects', slug);
+      fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, 'chat.jsonl');
+      fs.writeFileSync(file, JSON.stringify({ role: 'user', text: 'x' }) + '\n');
+      return file;
+    }
+    const own = writeHost(projectFolderSlugs(project)[0]);
+    const ancestor = writeHost(projectFolderSlugs(parent)[0]);
+
+    const off = discoverTranscriptSources(project, { homeDir: home, pluginRoot: path.join(__dirname, '..') });
+    assert.equal(off.host_ingest, false);
+    assert.equal(off.files.some((f) => f.startsWith(home)), false);
+
+    const on = discoverTranscriptSources(project, { homeDir: home, hostIngest: true });
+    assert.equal(on.host_ingest, true);
+    assert.ok(on.files.includes(own));
+    assert.equal(on.files.includes(ancestor), false);
+
+    const every = discoverTranscriptSources(project, { homeDir: home, hostIngest: true, allHosts: true });
+    assert.ok(every.files.includes(own));
+    assert.ok(every.files.includes(ancestor));
+
+    const flagged = discoverTranscriptSources(project, { homeDir: home, allHosts: true, hostIngest: false });
+    assert.equal(flagged.files.some((f) => f.startsWith(home)), false);
+
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(project, { recursive: true, force: true });
+  });
+
+  it('session capture does not write its tail file beside the transcript', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'session-capture.cjs'), 'utf8');
+    assert.match(src, /os\.tmpdir\(\)/);
+    assert.doesNotMatch(src, /path\.dirname\(transcriptPath\)/);
+  });
 });
 
 describe('style profile extraction', () => {

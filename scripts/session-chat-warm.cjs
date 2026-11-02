@@ -2,6 +2,8 @@
 /**
  * Best-effort chat ingest + session procedure mine before memory-prime.
  * Opt out: AGENTIC_SWE_CHAT_WARM=0
+ * Host transcripts (~/.cursor, ~/.claude) are included only when the project opts in
+ * (transcripts.host_ingest or AGENTIC_SWE_HOST_TRANSCRIPTS=1).
  */
 'use strict';
 
@@ -85,4 +87,6 @@ async function main() {
 
 module.exports = { warmChatMemory };
 
-main().catch(() => process.exit(0));
+if (require.main === module) {
+  main().catch(() => process.exit(0));
+}

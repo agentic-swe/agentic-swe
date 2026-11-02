@@ -11,6 +11,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('../lib/work-engine/engine.cjs');
 const { tryDescentLadder, loadTierTokenEstimates } = require('../lib/descent/ladder.cjs');
@@ -25,6 +26,11 @@ const POLICY_WARM = POLICY_TOKEN_FALLBACK.estimated_tokens_after;
 
 async function main() {
   const pluginRoot = getDefaultPluginRoot();
+  const storeIdx = process.argv.indexOf('--store-root');
+  const storeRoot =
+    storeIdx >= 0
+      ? path.resolve(process.argv[storeIdx + 1])
+      : fs.mkdtempSync(path.join(os.tmpdir(), 'organic-portfolio-'));
   const projectRoot = pluginRoot;
   const date = new Date().toISOString().slice(0, 10);
   const outIdx = process.argv.indexOf('--out');
@@ -33,7 +39,7 @@ async function main() {
       ? process.argv[outIdx + 1]
       : path.join(pluginRoot, 'bench', 'results', `organic-portfolio-${date}.json`);
 
-  const capture = captureOrganicWorklogs({ projectRoot, pluginRoot, includeFixtures: true });
+  const capture = captureOrganicWorklogs({ projectRoot, pluginRoot, includeFixtures: true, storeRoot });
   const estimates = loadTierTokenEstimates(pluginRoot);
   const tasks = [];
 
@@ -62,6 +68,8 @@ async function main() {
     const descent = await tryDescentLadder({
       projectRoot,
       pluginRoot,
+      storeRoot,
+      telemetryRoot: storeRoot,
       verifyCommand,
       files,
       cwd: projectRoot,
