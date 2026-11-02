@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadMergedMemoryConfig } = require('./config.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * @param {string} abs
@@ -71,7 +72,11 @@ function buildCompactArtifact(opts) {
   }
 
   const outputPath = path.join(workDir, outName);
-  return { markdown: lines.join('\n'), outputPath, filesUsed: used };
+  return {
+    markdown: redactSecrets(lines.join('\n')).redacted,
+    outputPath,
+    filesUsed: used,
+  };
 }
 
 /**

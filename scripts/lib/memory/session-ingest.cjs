@@ -129,11 +129,12 @@ function findJsonlFiles(dir) {
  * @param {{ sessionId: string, turnIdx: number, role: string, body: string }} row
  */
 function insertSessionChunk(db, row) {
+  const body = redactSecrets(String(row.body || '')).redacted;
   const chunkId = makeChunkId(
     `.agentic-swe/sessions/${row.sessionId}.md`,
     row.turnIdx,
     row.turnIdx,
-    crypto.createHash('sha256').update(row.body).digest('hex')
+    crypto.createHash('sha256').update(body).digest('hex')
   );
   const stmt = db.prepare(
     `INSERT OR REPLACE INTO chunks (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
@@ -145,8 +146,8 @@ function insertSessionChunk(db, row) {
     `session:${row.sessionId}`,
     row.turnIdx,
     row.turnIdx,
-    crypto.createHash('sha256').update(row.body).digest('hex'),
-    row.body,
+    crypto.createHash('sha256').update(body).digest('hex'),
+    body,
   ]);
   stmt.free();
 }

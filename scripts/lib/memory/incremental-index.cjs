@@ -8,6 +8,7 @@ const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema
 const { chunkMarkdown, makeChunkId, workIdFromPath } = require('./chunk-split.cjs');
 const { isPathIncluded } = require('./glob-match.cjs');
 const { walkAllFiles, defaultChunkExtensions } = require('./chunk-ingest.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 function watermarkPath(projectRoot) {
   return path.join(projectRoot, '.agentic-swe', 'index-watermark.json');
@@ -98,9 +99,10 @@ async function runIncrementalIndex(opts) {
       }
       const workId = workIdFromPath(file.rel);
       for (const piece of chunkMarkdown(text, maxChars)) {
-        const cid = makeChunkId(file.rel, piece.startLine, piece.endLine, piece.body);
-        const sha = crypto.createHash('sha256').update(piece.body, 'utf8').digest('hex');
-        ins.run([cid, file.rel, workId, piece.startLine, piece.endLine, sha, piece.body]);
+        const body = redactSecrets(piece.body).redacted;
+        const cid = makeChunkId(file.rel, piece.startLine, piece.endLine, body);
+        const sha = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
+        ins.run([cid, file.rel, workId, piece.startLine, piece.endLine, sha, body]);
         chunks++;
       }
       watermark.files[file.rel] = file.mtimeMs;

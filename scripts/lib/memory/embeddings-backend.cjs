@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * @param {Float32Array} a
@@ -92,6 +93,7 @@ async function embedText(text, rt) {
     return { vec, dim: vec.length, modelId: rt.modelId };
   }
   if (rt.backend === 'ollama') {
+    text = redactSecrets(String(text || '')).redacted;
     const url = `${rt.ollamaHost}/api/embeddings`;
     const res = await fetch(url, {
       method: 'POST',
@@ -110,6 +112,7 @@ async function embedText(text, rt) {
     return { vec, dim: vec.length, modelId: rt.modelId };
   }
   if (rt.backend === 'openai') {
+    text = redactSecrets(String(text || '')).redacted;
     const key = process.env.OPENAI_API_KEY || process.env.AGENTIC_SWE_OPENAI_API_KEY;
     if (!key) {
       throw new Error('openai embeddings: set OPENAI_API_KEY or AGENTIC_SWE_OPENAI_API_KEY');

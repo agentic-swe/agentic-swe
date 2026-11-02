@@ -5,6 +5,7 @@ const path = require('node:path');
 const { execSync } = require('node:child_process');
 const { discoverTranscriptSources } = require('./discover-transcripts.cjs');
 const { partsToText } = require('./session-ingest.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 const MAX_CONSTRAINTS = 48;
 
@@ -352,7 +353,14 @@ function buildStyleProfile(opts) {
 function writeStyleProfile(projectRoot, profile) {
   const dir = path.join(projectRoot, '.agentic-swe');
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'style-profile.json'), JSON.stringify(profile, null, 2));
+  const stored = {
+    ...profile,
+    constraints: (profile.constraints || []).map((c) => ({
+      ...c,
+      text: redactSecrets(c.text).redacted,
+    })),
+  };
+  fs.writeFileSync(path.join(dir, 'style-profile.json'), JSON.stringify(stored, null, 2));
 }
 
 module.exports = {

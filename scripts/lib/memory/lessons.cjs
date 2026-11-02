@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * Extract failure-mode entries from a reflection-log.md.
@@ -85,7 +86,12 @@ function writeLessons(repoRoot) {
     categories: Object.fromEntries(
       Object.entries(categories).map(([cat, entries]) => [cat, entries.length])
     ),
-    lessons,
+    lessons: lessons.map((entry) => ({
+      ...entry,
+      whatFailed: redactSecrets(entry.whatFailed).redacted,
+      rootCause: redactSecrets(entry.rootCause).redacted,
+      strategyChange: redactSecrets(entry.strategyChange).redacted,
+    })),
   };
 
   const outPath = path.join(outputDir, 'lessons.json');

@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * @param {unknown} content
@@ -109,6 +110,10 @@ async function summarizeWithOpenAI(oldBlock, opts) {
  * @param {{ recentVerbatim: number, maxOldChars: number, useLlm?: boolean, llmModel?: string }} opts
  */
 async function buildSlidingSummaryMarkdown(turns, opts) {
+  const safeTurns = (turns || []).map((turn) => ({
+    ...turn,
+    text: redactSecrets(turn.text).redacted,
+  }));
   const recentN = Math.max(1, Math.min(100, Number(opts.recentVerbatim) || 8));
   const maxOld = Math.max(80, Math.min(2000, Number(opts.maxOldChars) || 240));
   const lines = [];
@@ -119,13 +124,13 @@ async function buildSlidingSummaryMarkdown(turns, opts) {
   );
   lines.push('');
 
-  if (turns.length === 0) {
+  if (safeTurns.length === 0) {
     lines.push('_No user/assistant turns found in transcript._');
     return lines.join('\n');
   }
 
-  const old = turns.slice(0, Math.max(0, turns.length - recentN));
-  const recent = turns.slice(-recentN);
+  const old = safeTurns.slice(0, Math.max(0, safeTurns.length - recentN));
+  const recent = safeTurns.slice(-recentN);
 
   if (old.length) {
     lines.push('## Earlier turns (compressed)');
@@ -134,7 +139,7 @@ async function buildSlidingSummaryMarkdown(turns, opts) {
       const block = old.map((t, i) => `[${i + 1}] ${t.role}: ${t.text}`).join('\n\n');
       try {
         const sum = await summarizeWithOpenAI(block, { model: opts.llmModel });
-        lines.push(sum);
+        lines.push(redactSecrets(sum).redacted);
       } catch (e) {
         lines.push(`_LLM summary failed: ${e && e.message ? e.message : String(e)}_`);
         lines.push('');

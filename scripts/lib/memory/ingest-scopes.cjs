@@ -14,13 +14,14 @@ const { EVENTS_DIR } = require('../sync/git-sync.cjs');
 const { buildStyleProfile, writeStyleProfile } = require('./style-profile.cjs');
 
 function insertScopedChunk(db, opts) {
-  const sha = crypto.createHash('sha256').update(opts.body).digest('hex');
-  const chunkId = makeChunkId(opts.path, opts.start || 1, opts.end || 1, opts.body);
+  const body = redactSecrets(String(opts.body || '')).redacted;
+  const sha = crypto.createHash('sha256').update(body).digest('hex');
+  const chunkId = makeChunkId(opts.path, opts.start || 1, opts.end || 1, body);
   const stmt = db.prepare(
     `INSERT OR REPLACE INTO chunks (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
-  stmt.run([chunkId, opts.path, opts.workId, opts.start || 1, opts.end || 1, sha, opts.body]);
+  stmt.run([chunkId, opts.path, opts.workId, opts.start || 1, opts.end || 1, sha, body]);
   stmt.free();
   return chunkId;
 }
