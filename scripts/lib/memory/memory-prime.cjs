@@ -17,6 +17,7 @@ const {
   embedText,
   cosineSimilarity,
 } = require('./embeddings-backend.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * @param {string} q
@@ -92,8 +93,8 @@ function queryChunkHits(db, tokens, limit, workId) {
   const rows = [];
   while (stmt.step()) {
     const o = stmt.getAsObject();
-    const b = o.body;
-    o.snip = snippetFromBody(String(b || ''), tokens, 220);
+    const b = redactSecrets(String(o.body || '')).redacted;
+    o.snip = snippetFromBody(b, tokens, 220);
     delete o.body;
     rows.push(o);
   }
@@ -132,7 +133,7 @@ function queryChunkHitsSemantic(db, queryVec, modelId, limit, workId, maxScan, t
     delete o.vec;
     if (vec.length !== queryVec.length) continue;
     const sim = cosineSimilarity(queryVec, vec);
-    const body = String(o.body || '');
+    const body = redactSecrets(String(o.body || '')).redacted;
     o.snip = snippetFromBody(body, tokens, 220);
     delete o.body;
     o._sim = sim;
@@ -188,7 +189,7 @@ function appendAdvisoryDigests(lines, projectRoot) {
       if (data.lessons?.length) {
         lines.push('### Lessons digest (from reflection logs)');
         for (const l of data.lessons.slice(0, 5)) {
-          lines.push(`- **${l.category}** (${l.workId}): ${l.rootCause}`);
+          lines.push(`- **${l.category}** (${l.workId}): ${redactSecrets(String(l.rootCause || '')).redacted}`);
         }
         lines.push('');
       }
@@ -202,7 +203,7 @@ function appendAdvisoryDigests(lines, projectRoot) {
       if (data.constraints?.length) {
         lines.push('### Style profile (constraints)');
         for (const c of data.constraints.slice(0, 6)) {
-          lines.push(`- ${c.text} _(${c.provenance})_`);
+          lines.push(`- ${redactSecrets(String(c.text || '')).redacted} _(${c.provenance})_`);
         }
         lines.push('');
       }
@@ -267,7 +268,7 @@ async function buildPrimeMarkdown(opts) {
     if (top.length) {
       lines.push('- **High-degree nodes:**');
       for (const r of top) {
-        lines.push(`  - \`${r.id}\` (${r.kind}, deg ${r.deg}) ${r.label ? `— ${r.label}` : ''}`);
+        lines.push(`  - \`${r.id}\` (${r.kind}, deg ${r.deg}) ${r.label ? `— ${redactSecrets(String(r.label)).redacted}` : ''}`);
       }
     }
     lines.push('');
@@ -279,7 +280,7 @@ async function buildPrimeMarkdown(opts) {
       lines.push('How this repo was actually changed. Advisory; `state.json` and files win.');
       lines.push('');
       for (const c of teamChunks) {
-        const snip = String(c.body || '')
+        const snip = redactSecrets(String(c.body || '')).redacted
           .replace(/\s+/g, ' ')
           .trim()
           .slice(0, 180);
@@ -295,7 +296,7 @@ async function buildPrimeMarkdown(opts) {
       lines.push('Cross-repo muscle-memory signals from fleet-submit → ingest. Advisory only.');
       lines.push('');
       for (const c of fleetChunks) {
-        const snip = String(c.body || '')
+        const snip = redactSecrets(String(c.body || '')).redacted
           .replace(/\s+/g, ' ')
           .trim()
           .slice(0, 220);
@@ -342,7 +343,7 @@ async function buildPrimeMarkdown(opts) {
       }
 
       lines.push(`### Chunk search (${mode})`);
-      lines.push(`- **Query:** ${JSON.stringify(q)}`);
+      lines.push(`- **Query:** ${JSON.stringify(redactSecrets(String(q)).redacted)}`);
       if (opts.workId) {
         lines.push(`- **Work id filter:** \`${opts.workId}\``);
       }
@@ -400,7 +401,7 @@ async function buildPrimeMarkdown(opts) {
       lines.push('');
     }
 
-    return limitChars(lines.join('\n'), maxOut);
+    return limitChars(redactSecrets(lines.join('\n')).redacted, maxOut);
   } finally {
     closeDatabase(db);
   }

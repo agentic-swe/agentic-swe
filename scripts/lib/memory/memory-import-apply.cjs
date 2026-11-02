@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Ajv = require('ajv/dist/2020').default;
 const { openOrCreateDatabase, persistDatabase, closeDatabase } = require('./graph-store.cjs');
+const { redactSecrets, redactDeep } = require('./session-capture.cjs');
 
 /**
  * @param {object} bundle validated memory import bundle
@@ -23,12 +24,12 @@ function applyImportBundleToDb(db, bundle, caps) {
     `INSERT OR REPLACE INTO nodes (id, kind, path, label, meta_json) VALUES (?, ?, ?, ?, ?)`
   );
   for (const n of nodes) {
-    const meta = n.meta && typeof n.meta === 'object' ? JSON.stringify(n.meta) : null;
+    const meta = n.meta && typeof n.meta === 'object' ? JSON.stringify(redactDeep(n.meta)) : null;
     insN.run([
       n.id,
       n.kind,
-      n.path != null ? String(n.path) : null,
-      n.label != null ? String(n.label) : null,
+      n.path != null ? redactSecrets(String(n.path)).redacted : null,
+      n.label != null ? redactSecrets(String(n.label)).redacted : null,
       meta,
     ]);
   }
@@ -38,7 +39,7 @@ function applyImportBundleToDb(db, bundle, caps) {
     `INSERT OR REPLACE INTO edges (src_id, dst_id, kind, meta_json) VALUES (?, ?, ?, ?)`
   );
   for (const e of edges) {
-    const meta = e.meta && typeof e.meta === 'object' ? JSON.stringify(e.meta) : null;
+    const meta = e.meta && typeof e.meta === 'object' ? JSON.stringify(redactDeep(e.meta)) : null;
     insE.run([e.src_id, e.dst_id, e.kind, meta]);
   }
   insE.free();
@@ -47,7 +48,7 @@ function applyImportBundleToDb(db, bundle, caps) {
   const metaRow = {
     last_import_source: prov.source,
     last_import_at: prov.imported_at || new Date().toISOString(),
-    ...(prov.note ? { last_import_note: prov.note } : {}),
+    ...(prov.note ? { last_import_note: redactSecrets(String(prov.note)).redacted } : {}),
   };
   const m = db.prepare('INSERT OR REPLACE INTO memory_meta (key, value) VALUES (?, ?)');
   m.run(['last_graph_import', JSON.stringify(metaRow)]);

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { chunkMarkdown, makeChunkId, workIdFromPath } = require('./chunk-split.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 const { isPathIncluded } = require('./glob-match.cjs');
 
 function shouldSkipDir(name) {
@@ -99,9 +100,10 @@ function ingestChunksIntoDb(merged, projectRoot, db) {
     const pieces = chunkMarkdown(text, maxChars);
 
     for (const p of pieces) {
-      const cid = makeChunkId(rel, p.startLine, p.endLine, p.body);
-      const sha = crypto.createHash('sha256').update(p.body, 'utf8').digest('hex');
-      insChunk.run([cid, rel, workId, p.startLine, p.endLine, sha, p.body]);
+      const body = redactSecrets(p.body).redacted;
+      const cid = makeChunkId(rel, p.startLine, p.endLine, body);
+      const sha = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
+      insChunk.run([cid, rel, workId, p.startLine, p.endLine, sha, body]);
       n++;
     }
   }

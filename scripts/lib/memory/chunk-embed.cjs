@@ -1,6 +1,7 @@
 'use strict';
 
 const { resolveEmbeddingRuntime, embedText } = require('./embeddings-backend.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * Embed chunks that are missing or stale for the active embedding model.
@@ -36,7 +37,7 @@ async function syncChunkEmbeddings(db, merged) {
       const row = sel.getAsObject();
       const cid = row.chunk_id;
       const sha = row.content_sha256;
-      const body = String(row.body || '');
+      const body = redactSecrets(String(row.body || '')).redacted;
       const emb = await embedText(body, rt);
       if (!emb) continue;
       const buf = Buffer.from(emb.vec.buffer, emb.vec.byteOffset, emb.vec.byteLength);

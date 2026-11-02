@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
+const { redactDeep } = require('../memory/session-capture.cjs');
 
 const SYNC_BRANCH = 'agentic-swe-memory';
 const EVENTS_DIR = '.agentic-swe/sync/events';
@@ -26,7 +27,7 @@ function appendLocalEvent(opts) {
   const dir = path.join(root, EVENTS_DIR);
   fs.mkdirSync(dir, { recursive: true });
   const event = {
-    ...opts.event,
+    ...redactDeep(opts.event || {}),
     ts: new Date().toISOString(),
     id: crypto.randomUUID(),
   };

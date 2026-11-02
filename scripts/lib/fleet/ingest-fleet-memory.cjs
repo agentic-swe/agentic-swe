@@ -5,7 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('../memory/graph-store.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
-const { upsertTypedNodes } = require('../memory/session-capture.cjs');
+const { upsertTypedNodes, redactSecrets } = require('../memory/session-capture.cjs');
 const { makeChunkId } = require('../memory/chunk-split.cjs');
 
 function submissionDigest(submissionPath) {
@@ -56,7 +56,7 @@ async function ingestFleetSubmissionMemory(opts) {
   const archiveRel = path.relative(pluginRoot, archivePath);
   const merged = loadMergedMemoryConfig(pluginRoot, pluginRoot);
   const sqlitePath = sqlitePathForProject(merged, pluginRoot);
-  const body = buildFleetMemoryBody(submission, archiveRel);
+  const body = redactSecrets(buildFleetMemoryBody(submission, archiveRel)).redacted;
   const digest = crypto.createHash('sha256').update(body).digest('hex').slice(0, 12);
   const chunkPath = `bench/results/fleet-submissions/${path.basename(archivePath)}#memory`;
 

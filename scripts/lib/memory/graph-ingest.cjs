@@ -18,6 +18,7 @@ const {
   manifestNodeId,
   isCodeFile,
 } = require('./import-extract.cjs');
+const { redactSecrets } = require('./session-capture.cjs');
 
 const PROJECT_NODE_ID = 'project:root';
 
@@ -181,13 +182,13 @@ function ingestImportEdges(merged, projectRoot, db) {
       if (c.type === 'npm') {
         const nid = npmNodeId(c.name);
         insertNode(db, nid, 'npm', null, c.name, null);
-        insertEdge(db, fid, nid, 'imports', { specifier: spec });
+        insertEdge(db, fid, nid, 'imports', { specifier: redactSecrets(spec).redacted });
       } else if (c.type === 'relative') {
         const resolved = resolveRelativeModuleFile(projectRoot, abs, spec);
         if (resolved) {
           const tid = fileNodeId(resolved);
           insertNode(db, tid, 'file', resolved, path.basename(resolved), null);
-          insertEdge(db, fid, tid, 'imports', { specifier: spec });
+          insertEdge(db, fid, tid, 'imports', { specifier: redactSecrets(spec).redacted });
         }
       }
     }
