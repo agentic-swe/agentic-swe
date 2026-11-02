@@ -25,29 +25,37 @@ function projectFolderSlugs(absPath) {
 }
 
 /**
- * Walk projectRoot and ancestors (bounded) so a nested package still finds the workspace transcript dir.
+ * Host transcripts (~/.cursor, ~/.claude) are off unless the project opts in.
+ * `opts.hostIngest` wins, then AGENTIC_SWE_HOST_TRANSCRIPTS, then transcripts.host_ingest
+ * in the merged memory config. Explicit sources are unaffected.
  * @param {string} projectRoot
- * @returns {string[]}
+ * @param {{ hostIngest?: boolean, pluginRoot?: string }} opts
  */
-function ancestorRoots(projectRoot, max = 6) {
-  const out = [];
-  let cur = path.resolve(projectRoot);
-  for (let i = 0; i < max; i++) {
-    out.push(cur);
-    const parent = path.dirname(cur);
-    if (parent === cur) break;
-    cur = parent;
+function hostIngestEnabled(projectRoot, opts) {
+  if (opts.hostIngest === true) return true;
+  if (opts.hostIngest === false) return false;
+  const env = process.env.AGENTIC_SWE_HOST_TRANSCRIPTS;
+  if (env === '1' || /^true$/i.test(String(env || ''))) return true;
+  if (env === '0' || /^false$/i.test(String(env || ''))) return false;
+  try {
+    const pluginRoot = opts.pluginRoot || path.resolve(__dirname, '..', '..', '..');
+    const { loadMergedMemoryConfig } = require('./config.cjs');
+    const cfg = loadMergedMemoryConfig(pluginRoot, projectRoot);
+    return Boolean(cfg.transcripts && cfg.transcripts.host_ingest === true);
+  } catch {
+    return false;
   }
-  return out;
 }
 
 /**
- * Project-scoped chat directories: local sessions, Cursor agent-transcripts, Claude projects.
- * Does not walk every host project unless opts.allHosts is true (cross-repo leak).
+ * Project-scoped chat directories.
+ * Always: `<project>/.agentic-swe/sessions`, `opts.extraDirs`, and `AGENTIC_SWE_CHAT_DIRS`.
+ * Host transcripts only when opted in, and only for this project directory (no ancestor walk).
+ * `allHosts` also requires that opt-in; it then reads every project under the host roots.
  *
  * @param {string} projectRoot
- * @param {{ allHosts?: boolean, extraDirs?: string[] }} [opts]
- * @returns {{ dirs: string[], files: string[], scoped: boolean }}
+ * @param {{ allHosts?: boolean, extraDirs?: string[], hostIngest?: boolean, pluginRoot?: string, homeDir?: string }} [opts]
+ * @returns {{ dirs: string[], files: string[], scoped: boolean, host_ingest: boolean }}
  */
 function discoverTranscriptSources(projectRoot, opts = {}) {
   const dirs = [];
@@ -60,7 +68,8 @@ function discoverTranscriptSources(projectRoot, opts = {}) {
     dirs.push(d);
   }
 
-  addDir(path.join(path.resolve(projectRoot), '.agentic-swe', 'sessions'));
+  const resolved = path.resolve(projectRoot);
+  addDir(path.join(resolved, '.agentic-swe', 'sessions'));
 
   for (const extra of opts.extraDirs || []) addDir(path.resolve(extra));
 
@@ -70,16 +79,16 @@ function discoverTranscriptSources(projectRoot, opts = {}) {
     .filter(Boolean);
   for (const d of envDirs) addDir(d);
 
-  const home = os.homedir();
-  const cursorRoot = path.join(home, '.cursor', 'projects');
-  const claudeRoot = path.join(home, '.claude', 'projects');
-
-  if (opts.allHosts) {
-    addDir(cursorRoot);
-    addDir(claudeRoot);
-  } else {
-    for (const root of ancestorRoots(projectRoot)) {
-      for (const slug of projectFolderSlugs(root)) {
+  const hostIngest = hostIngestEnabled(resolved, opts);
+  if (hostIngest) {
+    const home = opts.homeDir || os.homedir();
+    const cursorRoot = path.join(home, '.cursor', 'projects');
+    const claudeRoot = path.join(home, '.claude', 'projects');
+    if (opts.allHosts) {
+      addDir(cursorRoot);
+      addDir(claudeRoot);
+    } else {
+      for (const slug of projectFolderSlugs(resolved)) {
         addDir(path.join(cursorRoot, slug, 'agent-transcripts'));
         addDir(path.join(cursorRoot, slug));
         addDir(path.join(claudeRoot, slug));
@@ -98,7 +107,7 @@ function discoverTranscriptSources(projectRoot, opts = {}) {
     }
   }
 
-  return { dirs, files, scoped: !opts.allHosts };
+  return { dirs, files, scoped: !opts.allHosts, host_ingest: hostIngest };
 }
 
 /**
@@ -124,4 +133,4 @@ function newestTranscriptFile(projectRoot, opts = {}) {
   return best;
 }
 
-module.exports = { projectFolderSlugs, ancestorRoots, discoverTranscriptSources, newestTranscriptFile };
+module.exports = { projectFolderSlugs, hostIngestEnabled, discoverTranscriptSources, newestTranscriptFile };

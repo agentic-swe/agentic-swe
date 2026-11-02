@@ -54,8 +54,8 @@ describe('ok', () => { it('passes', () => assert.equal(1, 1)); });
     assert.ok(r.transcript.procedures >= 1, JSON.stringify(r.transcript));
 
     const store = loadStore(tmp);
-    const tx = store.procedures.find((p) => p.procedure?._meta?.source === 'transcript-tools');
-    assert.ok(tx, 'expected transcript-tools procedure');
+    const tx = store.procedures.find((p) => JSON.stringify(p.procedure).includes('node --test test/ok.test.js'));
+    assert.ok(tx, 'expected a procedure for the session verify command');
     assert.equal(tx.eval_status, 'evaluated');
 
     const { appendLocalEvent } = require('../scripts/lib/sync/git-sync.cjs');

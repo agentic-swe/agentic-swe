@@ -96,7 +96,7 @@ function replayProcedure(opts) {
 
 function replayProcedureWithTelemetry(opts) {
   const r = replayProcedure(opts);
-  recordTierEvent(opts.projectRoot, r.tier || 'L3', r.ok);
+  recordTierEvent(opts.telemetryRoot || opts.projectRoot, r.tier || 'L3', r.ok);
   return r;
 }
 

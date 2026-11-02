@@ -4,7 +4,7 @@
  * tasks via validation-approved path into the live procedure store.
  *
  * Usage:
- *   node scripts/bench/accumulate-holdout-procedures.cjs [--no-purge] [--json]
+ *   node scripts/bench/accumulate-holdout-procedures.cjs [--project-root dir] [--no-purge] [--json]
  */
 'use strict';
 
@@ -15,9 +15,11 @@ const { accumulateDeliveredHoldout } = require('../lib/descent/holdout-capture.c
 function main() {
   const pluginRoot = getDefaultPluginRoot();
   const noPurge = process.argv.includes('--no-purge');
+  const rootIdx = process.argv.indexOf('--project-root');
+  const projectRoot = rootIdx >= 0 ? path.resolve(process.argv[rootIdx + 1]) : pluginRoot;
   const result = accumulateDeliveredHoldout({
     pluginRoot,
-    projectRoot: pluginRoot,
+    projectRoot,
     purge: !noPurge,
   });
 

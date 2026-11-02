@@ -90,7 +90,7 @@ async function tryL2MemoryVerify(opts) {
     if (hits.length < 2) return { ok: false };
 
     const r = executeAction({ type: 'RUN', command: verify, cwd: opts.cwd || projectRoot }, projectRoot);
-    recordTierEvent(projectRoot, 'L2', r.ok);
+    recordTierEvent(opts.telemetryRoot || projectRoot, 'L2', r.ok);
     if (!r.ok) return { ok: false, tier: 'L2', reason: 'memory-guided verify failed' };
 
     return {
@@ -122,7 +122,7 @@ function tryL2RepoMapVerify(opts) {
 
     const testCmd = `node --test ${tests[0]}`;
     const r = executeAction({ type: 'RUN', command: testCmd, cwd: projectRoot }, projectRoot);
-    recordTierEvent(projectRoot, 'L2', r.ok);
+    recordTierEvent(opts.telemetryRoot || projectRoot, 'L2', r.ok);
     if (!r.ok) return { ok: false, tier: 'L2', reason: 'repo-map verify failed' };
 
     return {
@@ -146,16 +146,17 @@ async function tryDescentLadder(opts) {
   const projectRoot = path.resolve(opts.projectRoot);
   const pluginRoot = path.resolve(opts.pluginRoot || projectRoot);
   const storeRoot = path.resolve(opts.storeRoot || projectRoot);
+  const telemetryRoot = path.resolve(opts.telemetryRoot || projectRoot);
   const tokenEst = loadTierTokenEstimates(pluginRoot);
   const data = loadStore(storeRoot);
-  const ladderOpts = { ...opts, projectRoot, storeRoot };
+  const ladderOpts = { ...opts, projectRoot, storeRoot, telemetryRoot };
 
   for (const tier of ['L0', 'L1']) {
     const rec = findProcedureRecord(data.procedures, ladderOpts, tier);
     if (!rec) continue;
-    const r = replayProcedureWithTelemetry({ projectRoot, procedure: rec.procedure, record: rec });
+    const r = replayProcedureWithTelemetry({ projectRoot, telemetryRoot, procedure: rec.procedure, record: rec });
     if (r.ok) {
-      if (tier === 'L1') {
+      if (tier === 'L1' && !opts.readOnlyStore) {
         promoteOrDemote({
           projectRoot: storeRoot,
           fingerprint: rec.fingerprint,
@@ -199,7 +200,7 @@ async function tryDescentLadder(opts) {
     }
   }
 
-  recordTierEvent(projectRoot, 'L3', false);
+  recordTierEvent(telemetryRoot, 'L3', false);
   return {
     ok: false,
     tier: 'L3',
@@ -216,19 +217,16 @@ async function tryDescentLadderWithFallback(opts) {
   const pluginRoot = path.resolve(opts.pluginRoot || projectRoot);
   let r = await tryDescentLadder({ ...opts, projectRoot, pluginRoot });
   if (!r.ok && path.resolve(pluginRoot) !== projectRoot) {
-    const packOnConsumer = await tryDescentLadder({
+    const packRead = {
       ...opts,
-      projectRoot,
       pluginRoot,
       storeRoot: pluginRoot,
-    });
+      telemetryRoot: projectRoot,
+      readOnlyStore: true,
+    };
+    const packOnConsumer = await tryDescentLadder({ ...packRead, projectRoot });
     if (packOnConsumer.ok) return packOnConsumer;
-    const packAsProject = await tryDescentLadder({
-      ...opts,
-      projectRoot: pluginRoot,
-      pluginRoot,
-      storeRoot: pluginRoot,
-    });
+    const packAsProject = await tryDescentLadder({ ...packRead, projectRoot: pluginRoot });
     if (packAsProject.ok) r = packAsProject;
   }
   return r;

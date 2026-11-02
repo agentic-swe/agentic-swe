@@ -189,7 +189,8 @@ test('hit', () => assert.equal(require('../src/hit.js'), 1));
 
   it('descent-try --files uses explicit keys instead of work_id basename', () => {
     const { accumulateDeliveredHoldout } = require('../scripts/lib/descent/holdout-capture.cjs');
-    accumulateDeliveredHoldout({ pluginRoot, projectRoot: pluginRoot, purge: true });
+    const store = fs.mkdtempSync(path.join(os.tmpdir(), 'git-files-store-'));
+    accumulateDeliveredHoldout({ pluginRoot, projectRoot: store, purge: true });
 
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'git-files-'));
     const workDir = path.join(tmp, '.worklogs', 'bench-mined-trivial-pass');
@@ -216,7 +217,7 @@ test('hit', () => assert.equal(require('../src/hit.js'), 1));
         '--work-dir',
         workDir,
         '--project-root',
-        pluginRoot,
+        store,
         '--plugin-root',
         pluginRoot,
         '--files',
@@ -232,5 +233,6 @@ test('hit', () => assert.equal(require('../src/hit.js'), 1));
     assert.equal(payload.ok, true);
     assert.equal(payload.tier, 'L0');
     fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(store, { recursive: true, force: true });
   });
 });

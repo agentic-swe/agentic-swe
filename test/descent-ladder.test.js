@@ -3,6 +3,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { tryDescentLadder, loadTierTokenEstimates } = require('../scripts/lib/descent/ladder.cjs');
 const { promoteOrDemote } = require('../scripts/lib/descent/promotion.cjs');
@@ -67,15 +68,18 @@ describe('descent ladder', () => {
 
   it('portfolio bench requires holdout coverage for target_met', async () => {
     const { spawnSync } = require('node:child_process');
+    const store = fs.mkdtempSync(path.join(os.tmpdir(), 'portfolio-store-'));
     const accum = spawnSync(process.execPath, [
       path.join(pluginRoot, 'scripts/bench/accumulate-holdout-procedures.cjs'),
+      '--project-root',
+      store,
     ], { encoding: 'utf8', cwd: pluginRoot });
     assert.strictEqual(accum.status, 0, accum.stderr + accum.stdout);
 
     const out = path.join(__dirname, '_tmp-portfolio-honesty.json');
     const r = spawnSync(
       process.execPath,
-      [path.join(pluginRoot, 'scripts/bench/run-portfolio.cjs'), '--out', out],
+      [path.join(pluginRoot, 'scripts/bench/run-portfolio.cjs'), '--store-root', store, '--out', out],
       { encoding: 'utf8', cwd: pluginRoot }
     );
     assert.strictEqual(r.status, 0, r.stderr + r.stdout);
@@ -95,5 +99,6 @@ describe('descent ladder', () => {
       assert.strictEqual(payload.combined.target_met, false);
     }
     fs.unlinkSync(out);
+    fs.rmSync(store, { recursive: true, force: true });
   });
 });
