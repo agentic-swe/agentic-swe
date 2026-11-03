@@ -33,15 +33,15 @@ Do **not** fetch third-party agent dumps by default. If the human explicitly pro
 ## Workflow
 
 ### When user asks to browse or list agents:
-1. Fetch categories from GitHub API using WebFetch or Bash with curl
-2. Parse the JSON response to extract directory names
-3. Present categories in a numbered list
-4. When user selects a category, fetch and list agents in that category
+1. List category directories under `agents/subagents/` (or `${CLAUDE_PLUGIN_ROOT}/agents/subagents/`)
+2. Present categories in a numbered list
+3. When user selects a category, list `*.md` agent files in that directory
+4. Optionally show each agent's frontmatter `description`, `tools`, `model`, and `provenance`
 
 ### When user wants to install an agent:
 1. Ask if they want global installation (`~/.claude/agents/`) or local (`.claude/agents/`)
 2. For local: Check if `.claude/` directory exists, create `.claude/agents/` if needed
-3. Download the agent .md file from GitHub raw URL
+3. Read the agent `.md` from `agents/subagents/{category}/{agent-name}.md`
 4. Save to the appropriate directory
 5. Confirm successful installation
 
