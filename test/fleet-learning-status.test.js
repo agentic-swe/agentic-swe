@@ -20,8 +20,10 @@ describe('fleet-learning-status', () => {
     assert.match(p.measurement_contract, /fleet/i);
     assert.ok(p.procedures && typeof p.procedures.evaluated === 'number');
     assert.equal(p.submission_readiness?.fleet_submission_ready, false);
-    assert.equal(p.pack_scorecard_local_met, true);
-    assert.equal(p.pack_scorecard_all_met, true);
+    // Committed objective-evidence uses proven_e2e_bench, so token-reduction stays partial.
+    assert.equal(p.pack_scorecard_local_met, false);
+    assert.equal(p.pack_scorecard_all_met, false);
+    assert.equal(p.goal_complete, false);
     assert.ok(p.fleet_submissions_independent?.distinct_independent_consumers >= 3);
     assert.ok((p.fleet_submissions?.archived || 0) >= 3);
     assert.ok(p.fleet_archive_detail);
