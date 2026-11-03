@@ -278,6 +278,9 @@ describe('multi-platform stubs: OpenCode', () => {
     const mod = await import(url);
     assert.strictEqual(typeof mod.config, 'function');
     assert.ok(mod.experimental?.chat?.messages?.transform, 'experimental.chat.messages.transform missing');
+    assert.strictEqual(typeof mod.AgenticSwePolicy, 'function');
+    const hooks = await mod.AgenticSwePolicy({ directory: repoRoot });
+    assert.strictEqual(typeof hooks['tool.execute.before'], 'function');
     const out = mod.config({});
     assert.ok(out.paths?.commands && out.paths?.phases, 'config should set paths.commands and paths.phases');
     assert.ok(fs.existsSync(out.paths.commands), 'resolved commands path should exist');

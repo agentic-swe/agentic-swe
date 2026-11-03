@@ -273,4 +273,133 @@ describe('PreToolUse policy hook', () => {
     assert.notEqual(ours.async, true, 'policy hook must block');
     assert.ok(fs.existsSync(hook));
   });
+
+  describe('host payload fixtures', () => {
+    beforeEach(() => writeState({ track: 'standard', state: 'implementation' }));
+
+    it('antigravity: allow / deny rm -rf / / fail-closed on malformed', () => {
+      const allow = runHook(
+        {
+          toolCall: { name: 'run_command', args: { CommandLine: 'git status', Cwd: repo } },
+          workspacePaths: [repo],
+        },
+        withWork(),
+        ['--host', 'antigravity']
+      );
+      assert.equal(allow.status, 0, allow.stderr);
+      assert.deepEqual(JSON.parse(allow.stdout), { decision: 'allow' });
+
+      const deny = runHook(
+        {
+          toolCall: { name: 'run_command', args: { CommandLine: 'rm -rf /', Cwd: repo } },
+          workspacePaths: [repo],
+        },
+        withWork(),
+        ['--host', 'antigravity']
+      );
+      assert.equal(deny.status, 2);
+      assert.equal(JSON.parse(deny.stdout).decision, 'deny');
+      assert.match(JSON.parse(deny.stdout).reason, /baseline-rm-root/);
+
+      writeState({ track: 'rigorous' });
+      const bad = runHook('not json', withWork(), ['--host', 'antigravity']);
+      assert.equal(bad.status, 2);
+      assert.equal(JSON.parse(bad.stdout).decision, 'deny');
+    });
+
+    it('windsurf: allow / deny / fail-closed on missing action', () => {
+      const allow = runHook(
+        { agent_action_name: 'pre_run_command', tool_info: { command_line: 'git status', cwd: repo } },
+        withWork(),
+        ['--host', 'windsurf']
+      );
+      assert.equal(allow.status, 0, allow.stderr);
+      assert.equal(allow.stdout, '');
+
+      const deny = runHook(
+        { agent_action_name: 'pre_run_command', tool_info: { command_line: 'rm -rf /', cwd: repo } },
+        withWork(),
+        ['--host', 'windsurf']
+      );
+      assert.equal(deny.status, 2);
+      assert.match(deny.stderr, /baseline-rm-root/);
+
+      writeState({ track: 'rigorous' });
+      const bad = runHook({ tool_info: { command_line: 'ls' } }, withWork(), ['--host', 'windsurf']);
+      assert.equal(bad.status, 2);
+      assert.match(bad.stderr, /unsupported agent_action_name|no tool_name|fail-closed/);
+    });
+
+    it('kiro: allow / deny / fail-closed on missing tool_name', () => {
+      const allow = runHook(
+        { tool_name: 'Bash', tool_input: { command: 'git status' }, cwd: repo },
+        withWork(),
+        ['--host', 'kiro']
+      );
+      assert.equal(allow.status, 0, allow.stderr);
+
+      const deny = runHook(
+        { tool_name: 'Bash', tool_input: { command: 'rm -rf /' }, cwd: repo },
+        withWork(),
+        ['--host', 'kiro']
+      );
+      assert.equal(deny.status, 2);
+
+      writeState({ track: 'rigorous' });
+      const bad = runHook({ cwd: repo }, withWork(), ['--host', 'kiro']);
+      assert.equal(bad.status, 2);
+      assert.match(bad.stderr, /no tool_name/);
+    });
+
+    it('copilot: allow / deny JSON / fail-closed on malformed', () => {
+      const allow = runHook(
+        { toolName: 'bash', toolArgs: { command: 'git status' }, cwd: repo },
+        withWork(),
+        ['--host', 'copilot']
+      );
+      assert.equal(allow.status, 0, allow.stderr);
+      assert.equal(allow.stdout, '');
+
+      const deny = runHook(
+        { toolName: 'bash', toolArgs: { command: 'rm -rf /' }, cwd: repo },
+        withWork(),
+        ['--host', 'copilot']
+      );
+      assert.equal(deny.status, 2);
+      const out = JSON.parse(deny.stdout);
+      assert.equal(out.permissionDecision, 'deny');
+      assert.match(out.permissionDecisionReason, /baseline-rm-root/);
+
+      writeState({ track: 'rigorous' });
+      const bad = runHook('not json', withWork(), ['--host', 'copilot']);
+      assert.equal(bad.status, 2);
+      assert.equal(JSON.parse(bad.stdout).permissionDecision, 'deny');
+    });
+
+    it('opencode: Claude-like stdin allow / deny (plugin feeds this shape)', () => {
+      const allow = runHook(
+        { tool_name: 'Bash', tool_input: { command: 'git status' }, cwd: repo },
+        withWork(),
+        ['--host', 'opencode']
+      );
+      assert.equal(allow.status, 0, allow.stderr);
+
+      const deny = runHook(
+        { tool_name: 'Bash', tool_input: { command: 'rm -rf /' }, cwd: repo },
+        withWork(),
+        ['--host', 'opencode']
+      );
+      assert.equal(deny.status, 2);
+      assert.match(deny.stderr, /baseline-rm-root/);
+    });
+
+    it('repo Codex PreToolUse registration uses --host codex', () => {
+      const j = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'integrations', 'codex', 'hooks.json'), 'utf8'));
+      const group = (j.hooks.PreToolUse || []).find((g) =>
+        (g.hooks || []).some((h) => /hook-pre-tool-policy\.cjs.*--host codex/.test(h.command))
+      );
+      assert.ok(group);
+      assert.equal(group.matcher, '*');
+    });
+  });
 });

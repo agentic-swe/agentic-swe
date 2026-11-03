@@ -8,6 +8,20 @@
       }
     ]
   },
+  "agentic-swe-policy": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host antigravity",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "agentic-swe-memory-stop": {
     "Stop": [
       {

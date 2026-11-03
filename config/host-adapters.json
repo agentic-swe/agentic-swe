@@ -29,39 +29,39 @@
     "native": true,
     "reason": "Trusted Codex plugin or repository hooks run the shared lifecycle at SessionStart and Stop.",
     "policy_hook": true,
-    "policy_hook_reason": "The Codex plugin registers a PreToolUse policy hook once its hooks are trusted; repository-only setup (.codex/hooks.json) installs lifecycle hooks only."
+    "policy_hook_reason": "Codex plugin (.codex-plugin/hooks/hooks.json) and repository setup (integrations/codex/hooks.json → .codex/hooks.json) register PreToolUse; plugin hooks require trust."
   },
   "opencode": {
     "start": true,
     "stop": true,
     "native": true,
     "reason": "The OpenCode plugin runs shared lifecycle maintenance on normal chat turns.",
-    "policy_hook": false,
-    "policy_hook_reason": "The OpenCode plugin injects policy text but registers no tool.execute.before handler yet."
+    "policy_hook": true,
+    "policy_hook_reason": ".opencode/plugins/agentic-swe.js registers tool.execute.before and throws when the policy hook exits non-zero."
   },
   "antigravity": {
     "start": true,
     "stop": true,
     "native": true,
     "reason": "Workspace hooks run maintenance on PreInvocation and capture on Stop.",
-    "policy_hook": false,
-    "policy_hook_reason": "No pre-tool policy hook is registered for Antigravity yet."
+    "policy_hook": true,
+    "policy_hook_reason": "integrations/antigravity/hooks.json registers PreToolUse with decision JSON deny/allow."
   },
   "windsurf": {
     "start": true,
     "stop": true,
     "native": true,
     "reason": "Cascade hooks run maintenance and transcript capture when Restricted Mode is disabled.",
-    "policy_hook": false,
-    "policy_hook_reason": "No pre_run_command or pre_write_code policy hook is registered for Windsurf yet."
+    "policy_hook": true,
+    "policy_hook_reason": "integrations/windsurf/hooks.json registers pre_run_command, pre_write_code, pre_read_code, and pre_mcp_tool_use (exit 2 blocks)."
   },
   "kiro": {
     "start": true,
     "stop": true,
     "native": true,
     "reason": "Kiro v1 SessionStart and Stop hooks run the shared lifecycle.",
-    "policy_hook": false,
-    "policy_hook_reason": "No preToolUse policy hook is registered for Kiro yet."
+    "policy_hook": true,
+    "policy_hook_reason": "integrations/kiro/agentic-swe-memory.json registers a PreToolUse command hook (exit 2 blocks)."
   },
   "copilot": {
     "start": true,
@@ -69,7 +69,7 @@
     "native": true,
     "fullScope": false,
     "reason": "Copilot CLI and coding-agent hooks are covered; IDE chat transcript lifecycle is not exposed consistently.",
-    "policy_hook": false,
-    "policy_hook_reason": "No preToolUse policy hook is registered for Copilot yet."
+    "policy_hook": true,
+    "policy_hook_reason": "integrations/copilot/agentic-swe.json registers preToolUse with permissionDecision deny JSON and exit 2."
   }
 }

@@ -7,6 +7,34 @@
         "show_output": false
       }
     ],
+    "pre_run_command": [
+      {
+        "command": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "powershell": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "show_output": false
+      }
+    ],
+    "pre_write_code": [
+      {
+        "command": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "powershell": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "show_output": false
+      }
+    ],
+    "pre_read_code": [
+      {
+        "command": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "powershell": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "show_output": false
+      }
+    ],
+    "pre_mcp_tool_use": [
+      {
+        "command": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "powershell": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host windsurf",
+        "show_output": false
+      }
+    ],
     "post_cascade_response_with_transcript": [
       {
         "command": "node .agentic-swe/scripts/host-lifecycle.cjs --host windsurf --event stop",

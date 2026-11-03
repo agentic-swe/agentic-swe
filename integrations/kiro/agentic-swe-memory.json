@@ -10,6 +10,15 @@
       }
     },
     {
+      "name": "agentic-swe-policy",
+      "trigger": "PreToolUse",
+      "action": {
+        "type": "command",
+        "command": "node .agentic-swe/scripts/hook-pre-tool-policy.cjs --host kiro"
+      },
+      "timeout": 10
+    },
+    {
       "name": "agentic-swe-memory-stop",
       "trigger": "Stop",
       "action": {

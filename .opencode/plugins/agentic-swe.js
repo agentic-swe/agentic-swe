@@ -10,6 +10,9 @@
  *   Read/Write/Edit   → opencode.file.*
  *   TodoWrite         → opencode.tasks (if available)
  *   WebSearch/Fetch   → opencode.web.* (if available)
+ *
+ * Policy: tool.execute.before spawns scripts/hook-pre-tool-policy.cjs --host opencode
+ * and throws to block (https://opencode.ai/docs/plugins/).
  */
 
 import { readFileSync } from "node:fs";
@@ -57,6 +60,47 @@ function runLifecycle() {
     return "";
   }
 }
+
+/**
+ * Map OpenCode tool ids to Claude-like names so baseline banned_commands / protected_paths apply.
+ * @see https://opencode.ai/docs/plugins/ (tool.execute.before: input.tool, output.args)
+ */
+function canonicalToolName(tool) {
+  const t = String(tool || "");
+  if (t === "bash" || t === "shell") return "Bash";
+  if (t === "write") return "Write";
+  if (t === "edit") return "Edit";
+  if (t === "read") return "Read";
+  return t;
+}
+
+function runPolicyHook(input, output, directory) {
+  if (process.env.AGENTIC_SWE_HOOK_POLICY === "0") return;
+  const script = join(repoRoot, "scripts/hook-pre-tool-policy.cjs");
+  const payload = {
+    tool_name: canonicalToolName(input && input.tool),
+    tool_input: output && output.args != null ? output.args : {},
+    cwd: directory || process.cwd(),
+  };
+  const result = spawnSync(process.execPath, [script, "--host", "opencode"], {
+    input: JSON.stringify(payload),
+    encoding: "utf8",
+    timeout: 10000,
+    cwd: directory || process.cwd(),
+  });
+  if (result.status === 0) return;
+  const reason = (result.stderr || result.stdout || "agentic-swe policy denied").trim();
+  throw new Error(reason || "agentic-swe policy denied");
+}
+
+/** OpenCode loads every exported plugin function from this file. */
+export const AgenticSwePolicy = async ({ directory }) => {
+  return {
+    "tool.execute.before": async (input, output) => {
+      runPolicyHook(input, output, directory);
+    },
+  };
+};
 
 export const experimental = {
   chat: {

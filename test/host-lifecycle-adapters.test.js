@@ -60,10 +60,41 @@ test('all native lifecycle manifests parse and target the shared adapter', () =>
   }
 });
 
-test('Kiro adapter uses the v1 SessionStart and Stop schema', () => {
+test('Kiro adapter uses the v1 SessionStart, PreToolUse, and Stop schema', () => {
   const manifest = readJson('integrations/kiro/agentic-swe-memory.json');
   assert.equal(manifest.version, 'v1');
-  assert.deepEqual(manifest.hooks.map((hook) => hook.trigger), ['SessionStart', 'Stop']);
+  assert.deepEqual(manifest.hooks.map((hook) => hook.trigger), ['SessionStart', 'PreToolUse', 'Stop']);
+  const policy = manifest.hooks.find((hook) => hook.trigger === 'PreToolUse');
+  assert.match(policy.action.command, /hook-pre-tool-policy\.cjs --host kiro/);
+});
+
+test('remaining host templates register the pre-tool policy hook', () => {
+  const antigravity = readJson('integrations/antigravity/hooks.json');
+  assert.match(
+    JSON.stringify(antigravity['agentic-swe-policy']),
+    /hook-pre-tool-policy\.cjs --host antigravity/,
+  );
+
+  const windsurf = readJson('integrations/windsurf/hooks.json');
+  for (const event of ['pre_run_command', 'pre_write_code', 'pre_read_code', 'pre_mcp_tool_use']) {
+    assert.ok(windsurf.hooks[event], event);
+    assert.match(windsurf.hooks[event][0].command, /hook-pre-tool-policy\.cjs --host windsurf/);
+  }
+
+  const copilot = readJson('integrations/copilot/agentic-swe.json');
+  assert.match(copilot.hooks.preToolUse[0].bash, /hook-pre-tool-policy\.cjs --host copilot/);
+
+  const codex = readJson('integrations/codex/hooks.json');
+  const group = (codex.hooks.PreToolUse || []).find((g) =>
+    (g.hooks || []).some((h) => /hook-pre-tool-policy\.cjs/.test(h.command)),
+  );
+  assert.ok(group, 'repo Codex PreToolUse policy hook missing');
+  assert.equal(group.matcher, '*');
+
+  const opencode = fs.readFileSync(path.join(root, '.opencode/plugins/agentic-swe.js'), 'utf8');
+  assert.match(opencode, /tool\.execute\.before/);
+  assert.match(opencode, /hook-pre-tool-policy\.cjs/);
+  assert.match(opencode, /AgenticSwePolicy/);
 });
 
 test('VS Code extension JavaScript passes syntax validation', () => {

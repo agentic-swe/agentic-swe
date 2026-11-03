@@ -14,6 +14,19 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.agentic-swe/scripts/hook-pre-tool-policy.cjs\" --host codex",
+            "timeout": 10,
+            "statusMessage": "Checking Agentic SWE policy"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

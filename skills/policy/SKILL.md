@@ -47,7 +47,7 @@ The policy is evaluated during:
 - Every work-engine transition — an invalid policy fails with `POLICY_INVALID`
 - Leaving `lean-track-check` (and any `--set-pipeline-track`) — a track below a matching `track_rules` minimum fails with `TRACK_POLICY`
 - Leaving a rule's `phase`, and before `validation` → `pr-creation` — each matching `mandatory_subagents` entry needs a `work record-spawn` record, else `MANDATORY_SUBAGENT_MISSING`
-- Tool invocations — `banned_tools`, `banned_commands`, `protected_paths` and `phase_tool_allowlist` are enforced by the pre-tool policy hook (`scripts/hook-pre-tool-policy.cjs`; Claude Code, Cursor, Codex plugin); each call is logged to the active work item's `audit.log`. Hook errors deny in rigorous or track-less work items (see `references/policy-as-code.md`)
+- Tool invocations — `banned_tools`, `banned_commands`, `protected_paths` and `phase_tool_allowlist` are enforced by the pre-tool policy hook (`scripts/hook-pre-tool-policy.cjs`; Claude Code, Cursor, Codex, OpenCode, Antigravity, Windsurf, Kiro, Copilot — see host contract table in `references/policy-as-code.md`); each call is logged to the active work item's `audit.log`. Hook errors deny in rigorous or track-less work items
 - Artifact validation — `required_artifacts[state]` files are required before leaving that state
 - Budget profiles — `budget_overrides` replace track ceilings at `work init` and leaving `lean-track-check`
 

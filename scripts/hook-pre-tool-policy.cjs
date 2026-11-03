@@ -3,9 +3,11 @@
  * Pre-tool hook: enforce Policy-as-Code on every tool call and append the decision
  * to the active work item's audit.log (OWASP ASI02).
  *
- * stdin: host hook JSON ({ tool_name, tool_input, cwd, ... }).
- * Claude Code / Codex (default): exit 2 = deny (stderr is shown to the model), exit 0 = allow.
+ * stdin: host hook JSON (shape varies by --host; see scripts/lib/policy/host-payload.cjs).
+ * Claude Code / Codex / Kiro / Windsurf (default): exit 2 = deny (stderr is shown to the model), exit 0 = allow.
  * --host cursor: also prints {"permission":"allow"|"deny",...}; Cursor blocks on missing JSON.
+ * --host antigravity: prints {"decision":"allow"|"deny",...}.
+ * --host copilot: prints {"permissionDecision":"deny",...} on deny; exit 2 also denies.
  * Hook errors fail closed per scripts/lib/policy/fail-mode.cjs.
  */
 'use strict';
@@ -14,6 +16,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const packRoot = path.join(__dirname, '..');
+const { normalizeHostPayload, writeHostDecision } = require('./lib/policy/host-payload.cjs');
 
 function argValue(name) {
   const i = process.argv.indexOf(name);
@@ -59,12 +62,7 @@ function firstString(...values) {
 }
 
 function finish(decision, message) {
-  if (host === 'cursor') {
-    const out = decision === 'deny'
-      ? { permission: 'deny', user_message: message, agent_message: message }
-      : { permission: 'allow' };
-    process.stdout.write(`${JSON.stringify(out)}\n`);
-  }
+  writeHostDecision(host, decision, message);
   if (message) process.stderr.write(`${message}\n`);
   process.exit(decision === 'deny' ? 2 : 0);
 }
@@ -81,12 +79,20 @@ function main() {
     errors.push('hook input is not a JSON object');
     input = null;
   }
-  const toolName = input ? String(input.tool_name || '') : '';
+
+  const normalized = normalizeHostPayload(host, input);
+  errors.push(...normalized.errors);
+  const toolName = normalized.toolName || '';
   if (input && !toolName) errors.push('hook input has no tool_name');
 
-  const roots = input && Array.isArray(input.workspace_roots) ? input.workspace_roots : [];
+  const roots = normalized.workspaceRoots;
   const projectRoot = path.resolve(
-    firstString(input && input.cwd, roots[0], process.env.CURSOR_PROJECT_DIR, process.env.CLAUDE_PROJECT_DIR) || process.cwd()
+    firstString(
+      normalized.cwd,
+      roots[0],
+      process.env.CURSOR_PROJECT_DIR,
+      process.env.CLAUDE_PROJECT_DIR
+    ) || process.cwd()
   );
 
   let workDir = process.env.AGENTIC_SWE_WORK_DIR ? path.resolve(process.env.AGENTIC_SWE_WORK_DIR) : null;
@@ -106,8 +112,13 @@ function main() {
     const resolved = resolvePolicyChecked(projectRoot, packRoot);
     errors.push(...resolved.errors);
     if (toolName) {
-      verdict = evaluateToolCall({ policy: resolved.policy, toolName, toolInput: input.tool_input, state: currentState });
-      summary = summarizeInput(toolName, input.tool_input);
+      verdict = evaluateToolCall({
+        policy: resolved.policy,
+        toolName,
+        toolInput: normalized.toolInput,
+        state: currentState,
+      });
+      summary = summarizeInput(toolName, normalized.toolInput);
       for (const w of verdict.warnings) process.stderr.write(`agentic-swe policy: ${w}\n`);
     }
   } catch (e) {
@@ -119,7 +130,11 @@ function main() {
       const roles = require('./lib/policy/roles.cjs');
       const loaded = roles.loadRoles(process.env.AGENTIC_SWE_ROLES_DIR || undefined);
       errors.push(...loaded.errors);
-      const actor = roles.resolveActor({ roles: loaded.roles, agentType: input.agent_type, hasWorkItem: Boolean(workDir) });
+      const actor = roles.resolveActor({
+        roles: loaded.roles,
+        agentType: input && input.agent_type,
+        hasWorkItem: Boolean(workDir),
+      });
       if (actor.error) errors.push(actor.error);
       const auth = roles.readAuthorizations(workDir);
       if (auth.error) errors.push(auth.error);
@@ -127,7 +142,7 @@ function main() {
         roles: loaded.roles,
         actor,
         toolName,
-        toolInput: input.tool_input,
+        toolInput: normalized.toolInput,
         authorized: auth.actions,
       });
       if (roleVerdict.decision === 'deny') verdict = { ...verdict, ...roleVerdict };
