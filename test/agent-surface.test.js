@@ -102,3 +102,30 @@ test('a real occurrence of the dangerous flag elsewhere under agent-surface/ is 
   assert.ok(result.findings.some((finding) => finding.rule === 'policy-auto-run-unsafe'));
   assert.equal(result.summary.status, 'blocked');
 });
+
+test('skips .agentic-swe runtime binaries while still blocking unsafe text files (TD-14)', (t) => {
+  const directory = tempDir(t);
+  const flag = ['--dangerously', 'skip', 'permissions'].join('-');
+  const agentic = path.join(directory, '.agentic-swe');
+  fs.mkdirSync(agentic, { recursive: true });
+  // SQLite-ish bytes that would false-positive policy-auto-run-unsafe if utf8-scanned.
+  const fakeSqlite = Buffer.concat([
+    Buffer.from('SQLite format 3\0'),
+    Buffer.from(`noise ${flag} more`),
+    Buffer.from([0x00, 0x01, 0xff]),
+  ]);
+  fs.writeFileSync(path.join(agentic, 'memory.sqlite'), fakeSqlite);
+  fs.writeFileSync(path.join(directory, 'policy.md'), `Never use ${flag}.\n`);
+
+  const result = scanSurfaces({ roots: [directory] });
+  assert.equal(
+    result.findings.some((f) => String(f.path).includes('.agentic-swe')),
+    false,
+    'must not report findings from .agentic-swe'
+  );
+  assert.ok(
+    result.findings.some((f) => f.rule === 'policy-auto-run-unsafe' && f.path === 'policy.md'),
+    'text file with dangerous flag must still block'
+  );
+  assert.equal(result.summary.status, 'blocked');
+});
