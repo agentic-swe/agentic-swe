@@ -20,6 +20,25 @@ describe('generate-skills metadata', () => {
     const evalCount = (metaBlock.match(/eval_status:/g) || []).length;
     assert.strictEqual(evalCount, 1, 'eval_status should appear once in metadata');
   });
+
+  it('never emits forbidden per-file upstream provenance keys in skill metadata', () => {
+    const r = spawnSync(process.execPath, [path.join(root, 'scripts/generate-skills.cjs')], {
+      encoding: 'utf8',
+      cwd: root,
+    });
+    assert.strictEqual(r.status, 0, r.stderr + r.stdout);
+    const skillsRoot = path.join(root, 'skills');
+    const forbidden = /\b(upstream_repo|upstream_commit|rewritten)\s*:/;
+    const offenders = [];
+    for (const name of fs.readdirSync(skillsRoot)) {
+      const skillPath = path.join(skillsRoot, name, 'SKILL.md');
+      if (!fs.existsSync(skillPath)) continue;
+      const text = fs.readFileSync(skillPath, 'utf8');
+      const metaBlock = text.split('metadata:')[1]?.split(/\n---/)[0] || '';
+      if (forbidden.test(metaBlock)) offenders.push(name);
+    }
+    assert.deepStrictEqual(offenders, [], `forbidden provenance keys in: ${offenders.join(', ')}`);
+  });
 });
 
 describe('session-skill-route-hint', () => {

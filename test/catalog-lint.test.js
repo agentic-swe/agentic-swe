@@ -70,4 +70,37 @@ model: balanced
     assert.ok(r.status !== 0, 'expected non-zero exit');
     assert.match(r.stderr + r.stdout, /provenance\.license/i);
   });
+
+  it('fails when per-file upstream_repo/rewritten provenance fields are present', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catlint-forbid-'));
+    const cat = path.join(dir, 'c1');
+    fs.mkdirSync(cat, { recursive: true });
+    fs.writeFileSync(
+      path.join(cat, 'forbid-upstream.md'),
+      `---
+name: forbid-upstream
+description: "Use when testing forbidden per-file upstream provenance fields."
+tools: Read
+model: balanced
+provenance:
+  origin: agentic-swe
+  license: MIT
+  authors: "Test"
+  upstream_repo: https://example.com/upstream.git
+  rewritten: "true"
+---
+`,
+      'utf8'
+    );
+    const r = spawnSync(process.execPath, [lintScript], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, AGENTIC_SWE_SUBAGENTS_DIR: dir },
+    });
+    assert.ok(r.status !== 0, 'expected non-zero exit');
+    assert.match(
+      r.stderr + r.stdout,
+      /per-file upstream_repo\/upstream_commit\/rewritten are forbidden/i
+    );
+  });
 });
