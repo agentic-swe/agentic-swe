@@ -117,16 +117,32 @@ When repo and org policies both list a state, only tools present in both lists a
 
 ## Runtime enforcement (PreToolUse hook)
 
-`scripts/hook-pre-tool-policy.cjs` runs as a blocking pre-tool hook for every tool on Claude Code (`hooks/hooks.json`), Cursor (`hooks/hooks-cursor.json`, `--host cursor`) and the Codex plugin (`.codex-plugin/hooks/hooks.json`). `agentic-swe host-parity --json` reports `policy_hook` per host. Per call it:
+`scripts/hook-pre-tool-policy.cjs` runs as a blocking pre-tool hook. `scripts/lib/policy/host-payload.cjs` normalizes each host's stdin to `{ toolName, toolInput, cwd }` and writes the host's deny protocol on stdout when required. `agentic-swe host-parity --json` reports `policy_hook` per host. Per call it:
 
-1. Resolves the project root from the hook's `cwd` (then Cursor `workspace_roots[0]`, `CURSOR_PROJECT_DIR`, `CLAUDE_PROJECT_DIR`, the process cwd) and the work item from `AGENTIC_SWE_WORK_DIR` or `.worklogs/` discovery.
+1. Normalizes the host payload, then resolves the project root from `cwd` / workspace roots / `CURSOR_PROJECT_DIR` / `CLAUDE_PROJECT_DIR` / process cwd and the work item from `AGENTIC_SWE_WORK_DIR` or `.worklogs/` discovery.
 2. Loads the pack default, repo and org policies and validates each, and the merged result, against `schemas/agentic-swe-policy.schema.json`.
 3. Evaluates `banned_tools` → `banned_commands` → `protected_paths` → `phase_tool_allowlist` against the current state, then the caller's [agent role](#agent-roles).
 4. Appends one line to the work item's `audit.log`:
    `<ISO> actor=agent action=tool_call tool=<name> decision=allow|deny state=<state> [rule=<rule>] input="<redacted, ≤160 chars>" | evidence: PreToolUse policy hook`
-5. Exits `2` with the reason on stderr to deny, `0` to allow. With `--host cursor` it also prints `{"permission":"allow"|"deny",...}`.
+5. Denies with the host protocol below (exit `2` and/or JSON); allows with exit `0`.
 
 Repo and org policy are enforced even without an active work item; audit lines are written only when one exists.
+
+### Host hook contracts
+
+| Host | Registration | Event | Stdin fields (tool / input / cwd) | Deny protocol | Docs |
+|------|--------------|-------|-----------------------------------|---------------|------|
+| Claude Code | `hooks/hooks.json` | `PreToolUse` | `tool_name`, `tool_input`, `cwd` | exit `2` + stderr | [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) |
+| Cursor | `hooks/hooks-cursor.json` | `preToolUse` | `tool_name`, `tool_input`, `workspace_roots` | stdout `{"permission":"deny",...}` + exit `2` | Cursor hooks schema (pack `hooks/hooks-cursor.json`) |
+| Codex | `.codex-plugin/hooks/hooks.json` + `integrations/codex/hooks.json` | `PreToolUse` | `tool_name`, `tool_input`, `cwd` | exit `2` + stderr (or `permissionDecision` JSON) | [Codex hooks](https://developers.openai.com/codex/hooks) |
+| OpenCode | `.opencode/plugins/agentic-swe.js` | `tool.execute.before` | plugin: `input.tool`, `output.args`; fed as Claude-like JSON | plugin `throw` after hook exit ≠ 0 | [OpenCode plugins](https://opencode.ai/docs/plugins/) |
+| Antigravity | `integrations/antigravity/hooks.json` | `PreToolUse` | `toolCall.name`, `toolCall.args`, `workspacePaths` | stdout `{"decision":"deny","reason":...}` | [Antigravity hooks](https://antigravity.google/docs/hooks/) |
+| Windsurf | `integrations/windsurf/hooks.json` | `pre_run_command` / `pre_write_code` / `pre_read_code` / `pre_mcp_tool_use` | `agent_action_name`, `tool_info.*` | exit `2` + stderr | [Cascade hooks](https://docs.devin.ai/desktop/cascade/hooks) |
+| Kiro | `integrations/kiro/agentic-swe-memory.json` | `PreToolUse` | `tool_name`, `tool_input`, `cwd` | exit `2` + stderr | [Kiro hooks](https://kiro.dev/docs/hooks/) · [triggers](https://kiro.dev/docs/hooks/types/) |
+| Copilot | `integrations/copilot/agentic-swe.json` | `preToolUse` | `toolName`/`toolArgs` or `tool_name`/`tool_input`, `cwd` | stdout `{"permissionDecision":"deny",...}` + exit `2` | [Copilot hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
+| VS Code | — | — | — | unverified — no pre-tool API for another extension | — |
+
+Hosts without a verified contract keep `policy_hook: false` in `config/host-adapters.json`.
 
 ### Baseline policy
 
@@ -186,7 +202,7 @@ A hook error is bad stdin, a missing `tool_name`, an unreadable or schema-invali
 
 Neither setting can turn a fail-closed case into fail-open. Rules from valid policy sources still apply while another source is broken.
 
-**Limits:** VS Code, OpenCode, Antigravity, Windsurf, Kiro and Copilot adapters do not register the hook yet, and repository-only Codex setup installs lifecycle hooks only. Codex runs plugin hooks only after you trust them, and hosted tools such as Codex `WebSearch` bypass hooks. Shell matching is textual — a command assembled at runtime (for example via `eval` or a script file) is not seen.
+**Limits:** VS Code (and Gemini CLI) have no verified pre-tool hook API. Codex plugin hooks run only after you trust them; hosted tools such as Codex `WebSearch` bypass hooks. Windsurf hooks are disabled in Restricted Mode. Shell matching is textual — a command assembled at runtime (for example via `eval` or a script file) is not seen.
 
 ### Budget Overrides
 

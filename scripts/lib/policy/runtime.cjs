@@ -9,7 +9,15 @@ const path = require('node:path');
 const { minimatch } = require('minimatch');
 const { redactSecrets } = require('../memory/session-capture.cjs');
 
-const SHELL_TOOLS = new Set(['Bash', 'Shell', 'run_shell_command', 'shell', 'local_shell']);
+const SHELL_TOOLS = new Set([
+  'Bash',
+  'Shell',
+  'bash',
+  'shell',
+  'run_shell_command',
+  'run_command',
+  'local_shell',
+]);
 const SUMMARY_MAX = 160;
 const PATTERN_MAX = 512;
 
@@ -31,13 +39,33 @@ function knownStates() {
 
 function extractCommand(toolName, toolInput) {
   if (!SHELL_TOOLS.has(toolName) || !toolInput) return null;
-  const c = toolInput.command != null ? toolInput.command : toolInput.cmd;
+  const c =
+    toolInput.command != null
+      ? toolInput.command
+      : toolInput.cmd != null
+        ? toolInput.cmd
+        : toolInput.command_line != null
+          ? toolInput.command_line
+          : toolInput.CommandLine;
   if (Array.isArray(c)) return c.map(String).join(' ');
   return typeof c === 'string' ? c : null;
 }
 
 const EDIT_TOOL_RE = /write|edit|replace|patch|delete|create|move|rename|notebook/i;
-const PATH_KEYS = ['file_path', 'path', 'target_file', 'notebook_path', 'target_notebook', 'filePath', 'filename', 'destination', 'new_path', 'old_path'];
+const PATH_KEYS = [
+  'file_path',
+  'path',
+  'target_file',
+  'TargetFile',
+  'AbsolutePath',
+  'notebook_path',
+  'target_notebook',
+  'filePath',
+  'filename',
+  'destination',
+  'new_path',
+  'old_path',
+];
 const PATCH_FILE_RE = /^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$/gm;
 
 /** Paths an edit-capable tool call would modify, as given in its input. */
