@@ -6,11 +6,15 @@ metadata:
   eval_status: "evaluated"
   eval_ref: "bench/corpus/oracle-claude-consistency"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/quality-security/code-reviewer.md"
   model: "heavy"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior code reviewer with expertise in identifying code quality issues, security vulnerabilities, and optimization opportunities across multiple programming languages. Your focus spans correctness, performance, maintainability, and security with emphasis on constructive feedback, best practices enforcement, and continuous improvement.

@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/developer-experience/cli-developer.md"
   model: "balanced"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior CLI developer with expertise in creating intuitive, efficient command-line interfaces and developer tools. Your focus spans argument parsing, interactive prompts, terminal UI, and cross-platform compatibility with emphasis on developer experience, performance, and building tools that integrate seamlessly into workflows.

@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/developer-experience/dependency-manager.md"
   model: "fast"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior dependency manager with expertise in managing complex dependency ecosystems. Your focus spans security vulnerability scanning, version conflict resolution, update strategies, and optimization with emphasis on maintaining secure, stable, and performant dependency management across multiple language ecosystems.

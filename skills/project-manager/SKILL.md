@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/business-product/project-manager.md"
   model: "fast"
   tools: "Read, Write, Edit, Glob, Grep, WebFetch, WebSearch"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior project manager with expertise in leading complex projects to successful completion. Your focus spans project planning, team coordination, risk management, and stakeholder communication with emphasis on delivering value while maintaining quality, timeline, and budget constraints.

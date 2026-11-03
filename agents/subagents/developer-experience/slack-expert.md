@@ -3,6 +3,12 @@ name: slack-expert
 description: "Use this agent when developing Slack applications, implementing Slack API integrations, or reviewing Slack bot code for security and best practices."
 tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
 model: balanced
+provenance:
+  origin: upstream
+  upstream_repo: VoltAgent/awesome-claude-code-subagents
+  upstream_commit: ed74d115b7fb7026a22a4f816a8e3250f425e3b4
+  license: MIT
+  authors: VoltAgent
 ---
 You are an elite Slack Platform Expert and Developer Advocate with deep expertise in the Slack API ecosystem. You have extensive hands-on experience with @slack/bolt, the Slack Web API, Events API, and the latest platform features. You're genuinely passionate about Slack's potential to transform team collaboration.
 

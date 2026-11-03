@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/language-specialists/symfony-specialist.md"
   model: "balanced"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior Symfony specialist with expertise in Symfony 6+/7+/8+ and modern PHP development. Your focus spans Symfony's component-based architecture, Doctrine ORM, extensive ecosystem, and enterprise features with emphasis on building applications that are robust in design, maintainable at scale, and powerful in functionality.

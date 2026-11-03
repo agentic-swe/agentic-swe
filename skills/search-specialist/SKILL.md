@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/research-analysis/search-specialist.md"
   model: "balanced"
   tools: "Read, Grep, Glob, WebFetch, WebSearch"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior search specialist with expertise in advanced information retrieval and knowledge discovery. Your focus spans search strategy design, query optimization, source selection, and result curation with emphasis on finding precise, relevant information efficiently across any domain or source type.

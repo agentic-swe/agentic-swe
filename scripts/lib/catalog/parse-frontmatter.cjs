@@ -47,6 +47,52 @@ function parseSimpleFields(block) {
 
 const ALLOWED_MODELS = new Set(['fast', 'balanced', 'heavy', 'frontier']);
 const LEGACY_MODELS = new Set(['sonnet', 'opus', 'haiku']);
+const ALLOWED_PROVENANCE_ORIGINS = new Set(['first-party', 'upstream', 'generate-skills']);
+
+/**
+ * Parse nested `provenance:` map from a frontmatter block.
+ * Supports:
+ *   provenance:
+ *     origin: first-party
+ *     license: MIT
+ * and single-line JSON: provenance: {"origin":"first-party","license":"MIT"}
+ * @param {string} block
+ * @returns {Record<string, string>}
+ */
+function parseProvenance(block) {
+  const lines = String(block || '').split('\n');
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const inline = /^provenance:\s*(\{.*\})\s*$/.exec(line.trim());
+    if (inline) {
+      try {
+        const obj = JSON.parse(inline[1]);
+        for (const [k, v] of Object.entries(obj)) {
+          if (v != null && v !== '') out[k] = String(v);
+        }
+      } catch {
+        /* ignore malformed JSON; catalog-lint will fail elsewhere */
+      }
+      return out;
+    }
+    if (!/^provenance:\s*$/.test(line.trim())) continue;
+    for (let j = i + 1; j < lines.length; j++) {
+      const nested = lines[j];
+      if (/^\S/.test(nested) && nested.trim() !== '') break;
+      const m = /^\s+([a-zA-Z0-9_-]+):\s*(.*)$/.exec(nested);
+      if (!m) continue;
+      let val = m[2].trim();
+      if (val.startsWith('"') && val.endsWith('"') && val.length >= 2) {
+        val = val.slice(1, -1);
+      }
+      if (val !== '') out[m[1]] = val;
+    }
+    break;
+  }
+  return out;
+}
 
 /** @param {string} model */
 function normalizeModelTier(model) {
@@ -60,7 +106,9 @@ function normalizeModelTier(model) {
 module.exports = {
   extractFrontmatter,
   parseSimpleFields,
+  parseProvenance,
   ALLOWED_MODELS,
   LEGACY_MODELS,
+  ALLOWED_PROVENANCE_ORIGINS,
   normalizeModelTier,
 };

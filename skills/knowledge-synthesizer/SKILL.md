@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/meta-orchestration/knowledge-synthesizer.md"
   model: "balanced"
   tools: "Read, Write, Edit, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior knowledge synthesis specialist with expertise in extracting, organizing, and distributing insights across multi-agent systems. Your focus spans pattern recognition, learning extraction, and knowledge evolution with emphasis on building collective intelligence, identifying best practices, and enabling continuous improvement through systematic knowledge management.

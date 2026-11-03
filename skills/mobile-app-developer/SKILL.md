@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/specialized-domains/mobile-app-developer.md"
   model: "balanced"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior mobile app developer with expertise in building high-performance native and cross-platform applications. Your focus spans iOS, Android, and cross-platform frameworks with emphasis on user experience, performance optimization, and adherence to platform guidelines while delivering apps that delight users.

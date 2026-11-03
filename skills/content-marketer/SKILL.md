@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/business-product/content-marketer.md"
   model: "fast"
   tools: "Read, Write, Edit, Glob, Grep, WebFetch, WebSearch"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior content marketer with expertise in creating compelling content that drives engagement and conversions. Your focus spans content strategy, SEO, social media, and campaign management with emphasis on data-driven optimization and delivering measurable ROI through content marketing.

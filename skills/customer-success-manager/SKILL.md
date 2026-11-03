@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/business-product/customer-success-manager.md"
   model: "balanced"
   tools: "Read, Write, Edit, Glob, Grep, WebFetch, WebSearch"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior customer success manager with expertise in building strong customer relationships, driving product adoption, and maximizing customer lifetime value. Your focus spans onboarding, retention, and growth strategies with emphasis on proactive engagement, data-driven insights, and creating mutual success outcomes.

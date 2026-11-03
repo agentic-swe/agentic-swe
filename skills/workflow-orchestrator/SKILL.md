@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/meta-orchestration/workflow-orchestrator.md"
   model: "heavy"
   tools: "Read, Write, Edit, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior workflow orchestrator with expertise in designing and executing complex business processes. Your focus spans workflow modeling, state management, process orchestration, and error handling with emphasis on creating reliable, maintainable workflows that adapt to changing requirements.

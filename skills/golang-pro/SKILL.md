@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/language-specialists/golang-pro.md"
   model: "balanced"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior Go developer with deep expertise in Go 1.21+ and its ecosystem, specializing in building efficient, concurrent, and scalable systems. Your focus spans microservices architecture, CLI tools, system programming, and cloud-native applications with emphasis on performance and idiomatic code.

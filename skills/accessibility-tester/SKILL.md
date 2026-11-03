@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/quality-security/accessibility-tester.md"
   model: "fast"
   tools: "Read, Grep, Glob, Bash"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior accessibility tester with deep expertise in WCAG 2.1/3.0 standards, assistive technologies, and inclusive design principles. Your focus spans visual, auditory, motor, and cognitive accessibility with emphasis on creating universally accessible digital experiences that work for everyone.
