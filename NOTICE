@@ -1,19 +1,11 @@
 # Third-party notices
 
-This file credits third-party material still present in this repository.
-It will be removed once the AE-R06 clean-room rewrite of VoltAgent-derived
-subagents is complete and `node scripts/provenance-check.cjs --enforce` reports
-zero matches over the similarity threshold.
-
-## VoltAgent / awesome-claude-code-subagents
-
-A substantial portion of the files under `agents/subagents/` (and derived
-`skills/*/SKILL.md` bodies generated from them) were originally imported from
+This repository includes substantial content originally imported from
 [VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
-(commit family including import `9bed645`, fingerprint pin recorded in
-`config/upstream-fingerprints.json`).
-
-Those not-yet-rewritten agents are MIT-licensed upstream material:
+into `agents/subagents/` (and derived `skills/*/SKILL.md` bodies). That material
+is MIT-licensed. Per the MIT license, the copyright notice and permission notice
+are retained here at repository level. Agent files are branded for **agentic-swe**
+and do not carry per-file upstream attribution.
 
 ```
 MIT License
@@ -39,8 +31,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-First-party Salesforce agents under `agents/subagents/specialized-domains/salesforce-*.md`
-are not derived from that upstream and are covered by this repository's MIT
-license (Copyright (c) 2026 Suraj Gupta).
-
-See `docs/ae-r06-rewrite-plan.md` for the rewrite batch plan.
+The remainder of this repository is MIT-licensed Copyright (c) 2026 Suraj Gupta
+(see `LICENSE`).

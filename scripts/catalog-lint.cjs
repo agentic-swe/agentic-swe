@@ -159,12 +159,13 @@ function lint() {
         `${rel}: provenance.origin must be ${[...ALLOWED_PROVENANCE_ORIGINS].join('|')}; got "${prov.origin}"`
       );
     }
-    if (prov.origin === 'upstream') {
-      if (!prov.upstream_repo) errors.push(`${rel}: upstream provenance requires provenance.upstream_repo`);
-      if (!prov.upstream_commit) {
-        errors.push(`${rel}: upstream provenance requires provenance.upstream_commit`);
-      }
-      if (!prov.authors) errors.push(`${rel}: upstream provenance requires provenance.authors`);
+    if (prov.upstream_repo || prov.upstream_commit || prov.rewritten) {
+      errors.push(
+        `${rel}: per-file upstream_repo/upstream_commit/rewritten are forbidden; use repo-level NOTICE + provenance.origin agentic-swe`
+      );
+    }
+    if (prov.origin === 'agentic-swe' && !prov.authors) {
+      errors.push(`${rel}: agentic-swe provenance requires provenance.authors`);
     }
   }
 
