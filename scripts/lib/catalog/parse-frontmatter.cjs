@@ -47,7 +47,7 @@ function parseSimpleFields(block) {
 
 const ALLOWED_MODELS = new Set(['fast', 'balanced', 'heavy', 'frontier']);
 const LEGACY_MODELS = new Set(['sonnet', 'opus', 'haiku']);
-const ALLOWED_PROVENANCE_ORIGINS = new Set(['first-party', 'upstream', 'generate-skills']);
+const ALLOWED_PROVENANCE_ORIGINS = new Set(['agentic-swe', 'generate-skills']);
 
 /**
  * Parse nested `provenance:` map from a frontmatter block.

@@ -27,7 +27,7 @@ description: "Use when you need duplicate-name test one."
 tools: Read
 model: balanced
 provenance:
-  origin: first-party
+  origin: agentic-swe
   license: MIT
   authors: "Test"
 ---
