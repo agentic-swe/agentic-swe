@@ -86,7 +86,7 @@ Then in Claude Code:
 - Audit log: `test/fixtures/receipt/lean-happy/audit.log` (9 entries)
 ```
 
-Every line above is computed from `.worklogs/<id>/` — no LLM summary, no hallucinated PRs. Reproduce locally:
+Receipt lines are computed from `.worklogs/<id>/` artifacts (including whatever the agent wrote to `pr-link.txt`); they are not an LLM summary. Reproduce locally:
 
 ```bash
 node scripts/render-receipt.cjs --work-dir test/fixtures/receipt/lean-happy

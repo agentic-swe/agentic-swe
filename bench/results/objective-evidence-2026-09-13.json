@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-09-13T19:04:10.791Z",
-  "claim_status": "proven_at_scale",
+  "claim_status": "proven_e2e_bench",
   "skills": {
     "total": 183,
     "unevaluated": 0
@@ -114,10 +114,10 @@
       "id": "token-reduction-benchmarks",
       "requirement": "Benchmarks proving per-task tokens toward 1–2% of cold",
       "evidence": [
-        "proven_at_scale",
+        "proven_e2e_bench",
         "portfolio_multiplier=0.008425613866153106"
       ],
-      "status": "met"
+      "status": "partial"
     },
     {
       "id": "live-path-reproducible",
@@ -254,9 +254,11 @@
       "status": "met"
     }
   ],
-  "unmet": [],
-  "scorecard_local_met": true,
-  "scorecard_all_met": true,
+  "unmet": [
+    "token-reduction-benchmarks"
+  ],
+  "scorecard_local_met": false,
+  "scorecard_all_met": false,
   "fleet_submissions": {
     "archived": 6,
     "archived_independent": 3,
@@ -376,6 +378,6 @@
       "Maintainer: npm run fleet-ingest-submission -- --submission fleet-submission.json"
     ]
   },
-  "goal_complete": true,
-  "honesty": "All objective requirements met including ≥3 independent fleet submissions at scale."
+  "goal_complete": false,
+  "honesty": "claim_status is proven_e2e_bench (not proven_at_scale): token-reduction-benchmarks stays partial until live pack-root tier_totals satisfy the claim contract. Fleet-scale (≥3 independent submissions) and maintainer dogfood remain met in this archived snapshot."
 }
