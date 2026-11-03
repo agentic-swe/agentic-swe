@@ -26,6 +26,33 @@ const RULES = [
   ['mcp-missing-description', 'low', /"mcpServers"\s*:\s*\{[\s\S]*?\{\s*\}/],
 ];
 
+/** Runtime state dir and binary-ish extensions — not policy text (TD-14). */
+const SKIP_DIR_NAMES = new Set(['node_modules', '.git', '.agentic-swe']);
+const BINARY_EXTENSIONS = new Set([
+  '.sqlite',
+  '.db',
+  '.wasm',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.ico',
+  '.pdf',
+  '.zip',
+  '.gz',
+  '.tgz',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.eot',
+  '.bin',
+  '.exe',
+  '.dll',
+  '.so',
+  '.dylib',
+]);
+
 function lineOf(content, index) {
   return content.slice(0, index).split('\n').length;
 }
@@ -49,15 +76,28 @@ function scanText(filePath, content) {
   return findings;
 }
 
+function isProbablyBinary(buffer) {
+  const len = Math.min(buffer.length, 8000);
+  for (let i = 0; i < len; i++) {
+    if (buffer[i] === 0) return true;
+  }
+  return false;
+}
+
 function walk(directory) {
   const files = [];
   if (!fs.existsSync(directory)) return files;
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === '.git') continue;
+      // Skip package/VCS trees and the local .agentic-swe runtime state dir (e.g. memory.sqlite).
+      if (SKIP_DIR_NAMES.has(entry.name)) continue;
       files.push(...walk(full));
-    } else if (entry.isFile()) files.push(full);
+    } else if (entry.isFile()) {
+      const ext = path.extname(entry.name).toLowerCase();
+      if (BINARY_EXTENSIONS.has(ext)) continue;
+      files.push(full);
+    }
   }
   return files;
 }
@@ -75,7 +115,9 @@ function scanSurfaces({ roots = [], plannedWrites = [] } = {}) {
   for (const planned of plannedWrites) findings.push(...scanText(planned.path, planned.content));
   for (const root of roots) {
     for (const file of walk(root)) {
-      findings.push(...scanText(path.relative(root, file), fs.readFileSync(file, 'utf8')));
+      const buf = fs.readFileSync(file);
+      if (isProbablyBinary(buf)) continue;
+      findings.push(...scanText(path.relative(root, file), buf.toString('utf8')));
     }
   }
   return { findings, summary: summarize(findings) };
