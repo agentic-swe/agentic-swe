@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Acceptance gate (TD-15):** `pipeline.acceptance_command` runs via argv with `shell: false`. JSON string arrays are preferred; string form is allowlisted (`npm test`, `npm run <script>`, `node <relpath>`) and shell metacharacters fail closed with `ACCEPTANCE_UNSAFE`.
 - `resolvePolicy(repoRoot, packRoot)` loads `config/default-policy.json` from `packRoot` (it previously looked three directories above it).
 - Skill `source` metadata always uses forward slashes so Claude plugin YAML parse works on Windows.
 - Frontmatter extractor accepts CRLF; POSIX absolute host paths stay stable on Windows lifecycle adapters.
