@@ -158,9 +158,7 @@ function collectSources() {
     };
     if (prov.license) extra.provenance_license = prov.license;
     if (prov.authors) extra.provenance_authors = prov.authors;
-    if (prov.upstream_repo) extra.upstream_repo = prov.upstream_repo;
-    if (prov.upstream_commit) extra.upstream_commit = prov.upstream_commit;
-    if (prov.rewritten) extra.rewritten = prov.rewritten;
+    // Do not copy upstream_repo / upstream_commit / rewritten — catalog-lint forbids them (AE-R06 / PD-4c).
     out.push({
       kind: 'subagent',
       abs,
