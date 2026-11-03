@@ -11,8 +11,10 @@ const path = require('node:path');
 const {
   extractFrontmatter,
   parseSimpleFields,
+  parseProvenance,
   ALLOWED_MODELS,
   LEGACY_MODELS,
+  ALLOWED_PROVENANCE_ORIGINS,
   normalizeModelTier,
 } = require('./lib/catalog/parse-frontmatter.cjs');
 const { listAgentMarkdownFiles } = require('./lib/catalog/walk-subagents.cjs');
@@ -145,6 +147,24 @@ function lint() {
     } else {
       const t = String(fm.tools || '').trim();
       if (!t) errors.push(`${rel}: tools: present but empty`);
+    }
+    const prov = parseProvenance(ex.block);
+    if (!prov.license) {
+      errors.push(`${rel}: missing provenance.license (required AE-R06 provenance block)`);
+    }
+    if (!prov.origin) {
+      errors.push(`${rel}: missing provenance.origin`);
+    } else if (!ALLOWED_PROVENANCE_ORIGINS.has(prov.origin)) {
+      errors.push(
+        `${rel}: provenance.origin must be ${[...ALLOWED_PROVENANCE_ORIGINS].join('|')}; got "${prov.origin}"`
+      );
+    }
+    if (prov.origin === 'upstream') {
+      if (!prov.upstream_repo) errors.push(`${rel}: upstream provenance requires provenance.upstream_repo`);
+      if (!prov.upstream_commit) {
+        errors.push(`${rel}: upstream provenance requires provenance.upstream_commit`);
+      }
+      if (!prov.authors) errors.push(`${rel}: upstream provenance requires provenance.authors`);
     }
   }
 

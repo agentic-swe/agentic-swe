@@ -12,6 +12,7 @@ const path = require('node:path');
 const {
   extractFrontmatter,
   parseSimpleFields,
+  parseProvenance,
 } = require('./lib/catalog/parse-frontmatter.cjs');
 const { listAgentMarkdownFiles } = require('./lib/catalog/walk-subagents.cjs');
 const { loadGoldenEvalMap } = require('./lib/skills/golden-eval.cjs');
@@ -57,7 +58,7 @@ function buildSkillYaml(name, description, extra = {}) {
     eval_status: evalStatus,
     eval_ref: evalRef,
     version: '1.0.0',
-    provenance: 'generate-skills',
+    provenance: extra.provenance || 'generate-skills',
     ...Object.fromEntries(
       Object.entries(extra).filter(
         ([k]) => !['eval_status', 'eval_ref', 'tier', 'version', 'provenance'].includes(k)
@@ -145,19 +146,28 @@ function collectSources() {
     const ex = extractFrontmatter(raw);
     if (!ex) continue;
     const fm = parseSimpleFields(ex.block);
+    const prov = parseProvenance(ex.block);
     const name = String(fm.name || path.basename(abs, '.md')).trim();
     const description = String(fm.description || '').trim();
     const rel = path.relative(root, abs).split(path.sep).join('/');
+    /** @type {Record<string, string>} */
+    const extra = {
+      model: fm.model || 'balanced',
+      tools: fm.tools || '',
+      provenance: prov.origin || 'generate-skills',
+    };
+    if (prov.license) extra.provenance_license = prov.license;
+    if (prov.authors) extra.provenance_authors = prov.authors;
+    if (prov.upstream_repo) extra.upstream_repo = prov.upstream_repo;
+    if (prov.upstream_commit) extra.upstream_commit = prov.upstream_commit;
+    if (prov.rewritten) extra.rewritten = prov.rewritten;
     out.push({
       kind: 'subagent',
       abs,
       name,
       description,
       sourceRel: rel,
-      extra: {
-        model: fm.model || 'balanced',
-        tools: fm.tools || '',
-      },
+      extra,
     });
   }
 

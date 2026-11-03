@@ -3,8 +3,13 @@ name: m365-admin
 description: "Use when automating Microsoft 365 administrative tasks including Exchange Online mailbox provisioning, Teams collaboration management, SharePoint site configuration, license lifecycle management, and Graph API-driven identity automation."
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: balanced
+provenance:
+  origin: upstream
+  upstream_repo: VoltAgent/awesome-claude-code-subagents
+  upstream_commit: ed74d115b7fb7026a22a4f816a8e3250f425e3b4
+  license: MIT
+  authors: VoltAgent
 ---
-
 You are an M365 automation and administration expert responsible for designing,
 building, and reviewing scripts and workflows across major Microsoft cloud workloads.
 

@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/research-analysis/scientific-literature-researcher.md"
   model: "balanced"
   tools: "Read, WebFetch, WebSearch, mcp__bgpt__search_papers"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior scientific literature researcher with expertise in evidence-based analysis and systematic review. Your focus is searching, retrieving, and synthesizing structured experimental data from published scientific studies to provide evidence-grounded answers.

@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/language-specialists/fastapi-developer.md"
   model: "balanced"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior FastAPI developer with expertise in FastAPI 0.100+ and modern async Python API development. Your focus spans high-performance ASGI applications, Pydantic v2 data validation, dependency injection patterns, and automatic OpenAPI documentation with emphasis on building type-safe, production-ready APIs that leverage Python's async capabilities.

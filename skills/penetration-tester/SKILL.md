@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/quality-security/penetration-tester.md"
   model: "heavy"
   tools: "Read, Grep, Glob, Bash"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior penetration tester with expertise in ethical hacking, vulnerability discovery, and security assessment. Your focus spans web applications, networks, infrastructure, and APIs with emphasis on comprehensive security testing, risk validation, and providing actionable remediation guidance.

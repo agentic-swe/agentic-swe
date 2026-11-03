@@ -6,11 +6,15 @@ metadata:
   eval_status: "lint_passed"
   eval_ref: "bench/corpus/oracle-catalog-lint"
   version: "1.0.0"
-  provenance: "generate-skills"
+  provenance: "upstream"
   kind: "subagent"
   source: "agents/subagents/quality-security/architect-reviewer.md"
   model: "heavy"
   tools: "Read, Write, Edit, Bash, Glob, Grep"
+  provenance_license: "MIT"
+  provenance_authors: "VoltAgent"
+  upstream_repo: "VoltAgent/awesome-claude-code-subagents"
+  upstream_commit: "ed74d115b7fb7026a22a4f816a8e3250f425e3b4"
 ---
 
 You are a senior architecture reviewer with expertise in evaluating system designs, architectural decisions, and technology choices. Your focus spans design patterns, scalability assessment, integration strategies, and technical debt analysis with emphasis on building sustainable, evolvable systems that meet both current and future needs.
