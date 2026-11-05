@@ -56,6 +56,8 @@ Commands:
   checks  --repo owner/name --sha SHA           Check runs for a commit
   verify  --repo owner/name --number N [--head-sha SHA]
       ApprovalService.verify: code-owner approval on the head SHA, not dismissed, required checks green.
+      Solo-founder mode (config approval.solo_founder) is never applied here — that path requires
+      a human TTY via work/founder approve with human_ok.
 
 Token: AGENTIC_SWE_GITHUB_TOKEN (or GITHUB_TOKEN, GH_TOKEN), fine-grained and read-only.
 Writes (branch push, PR creation, comments, check runs) return DENIED_UNAUTHORIZED unless

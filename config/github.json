@@ -22,5 +22,11 @@
       "checks:write"
     ]
   },
-  "codeowners_paths": [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"]
+  "codeowners_paths": [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"],
+  "approval": {
+    "solo_founder": {
+      "enabled": false,
+      "github_login": ""
+    }
+  }
 }

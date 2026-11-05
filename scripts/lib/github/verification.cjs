@@ -53,7 +53,9 @@ function assertGitHubVerification({ workDir, state }) {
   const v = found.verification;
   if (!v) return deny('no github.verified journal event');
   if (v.repo !== link.repo || v.pr !== link.pr) return deny(`verification is for ${v.repo}#${v.pr}`);
-  if (v.verdict !== 'approved') return deny(`latest verdict is ${v.verdict}: ${(v.reasons || []).map((r) => r.code).join(', ')}`);
+  if (v.verdict !== 'approved' && v.verdict !== 'approved_solo_founder') {
+    return deny(`latest verdict is ${v.verdict}: ${(v.reasons || []).map((r) => r.code).join(', ')}`);
+  }
   const iter = (state && state.counters && state.counters.approval_iter) || 0;
   if (v.approval_iter !== iter) return deny(`verification is from approval round ${v.approval_iter}, current round is ${iter}`);
   const historyLength = Array.isArray(state && state.history) ? state.history.length : 0;
@@ -64,10 +66,15 @@ function assertGitHubVerification({ workDir, state }) {
 /**
  * Run ApprovalService.verify for the work item's PR and journal the verdict (approved or not).
  * @param {{ workDir: string, service: { verify: Function }, link: object, actor: string,
- *           headSha?: string, calls?: object[] }} opts
+ *           headSha?: string, humanOk?: boolean, calls?: object[] }} opts
  */
-async function verifyAndJournal({ workDir, service, link, actor, headSha, calls }) {
-  const result = await service.verify({ repo: link.repo, pr: link.pr, head_sha: headSha });
+async function verifyAndJournal({ workDir, service, link, actor, headSha, humanOk = false, calls }) {
+  const result = await service.verify({
+    repo: link.repo,
+    pr: link.pr,
+    head_sha: headSha,
+    human_ok: humanOk === true,
+  });
   const at = new Date().toISOString();
   const statePath = path.join(workDir, 'state.json');
   const verification = withWriteLockSync(workDir, () => {
@@ -77,8 +84,10 @@ async function verifyAndJournal({ workDir, service, link, actor, headSha, calls 
       err.code = 'NOT_AT_APPROVAL_WAIT';
       throw err;
     }
+    const mode = result.mode === 'solo_founder' ? 'solo_founder' : 'github_review';
     const v = {
-      verdict: result.approved ? 'approved' : 'not_approved',
+      verdict: result.approved ? (mode === 'solo_founder' ? 'approved_solo_founder' : 'approved') : 'not_approved',
+      mode,
       repo: link.repo,
       pr: link.pr,
       head_sha: result.head_sha || headSha || null,
@@ -86,6 +95,7 @@ async function verifyAndJournal({ workDir, service, link, actor, headSha, calls 
       approvers: result.approvers || [],
       required_checks: result.required_checks || [],
       reasons: result.reasons || [],
+      solo_founder: result.solo_founder || null,
       approval_iter: (state.counters && state.counters.approval_iter) || 0,
       history_length: Array.isArray(state.history) ? state.history.length : 0,
       at,
@@ -100,10 +110,14 @@ async function verifyAndJournal({ workDir, service, link, actor, headSha, calls 
   });
   fs.appendFileSync(
     path.join(workDir, 'audit.log'),
-    `${at} actor=${actor} action=github_verified verdict=${verification.verdict} pr=${link.repo}#${link.pr} head=${verification.head_sha || 'unknown'}${verification.reasons.length ? ` reasons=${verification.reasons.map((r) => r.code).join(',')}` : ''}\n`,
+    `${at} actor=${actor} action=github_verified verdict=${verification.verdict} mode=${verification.mode} pr=${link.repo}#${link.pr} head=${verification.head_sha || 'unknown'}${verification.reasons.length ? ` reasons=${verification.reasons.map((r) => r.code).join(',')}` : ''}\n`,
     'utf8'
   );
-  return { ok: true, approved: verification.verdict === 'approved', verification };
+  return {
+    ok: true,
+    approved: verification.verdict === 'approved' || verification.verdict === 'approved_solo_founder',
+    verification,
+  };
 }
 
 module.exports = { EVENT_TYPE, parsePrLink, latestVerification, assertGitHubVerification, verifyAndJournal };

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-swe.github.io/schemas/github-config.schema.json",
+  "title": "Agentic SWE GitHub connector config",
+  "description": "Pack config/github.json and optional repo .agentic-swe/github.json merge shape (AE-015 / PD-13).",
+  "type": "object",
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "api_base": { "type": "string", "minLength": 1 },
+    "token_env": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "authorization": {
+      "type": "object",
+      "properties": {
+        "github_write": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "read": { "type": "array", "items": { "type": "string" } },
+        "write": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "codeowners_paths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "approval": {
+      "type": "object",
+      "description": "Local approval-policy overlays for GitHub verification (fail closed; off by default).",
+      "properties": {
+        "solo_founder": {
+          "type": "object",
+          "description": "When enabled, a human TTY approve may pass without a GitHub code-owner review if the PR author is the sole CODEOWNER (GitHub blocks self-approval).",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "github_login": {
+              "type": "string",
+              "description": "GitHub login of the sole founder/code owner. Non-empty and valid when enabled is true.",
+              "maxLength": 39,
+              "pattern": "^([A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38})?$"
+            }
+          },
+          "required": ["enabled"],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
