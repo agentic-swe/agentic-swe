@@ -155,7 +155,7 @@ Beyond the [Quickstart](#quickstart) above, alternate paths:
 |------|-----|-------------|
 | **Claude Code** | plugin (above) | yes — `PreToolUse` |
 | **Cursor** | `agentic-swe setup --host cursor` | yes — `preToolUse` |
-| **VS Code** | `agentic-swe setup --host vscode` | no |
+| **VS Code** | `agentic-swe setup --host vscode` | no — agent hooks are Preview only (verified 2026-11-05); Copilot Session Target uses `copilot` host |
 | **Codex** | `agentic-swe setup --host codex` | yes — plugin + repo `.codex/hooks.json` `PreToolUse` (plugin needs trust) |
 | **OpenCode** | `agentic-swe setup --host opencode` | yes — `tool.execute.before` |
 | **Antigravity** | `agentic-swe setup --host antigravity` | yes — `PreToolUse` |
@@ -164,7 +164,7 @@ Beyond the [Quickstart](#quickstart) above, alternate paths:
 | **GitHub Copilot** | `agentic-swe setup --host copilot` | yes — `preToolUse` |
 | **Gemini CLI** | `gemini-extension.json` · **`GEMINI.md`** | no |
 
-The policy hook enforces [Policy-as-Code](references/policy-as-code.md) on every tool call; `agentic-swe host-parity --json` reports `policy_hook` per host. VS Code and Gemini CLI have no verified pre-tool hook contract and rely on instructions only.
+The policy hook enforces [Policy-as-Code](references/policy-as-code.md) on every tool call; `agentic-swe host-parity --json` reports `policy_hook` per host. VS Code agent hooks exist only as **Preview** in official docs (verified 2026-11-05) — `policy_hook` stays false for the `vscode` host; Copilot-in-VS-Code is covered by the `copilot` host. Gemini CLI has no verified pre-tool hook contract and relies on instructions only.
 
 Run setup from the root of the git repository you want to configure. It refuses any other directory, shows the target and the planned changes, and waits for confirmation. `--yes` skips the question. `--dry-run` only prints the plan. Run setup without `--host` to auto-detect installed hosts, or use `--host all`. Run `agentic-swe doctor` to verify an installation. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
 

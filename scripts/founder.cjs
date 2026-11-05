@@ -58,7 +58,7 @@ Commands:
   approve --goal-dir <dir> --decision approved|changes_requested [--note "…"]
       Runs \`goal approve\`.
 
-Solo-founder approval (PD-13; off by default):
+Solo-founder approval (PD-17; off by default):
   Set in .agentic-swe/github.json (never enabled from an agent session):
     { "approval": { "solo_founder": { "enabled": true, "github_login": "yourLogin" } } }
   Then \`approve --work-dir … --decision approved --head-sha <receipted>\` may pass without a

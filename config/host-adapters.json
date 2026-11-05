@@ -21,7 +21,7 @@
     "native": false,
     "reason": "The extension performs automatic maintenance, but generic VS Code exposes no agent transcript lifecycle.",
     "policy_hook": false,
-    "policy_hook_reason": "VS Code exposes no pre-tool hook for another extension's agent tools."
+    "policy_hook_reason": "Verified 2026-11-05: official VS Code agent hooks are Preview only (format/behavior may change); do not claim a stable policy_hook. Copilot Session Target in VS Code is covered by the separate copilot host (.github/hooks). Citations: https://code.visualstudio.com/docs/agent-customization/hooks (Preview note) · https://code.visualstudio.com/docs/copilot/customization/hooks · https://docs.github.com/en/copilot/reference/hooks-reference (CLI/cloud; not a VS Code GA contract)."
   },
   "codex": {
     "start": true,

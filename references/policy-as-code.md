@@ -140,9 +140,22 @@ Repo and org policy are enforced even without an active work item; audit lines a
 | Windsurf | `integrations/windsurf/hooks.json` | `pre_run_command` / `pre_write_code` / `pre_read_code` / `pre_mcp_tool_use` | `agent_action_name`, `tool_info.*` | exit `2` + stderr | [Cascade hooks](https://docs.devin.ai/desktop/cascade/hooks) |
 | Kiro | `integrations/kiro/agentic-swe-memory.json` | `PreToolUse` | `tool_name`, `tool_input`, `cwd` | exit `2` + stderr | [Kiro hooks](https://kiro.dev/docs/hooks/) · [triggers](https://kiro.dev/docs/hooks/types/) |
 | Copilot | `integrations/copilot/agentic-swe.json` | `preToolUse` | `toolName`/`toolArgs` or `tool_name`/`tool_input`, `cwd` | stdout `{"permissionDecision":"deny",...}` + exit `2` | [Copilot hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference) |
-| VS Code | — | — | — | unverified — no pre-tool API for another extension | — |
+| VS Code | — | — | — | **Preview only — not wired** (`policy_hook: false`) | See verification note below |
 
-Hosts without a verified contract keep `policy_hook: false` in `config/host-adapters.json`.
+Hosts without a verified **stable** contract keep `policy_hook: false` in `config/host-adapters.json`.
+
+#### VS Code residual (AE-R03) — verified 2026-11-05
+
+Official docs describe agent hooks for VS Code, but mark them **Preview** (configuration and behavior may change):
+
+| Source | URL | Status as of 2026-11-05 |
+|--------|-----|-------------------------|
+| Configure agent hooks in VS Code (Preview) | https://code.visualstudio.com/docs/agent-customization/hooks | Preview; `preToolUse` / `.github/hooks/*.json`; deny via `permissionDecision` |
+| Agent hooks in Visual Studio Code (Preview) | https://code.visualstudio.com/docs/copilot/customization/hooks | Preview; same locations / PascalCase aliases |
+| GitHub Copilot hooks reference | https://docs.github.com/en/copilot/reference/hooks-reference | Documents Copilot CLI and cloud; not a VS Code GA contract |
+| VS Code 1.109 release notes | https://code.visualstudio.com/updates/v1_109 | Introduced Agent hooks (Preview) |
+
+Documented Preview shape (do **not** flip `policy_hook` until GA/stable): workspace config under `.github/hooks/*.json`; event `preToolUse` (camelCase payload `toolName` / `toolArgs`) or `PreToolUse` (snake_case); deny stdout `{"permissionDecision":"deny","permissionDecisionReason":"…"}`. Copilot CLI/cloud already use this via the **`copilot`** host (`integrations/copilot/agentic-swe.json` → `.github/hooks/…`). The **`vscode`** host stays `policy_hook: false` so we do not claim a stable VS Code-wide policy gate for non-Copilot / Local harness surfaces.
 
 ### Baseline policy
 
