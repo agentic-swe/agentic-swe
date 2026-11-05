@@ -9,7 +9,7 @@ const { spawnSync } = require('node:child_process');
 
 const { collectFounderStatus, formatFounderStatus, costOf } = require('../scripts/lib/founder/status.cjs');
 const { approveInvocation, parseArgs } = require('../scripts/founder.cjs');
-const { commitState } = require('../scripts/lib/work-engine/journal.cjs');
+const { commitState } = require('../scripts/lib/shared/journal.cjs');
 const { AGENT_ENV_MARKERS } = require('../scripts/lib/approval/human-approval.cjs');
 
 const root = path.join(__dirname, '..');

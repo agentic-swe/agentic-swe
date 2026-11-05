@@ -10,7 +10,7 @@ const { spawnSync } = require('node:child_process');
 
 const dispatcher = require('../scripts/lib/dispatch/dispatcher.cjs');
 const { applyGoalTransition } = require('../scripts/lib/work-engine/goal.cjs');
-const { commitState, readJournal } = require('../scripts/lib/work-engine/journal.cjs');
+const { commitState, readJournal } = require('../scripts/lib/shared/journal.cjs');
 const { loadRoles } = require('../scripts/lib/policy/roles.cjs');
 
 const root = path.join(__dirname, '..');

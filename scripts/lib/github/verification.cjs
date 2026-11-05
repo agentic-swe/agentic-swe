@@ -9,8 +9,8 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { readJournal, commitState } = require('../work-engine/journal.cjs');
-const { withWriteLockSync } = require('../work-engine/state-lock.cjs');
+const { readJournal, commitState } = require('../shared/journal.cjs');
+const { withWriteLockSync } = require('../shared/state-lock.cjs');
 
 const PR_URL = /https:\/\/github\.com\/([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})\/pull\/(\d+)\b/;
 const EVENT_TYPE = 'github.verified';

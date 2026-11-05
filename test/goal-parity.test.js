@@ -8,8 +8,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { applyGoalTransition, loadGoal } = require('../scripts/lib/work-engine/goal.cjs');
 const { recordGoalApproval } = require('../scripts/lib/work-engine/goal-approval.cjs');
-const { verifyWorkJournal } = require('../scripts/lib/work-engine/journal.cjs');
-const { acquireWriteLockSync, releaseWriteLockSync } = require('../scripts/lib/work-engine/state-lock.cjs');
+const { verifyWorkJournal } = require('../scripts/lib/shared/journal.cjs');
+const { acquireWriteLockSync, releaseWriteLockSync } = require('../scripts/lib/shared/state-lock.cjs');
 
 const root = path.join(__dirname, '..');
 const identity = { actor: 'user:tester@example.com', name: 'Tester', email: 'tester@example.com', os_user: 'tester' };

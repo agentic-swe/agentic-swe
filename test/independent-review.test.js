@@ -13,7 +13,7 @@ const {
   recordSpawn,
   validateTransition,
 } = require('../scripts/lib/work-engine/engine.cjs');
-const { readJournal, verifyWorkJournal } = require('../scripts/lib/work-engine/journal.cjs');
+const { readJournal, verifyWorkJournal } = require('../scripts/lib/shared/journal.cjs');
 const { decideReview, reviewSummary, validateFindings } = require('../scripts/lib/work-engine/reviews.cjs');
 
 const pluginRoot = path.join(__dirname, '..');

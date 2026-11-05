@@ -23,7 +23,7 @@ CLI flag **`--evidence`** accepts comma-separated paths **relative to** **`.work
 
 ## `state.json` writers and locking
 
-**`applyTransition`** (engine) and **`syncCostFromTranscript`** (transcript cost sync) perform atomic writes (**temp file + rename**) wrapped in a **best-effort cross-process lock**: **`.agentic-swe-write.lock`** in the work dir (**`scripts/lib/work-engine/state-lock.cjs`**), acquired with **`O_CREAT | O_EXCL`**-style exclusivity and bounded retries. Another process holding the lock causes a bounded wait, then **`LOCK_TIMEOUT`** on exhaustion.
+**`applyTransition`** (engine) and **`syncCostFromTranscript`** (transcript cost sync) perform atomic writes (**temp file + rename**) wrapped in a **best-effort cross-process lock**: **`.agentic-swe-write.lock`** in the work dir (**`scripts/lib/shared/state-lock.cjs`**), acquired with **`O_CREAT | O_EXCL`**-style exclusivity and bounded retries. Another process holding the lock causes a bounded wait, then **`LOCK_TIMEOUT`** on exhaustion.
 
 **What locking does not guarantee:** It does not replace workflow discipline; **CI** should still avoid two jobs mutating the same **`.worklogs/<id>`** concurrently. Locks are **per machine** (local filesystem); network filesystems may weaken semantics. Editors or other tools that rewrite **`state.json`** outside the engine are not coordinated by this lock.
 

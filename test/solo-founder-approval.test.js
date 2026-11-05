@@ -12,7 +12,7 @@ const { memoryCallJournal } = require('../scripts/lib/github/call-journal.cjs');
 const { parsePrLink, verifyAndJournal, assertGitHubVerification } = require('../scripts/lib/github/verification.cjs');
 const { recordApproval } = require('../scripts/lib/approval/human-approval.cjs');
 const { loadWorkItem } = require('../scripts/lib/work-engine/engine.cjs');
-const { readJournal } = require('../scripts/lib/work-engine/journal.cjs');
+const { readJournal } = require('../scripts/lib/shared/journal.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
 const FIXTURE = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'github', 'approved-pr.json'), 'utf8')).responses;
