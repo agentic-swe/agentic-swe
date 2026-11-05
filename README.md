@@ -232,6 +232,7 @@ A single **Hypervisor session** (this one) owns transitions, gates, and synthesi
 | Extend pipeline | **`/author-pipeline`** · [`references/authoring-pipeline-capabilities.md`](references/authoring-pipeline-capabilities.md) |
 | Competitive note | [`docs/competitive-vs-ruflo.md`](docs/competitive-vs-ruflo.md) — win on PR receipt + replay, not swarm/marketplace parity |
 | Compliance map | [`docs/compliance-mapping.md`](docs/compliance-mapping.md) — ASI / NIST AI RMF / EU AI Act coverage (pack-boundary, not a certification) |
+| Architecture decisions | [`docs/adr/`](docs/adr/README.md) — accepted ADRs (status, date, decider) |
 | CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — **`npm run ci`** locally |
 | Research basis | [`CLAUDE.md` — Research basis](CLAUDE.md#research-basis) |
 | License | [MIT](LICENSE) · [Licensing](https://agentic-swe.github.io/agentic-swe/docs/licensing) |
