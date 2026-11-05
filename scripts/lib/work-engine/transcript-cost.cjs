@@ -9,7 +9,7 @@ const {
   emptyTierTotals,
   addUsageToTierTotals,
   mergeTierTotals,
-} = require('../bench/tier-totals.cjs');
+} = require('./tier-totals.cjs');
 
 /**
  * @param {object} line parsed JSON line from Claude Code transcript

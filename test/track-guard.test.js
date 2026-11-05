@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { applyTransition, loadWorkItem } = require('../scripts/lib/work-engine/engine.cjs');
-const { recordTrackWaiver } = require('../scripts/lib/work-engine/track-guard.cjs');
+const { recordTrackWaiver } = require('../scripts/lib/work-engine/track-waiver.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
 const identity = { actor: 'user:tester@example.com', name: 'Tester', email: 'tester@example.com', os_user: 'tester' };
