@@ -1,6 +1,6 @@
 'use strict';
 
-const { loadStore } = require('./promotion.cjs');
+const { loadStore } = require('./procedure-store.cjs');
 
 /**
  * Evaluated L0/L1 procedures for prime/context-pack (advisory).

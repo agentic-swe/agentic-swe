@@ -245,7 +245,7 @@ function main() {
         'Live pack-root organic /work reports billed session USD multiplier (verify-replay vs cost_used; not new-feature sessions)',
       evidence: (() => {
         try {
-          const { aggregateOrganicSessionUsd } = require('./lib/bench/session-usd-portfolio.cjs');
+          const { aggregateOrganicSessionUsd } = require('./lib/descent/session-usd-portfolio.cjs');
           const live = aggregateOrganicSessionUsd(root, root);
           return [
             `billed=${live.summary.billed_sessions} mult=${live.summary.session_usd_multiplier}`,
@@ -256,7 +256,7 @@ function main() {
       })(),
       status: (() => {
         try {
-          const { aggregateOrganicSessionUsd } = require('./lib/bench/session-usd-portfolio.cjs');
+          const { aggregateOrganicSessionUsd } = require('./lib/descent/session-usd-portfolio.cjs');
           const live = aggregateOrganicSessionUsd(root, root);
           if (live.summary.billed_sessions >= 1 && live.summary.session_usd_multiplier != null) {
             return live.summary.usd_target_met === true ? 'met' : 'partial';

@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { listMuscleMemoryRows } = require('../descent/muscle-memory-digest.cjs');
+const { listMuscleMemoryRows } = require('../memory/muscle-memory-digest.cjs');
 const { extractDeclaredFiles } = require('../scope/diff-scope-check.cjs');
 const { projectRootFromWorkDir } = require('../work-engine/budget-config.cjs');
 

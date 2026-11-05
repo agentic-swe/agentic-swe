@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { ingestTranscripts } = require('../scripts/lib/memory/session-ingest.cjs');
 const { mineSessionProcedures } = require('../scripts/lib/descent/mine-session-procedures.cjs');
-const { runDescentOnImplementationEntry } = require('../scripts/lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../scripts/lib/context/implementation-descent.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');
 

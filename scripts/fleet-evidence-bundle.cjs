@@ -18,7 +18,7 @@ const {
   aggregateProductionTierTotals,
   productionPortfolioMultiplier,
 } = require('./lib/bench/production-tier-totals.cjs');
-const { aggregateOrganicSessionUsd } = require('./lib/bench/session-usd-portfolio.cjs');
+const { aggregateOrganicSessionUsd } = require('./lib/descent/session-usd-portfolio.cjs');
 const {
   buildSubmissionReadiness,
   latestJson,

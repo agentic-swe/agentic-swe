@@ -13,7 +13,8 @@ const { discoverTranscriptSources } = require('./lib/memory/discover-transcripts
 const { ingestTranscripts } = require('./lib/memory/session-ingest.cjs');
 const { mineSessionProcedures } = require('./lib/descent/mine-session-procedures.cjs');
 const { mineTranscriptProcedures } = require('./lib/descent/mine-transcript-procedures.cjs');
-const { ingestTeamEvents, ingestOrganicWorklogs, ingestProjectSkills } = require('./lib/memory/ingest-scopes.cjs');
+const { ingestTeamEvents, ingestOrganicWorklogs } = require('./lib/memory/ingest-scopes.cjs');
+const { ingestProjectSkills } = require('./lib/skills/ingest-project-skills.cjs');
 
 async function warmChatMemory(opts) {
   const projectRoot = path.resolve(opts.projectRoot);

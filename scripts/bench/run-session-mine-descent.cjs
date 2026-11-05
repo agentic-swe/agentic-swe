@@ -14,7 +14,7 @@ const path = require('node:path');
 const { getDefaultPluginRoot } = require('../lib/work-engine/engine.cjs');
 const { ingestTranscripts } = require('../lib/memory/session-ingest.cjs');
 const { mineSessionProcedures } = require('../lib/descent/mine-session-procedures.cjs');
-const { runDescentOnImplementationEntry } = require('../lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../lib/context/implementation-descent.cjs');
 const { loadTierTokenEstimates } = require('../lib/descent/ladder.cjs');
 
 const TARGET = 0.02;

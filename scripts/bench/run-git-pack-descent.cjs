@@ -15,7 +15,7 @@ const { getDefaultPluginRoot } = require('../lib/work-engine/engine.cjs');
 const { mineGitProcedures } = require('../lib/descent/mine-git-procedures.cjs');
 const { loadStore } = require('../lib/descent/promotion.cjs');
 const { procedureReadPaths } = require('../lib/descent/overlap-procedure.cjs');
-const { runDescentOnImplementationEntry } = require('../lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../lib/context/implementation-descent.cjs');
 const { loadTierTokenEstimates } = require('../lib/descent/ladder.cjs');
 
 const TARGET = 0.02;

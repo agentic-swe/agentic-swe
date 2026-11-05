@@ -145,7 +145,7 @@ async function runSkillEvolutionPipeline(opts) {
   let ingest = null;
   if (!opts.dryRun && opts.ingestMemory !== false && (scaffold?.created || promote?.promoted)) {
     try {
-      const { ingestProjectSkills } = require('../memory/ingest-scopes.cjs');
+      const { ingestProjectSkills } = require('./ingest-project-skills.cjs');
       ingest = await ingestProjectSkills({ projectRoot, pluginRoot });
     } catch {
       ingest = { ok: false };

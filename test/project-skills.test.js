@@ -124,7 +124,7 @@ describe('project skill memory ingest', () => {
       skillName: 'team-lint',
       verifyCommand: 'npm run team-lint',
     });
-    const { ingestProjectSkills } = require('../scripts/lib/memory/ingest-scopes.cjs');
+    const { ingestProjectSkills } = require('../scripts/lib/skills/ingest-project-skills.cjs');
     const ing = await ingestProjectSkills({ projectRoot: tmpProj, pluginRoot });
     assert.equal(ing.skills, 1);
     assert.equal(ing.chunks, 1);

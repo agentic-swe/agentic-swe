@@ -1,6 +1,6 @@
 'use strict';
 
-const { isWellFormedCommand } = require('../descent/procedure-hygiene.cjs');
+const { isWellFormedCommand } = require('./command-hygiene.cjs');
 
 const DECISION_RE = /(?:decided|decision|chosen|we will)\s*[:\-]\s*(\S.{19,200})/i;
 const LESSON_RE = /(?:lesson|learned|takeaway)\s*[:\-]\s*(\S.{19,200})/i;
