@@ -328,7 +328,7 @@ describe('approval-wait → completed with a GitHub PR', () => {
     assert.equal(gv.verdict, 'approved');
     assert.equal(gv.head_sha, HEAD);
     assert.ok(gv.calls.some((c) => c.endpoint.startsWith('/repos/acme/widgets/pulls/42/reviews?') && c.status === 200));
-    assert.match(fs.readFileSync(path.join(wd, 'audit.log'), 'utf8'), /action=github_verified verdict=approved pr=acme\/widgets#42/);
+    assert.match(fs.readFileSync(path.join(wd, 'audit.log'), 'utf8'), /action=github_verified verdict=approved(?: mode=\S+)? pr=acme\/widgets#42/);
     const r = recordApproval({ workDir: wd, pluginRoot, decision: 'approved', identity, risk });
     assert.equal(r.ok, true, r.message);
     assert.equal(loadWorkItem(wd, pluginRoot).state.current_state, 'completed');

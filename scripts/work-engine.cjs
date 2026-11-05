@@ -151,12 +151,24 @@ async function runApprove(args, pluginRoot) {
     const journal = fileCallJournal(workDir);
     const connector = createGitHubConnector({ token, journal, config });
     const service = createApprovalService({ connector, config });
-    const v = await verifyAndJournal({ workDir, service, link: ghLink, actor: identity.actor, headSha: args.headSha, calls: journal.calls });
+    // human_ok is true only after detectAgentContext above passed (human TTY, not agent).
+    const v = await verifyAndJournal({
+      workDir,
+      service,
+      link: ghLink,
+      actor: identity.actor,
+      headSha: args.headSha,
+      humanOk: true,
+      calls: journal.calls,
+    });
     const lines = v.verification.reasons.map((r) => `  - ${r.code}: ${r.detail}`);
-    process.stderr.write(`GitHub verification for ${ghLink.repo}#${ghLink.pr} @ ${v.verification.head_sha}: ${v.verification.verdict}\n${lines.join('\n')}${lines.length ? '\n' : ''}\n`);
+    const modeNote = v.verification.mode === 'solo_founder' ? ' (solo-founder mode)' : '';
+    process.stderr.write(`GitHub verification for ${ghLink.repo}#${ghLink.pr} @ ${v.verification.head_sha}: ${v.verification.verdict}${modeNote}\n${lines.join('\n')}${lines.length ? '\n' : ''}\n`);
     if (!v.approved) {
       fail('GitHub does not show an approved PR; nothing recorded (verdict journaled)', 1, { code: 'GITHUB_NOT_APPROVED', reasons: v.verification.reasons });
     }
+    // Stash for approval-record.json after the human confirms the work id.
+    args._githubVerification = v.verification;
   }
 
   const readline = require('node:readline/promises');
@@ -165,7 +177,17 @@ async function runApprove(args, pluginRoot) {
   rl.close();
   if (typed.trim() !== loaded.state.work_id) fail('confirmation did not match the work id; nothing recorded', 1, { code: 'NOT_CONFIRMED' });
 
-  const r = recordApproval({ workDir, pluginRoot, decision: args.decision, note: args.note, identity, risk });
+  const ghVer = args._githubVerification;
+  const r = recordApproval({
+    workDir,
+    pluginRoot,
+    decision: args.decision,
+    note: args.note,
+    identity,
+    risk,
+    mode: ghVer && ghVer.mode === 'solo_founder' ? 'solo_founder' : undefined,
+    soloFounder: ghVer && ghVer.mode === 'solo_founder' ? ghVer.solo_founder : undefined,
+  });
   if (!r.ok) fail(r.message, 1, r);
   if (args.json) printJson(r);
   else console.log('OK', r.decision, '→', r.current_state, 'by', identity.actor);
@@ -237,7 +259,10 @@ Commands:
       Leaving approval-wait any other way fails with HUMAN_APPROVAL_REQUIRED.
       When pr-link.txt is a github.com PR, "approved" first checks GitHub (code-owner approval on the head
       SHA, not dismissed, required checks green; token from AGENTIC_SWE_GITHUB_TOKEN) and journals the verdict.
-      approval-wait → completed fails with GITHUB_APPROVAL_REQUIRED without an approved verdict.
+      Opt-in solo-founder mode (approval.solo_founder in .agentic-swe/github.json) may pass without a
+      GitHub review when you are the sole CODEOWNER and PR author; pass --head-sha (receipted) and expect
+      journal verdict approved_solo_founder. approval-wait → completed fails with GITHUB_APPROVAL_REQUIRED
+      without an approved / approved_solo_founder verdict.
   authorize --work-dir <dir> --action github.branch.push|github.pr.write|npm.publish [--revoke] [--note "…"] [--json]
       Human-only (same checks as approve). Writes authorization-record.json; the pre-tool hook denies a
       privileged action unless the caller's role (config/roles) lists it and this record grants it.

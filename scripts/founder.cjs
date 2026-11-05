@@ -53,8 +53,20 @@ Commands:
       GitHub (read-only token, calls recorded in the item's github-calls.jsonl).
   approve --work-dir <dir> --decision approved|changes_requested [--note "…"] [--head-sha sha]
       Runs \`work approve\` (GitHub verification for github.com PRs; journaled).
+      For github.com PRs, code-owner APPROVED on the head SHA + green required checks are required
+      unless solo-founder mode is opted in (see below).
   approve --goal-dir <dir> --decision approved|changes_requested [--note "…"]
       Runs \`goal approve\`.
+
+Solo-founder approval (PD-13; off by default):
+  Set in .agentic-swe/github.json (never enabled from an agent session):
+    { "approval": { "solo_founder": { "enabled": true, "github_login": "yourLogin" } } }
+  Then \`approve --work-dir … --decision approved --head-sha <receipted>\` may pass without a
+  GitHub review when: you are the PR author, CODEOWNERS lists only your login for every changed
+  path, --head-sha matches the live PR head (reject drift), required checks are green, and this
+  command runs from a human TTY. The journal verdict is approved_solo_founder and
+  approval-record.json records mode: "solo_founder". Agents never get this path; github_write
+  stays false (no GitHub writes).
 
 Every command refuses agent sessions and non-interactive stdin.
 `;

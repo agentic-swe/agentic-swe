@@ -98,7 +98,7 @@ function appendAudit(workDir, line) {
  * Write the approval record and move the work item out of approval-wait.
  * Callers are responsible for having verified a human context (detectAgentContext).
  */
-function recordApproval({ workDir, pluginRoot, decision, note, identity, risk }) {
+function recordApproval({ workDir, pluginRoot, decision, note, identity, risk, mode, soloFounder }) {
   const { loadWorkItem, applyTransition } = require('../work-engine/engine.cjs');
   if (!DECISION_TARGET[decision]) {
     return { ok: false, code: 'BAD_DECISION', message: `decision must be one of: ${Object.keys(DECISION_TARGET).join(', ')}` };
@@ -127,6 +127,17 @@ function recordApproval({ workDir, pluginRoot, decision, note, identity, risk })
     note: note || '',
     risk: riskSummary,
   };
+  if (mode === 'solo_founder') {
+    record.mode = 'solo_founder';
+    record.head_sha = (soloFounder && soloFounder.head_sha) || null;
+    record.github_login = (soloFounder && soloFounder.login) || null;
+    record.codeowners = soloFounder
+      ? {
+          path: soloFounder.codeowners_path || null,
+          ...(soloFounder.evidence || {}),
+        }
+      : null;
+  }
   fs.writeFileSync(path.join(workDir, RECORD_FILE), JSON.stringify(record, null, 2) + '\n');
 
   if (decision === 'changes_requested') {

@@ -26,16 +26,40 @@ function readJsonOrNull(file) {
  * Pack `config/github.json`, then `<projectRoot>/.agentic-swe/github.json`. Writes are enabled
  * only by an explicit `authorization.github_write: true`; nothing in the environment enables them.
  */
+function mergeSoloFounder(packApproval, repoApproval) {
+  const pack = (packApproval && packApproval.solo_founder) || {};
+  const repo = (repoApproval && repoApproval.solo_founder) || {};
+  const enabledFlag = Object.prototype.hasOwnProperty.call(repo, 'enabled')
+    ? repo.enabled === true
+    : pack.enabled === true;
+  const loginRaw = typeof repo.github_login === 'string' && repo.github_login.trim()
+    ? repo.github_login.trim()
+    : (typeof pack.github_login === 'string' ? pack.github_login.trim() : '');
+  return {
+    // Fail closed: explicit true + non-empty login.
+    enabled: enabledFlag && Boolean(loginRaw),
+    github_login: loginRaw,
+  };
+}
+
 function loadGitHubConfig({ pluginRoot = PACK_ROOT, projectRoot } = {}) {
   const pack = readJsonOrNull(path.join(pluginRoot, 'config', 'github.json')) || {};
   const repo = projectRoot ? readJsonOrNull(path.join(projectRoot, '.agentic-swe', 'github.json')) || {} : {};
   const authorization = { ...(pack.authorization || {}), ...(repo.authorization || {}) };
+  const solo = mergeSoloFounder(pack.approval, repo.approval);
   return {
     api_base: pack.api_base || 'https://api.github.com',
     token_env: pack.token_env || ['AGENTIC_SWE_GITHUB_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'],
     permissions: pack.permissions || { read: [], write: [] },
     codeowners_paths: repo.codeowners_paths || pack.codeowners_paths || ['.github/CODEOWNERS', 'CODEOWNERS', 'docs/CODEOWNERS'],
     authorization: { github_write: authorization.github_write === true },
+    approval: {
+      solo_founder: {
+        // Fail closed: only an explicit true enables; login must be non-empty.
+        enabled: solo.enabled,
+        github_login: solo.github_login,
+      },
+    },
   };
 }
 
