@@ -4,7 +4,7 @@
 #   GitHub → Actions → "LLM tests (manual)" → Run workflow
 #
 # Runner requirements
-#   - Node 20+
+#   - Node 22+
 #   - `claude` on PATH (install Claude Code / CLI on the runner)
 #   - API auth for your provider, e.g. one of:
 #       ANTHROPIC_API_KEY   (common for Anthropic)
@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install root devDependencies
         run: npm install

@@ -47,7 +47,7 @@ function inspect(options = {}, context = {}) {
   const checks = [];
   const add = (name, ok, detail, level = 'required') => checks.push({ name, ok, detail, level });
 
-  add('Node.js', Number(process.versions.node.split('.')[0]) >= 18, process.version);
+  add('Node.js', Number(process.versions.node.split('.')[0]) >= 22, process.version);
   add('Pack root', fs.existsSync(path.join(packRoot, 'CLAUDE.md')), packRoot);
   add('State machine', fs.existsSync(path.join(packRoot, 'state-machine.json')), path.join(packRoot, 'state-machine.json'));
   add('Target repository', fs.existsSync(target) && fs.statSync(target).isDirectory(), target);

@@ -22,11 +22,11 @@ $ExpectedSha256 = if ($env:AGENTIC_SWE_SHA256) {
 }
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw "Agentic SWE requires Node.js 18 or newer: https://nodejs.org/"
+    throw "Agentic SWE requires Node.js 22 or newer: https://nodejs.org/"
 }
 $NodeMajor = [int](& node -p 'process.versions.node.split(".")[0]')
-if ($NodeMajor -lt 18) {
-    throw "Agentic SWE requires Node.js 18 or newer (found $(& node --version))"
+if ($NodeMajor -lt 22) {
+    throw "Agentic SWE requires Node.js 22 or newer (found $(& node --version))"
 }
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     throw "npm must be available with Node.js"
