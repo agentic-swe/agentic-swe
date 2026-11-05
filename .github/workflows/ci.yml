@@ -19,9 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Vite 8 + @vitejs/plugin-react 6 require Node ^20.19 || >=22.12 (no Node 18).
+      # Supported floor is Node 22 (docs/adr/0002-node-typescript.md). Each matrix entry
+      # reports as a required check `test (<version>)` in the main ruleset.
       matrix:
-        node-version: [20, 22]
+        node-version: [22]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 

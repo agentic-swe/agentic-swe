@@ -10,7 +10,7 @@
     "test": "node --test test/server.test.cjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
     "chokidar": "^4.0.3",

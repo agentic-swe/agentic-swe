@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Node.js 22 is the minimum supported version** (ADR-002). `engines.node` is `>=22`; `install.sh`, `install.ps1`, and `agentic-swe doctor` require Node 22; CI tests Node 22 only. Node 20 reached end-of-life on 2026-04-30 and is no longer tested.
 - **`approval-wait` exits need a human record:** `work transition` / `applyTransition` out of `approval-wait` now fails with `HUMAN_APPROVAL_REQUIRED` unless a matching `approval-record.json` for the current approval round exists. Scripts that auto-completed work items must switch to `work approve`. A recorded human `approved` decision can close the item even when the iteration or cost budget is spent (the standard track's 10 iterations are used up on arrival at `approval-wait`); `changes_requested` still stops on an exhausted budget.
 
 ### Fixed
