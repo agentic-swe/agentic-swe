@@ -7,10 +7,8 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { applyTransition, loadWorkItem } = require('../scripts/lib/work-engine/engine.cjs');
-const {
-  detectAgentContext,
-  recordApproval,
-} = require('../scripts/lib/approval/human-approval.cjs');
+const { detectAgentContext } = require('../scripts/lib/approval/human-approval.cjs');
+const { recordApproval } = require('../scripts/lib/work-engine/record-approval.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
 const identity = { name: 'Ada Human', email: 'ada@example.com', os_user: 'ada', actor: 'user:ada@example.com' };

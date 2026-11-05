@@ -106,9 +106,9 @@ async function runApprove(args, pluginRoot) {
   const {
     detectAgentContext,
     resolveUserIdentity,
-    recordApproval,
     DECISION_TARGET,
   } = require('./lib/approval/human-approval.cjs');
+  const { recordApproval } = require('./lib/work-engine/record-approval.cjs');
   const { collectRiskFlags, formatRiskFlags } = require('./lib/approval/risk-flags.cjs');
 
   const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
@@ -676,7 +676,7 @@ Commands:
 
   if (cmd === 'waive-track') {
     const { detectAgentContext, resolveUserIdentity } = require('./lib/approval/human-approval.cjs');
-    const { recordTrackWaiver } = require('./lib/work-engine/track-guard.cjs');
+    const { recordTrackWaiver } = require('./lib/work-engine/track-waiver.cjs');
     const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
     if (refusal) fail(`refusing track waiver: ${refusal}`, 3, { code: 'AGENT_CONTEXT' });
     const wdArg = args.workDir || process.env.AGENTIC_SWE_WORK_DIR;

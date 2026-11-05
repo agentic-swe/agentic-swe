@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadTierTokenEstimates } = require('./ladder.cjs');
-const { addUsageToTierTotals, mergeTierTotals, emptyTierTotals } = require('../bench/tier-totals.cjs');
+const { addUsageToTierTotals, mergeTierTotals, emptyTierTotals } = require('../work-engine/tier-totals.cjs');
 const { withWriteLockSync } = require('../shared/state-lock.cjs');
 
 /**

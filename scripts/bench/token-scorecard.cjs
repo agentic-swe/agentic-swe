@@ -9,7 +9,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { frontierTokenTotal } = require('../lib/bench/tier-totals.cjs');
+const { frontierTokenTotal } = require('../lib/work-engine/tier-totals.cjs');
 const { aggregateProductionTierTotals } = require('../lib/bench/production-tier-totals.cjs');
 const { tierHitRates } = require('../lib/descent/promotion.cjs');
 const { loadGoldenEvalMap, runAllGoldenEvals } = require('../lib/skills/golden-eval.cjs');

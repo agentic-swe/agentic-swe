@@ -12,7 +12,7 @@ const { parseCodeowners, ownersFor } = require('../scripts/lib/github/codeowners
 const { fileCallJournal, memoryCallJournal, readCalls } = require('../scripts/lib/github/call-journal.cjs');
 const { parsePrLink, verifyAndJournal, assertGitHubVerification } = require('../scripts/lib/github/verification.cjs');
 const { applyTransition, loadWorkItem } = require('../scripts/lib/work-engine/engine.cjs');
-const { recordApproval } = require('../scripts/lib/approval/human-approval.cjs');
+const { recordApproval } = require('../scripts/lib/work-engine/record-approval.cjs');
 const { readJournal } = require('../scripts/lib/shared/journal.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
