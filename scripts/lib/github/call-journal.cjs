@@ -7,7 +7,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { GENESIS_HASH, eventHash } = require('../work-engine/journal.cjs');
+const { GENESIS_HASH, eventHash } = require('../shared/journal.cjs');
 
 const CALLS_FILE = 'github-calls.jsonl';
 

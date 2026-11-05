@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { integrityReport } = require('../work-engine/journal.cjs');
+const { integrityReport } = require('../shared/journal.cjs');
 
 function extractReceipt(workDir) {
   const statePath = path.join(workDir, 'state.json');

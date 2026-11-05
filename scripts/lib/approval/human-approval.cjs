@@ -169,8 +169,8 @@ function recordApproval({ workDir, pluginRoot, decision, note, identity, risk, m
   });
   if (!r.ok) return r;
 
-  const { withWriteLockSync } = require('../work-engine/state-lock.cjs');
-  const { commitState } = require('../work-engine/journal.cjs');
+  const { withWriteLockSync } = require('../shared/state-lock.cjs');
+  const { commitState } = require('../shared/journal.cjs');
   const statePath = path.join(workDir, 'state.json');
   withWriteLockSync(workDir, () => {
     const next = JSON.parse(fs.readFileSync(statePath, 'utf8'));

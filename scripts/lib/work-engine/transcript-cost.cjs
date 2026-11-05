@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { usdForUsage } = require('./pricing.cjs');
-const { withWriteLockSync } = require('./state-lock.cjs');
+const { withWriteLockSync } = require('../shared/state-lock.cjs');
 const {
   ladderTierForModel,
   emptyTierTotals,

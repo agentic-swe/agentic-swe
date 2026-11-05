@@ -71,8 +71,8 @@ function recordTrackWaiver({ workDir, pluginRoot, reason, identity }) {
   next.pipeline.track_waiver = { actor: identity.actor, reason: String(reason).trim(), at };
   next.updated_at = at;
 
-  const { withWriteLockSync } = require('./state-lock.cjs');
-  const { commitState } = require('./journal.cjs');
+  const { withWriteLockSync } = require('../shared/state-lock.cjs');
+  const { commitState } = require('../shared/journal.cjs');
   try {
     withWriteLockSync(workDir, () => {
       const snapshot = commitState(workDir, next, {

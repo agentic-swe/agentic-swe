@@ -22,7 +22,7 @@ const {
   assertGoalBudget,
   commitGoal,
 } = require('./lib/work-engine/goal.cjs');
-const { assertProjection } = require('./lib/work-engine/journal.cjs');
+const { assertProjection } = require('./lib/shared/journal.cjs');
 
 function parseArgs(argv) {
   const out = { flags: {} };

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildFingerprint } = require('./fingerprint.cjs');
 const { promoteOrDemote, DEFAULT_STORE } = require('./promotion.cjs');
-const { writeJsonAtomic } = require('./atomic-json.cjs');
+const { writeJsonAtomic } = require('../shared/atomic-json.cjs');
 const { procedureFromScoring } = require('./corpus-seed.cjs');
 const { runTaskAcceptance } = require('../bench/run-task.cjs');
 

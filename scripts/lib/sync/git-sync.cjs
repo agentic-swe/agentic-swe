@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
-const { redactDeep } = require('../memory/session-capture.cjs');
+const { redactDeep } = require('../shared/redact.cjs');
 
 const SYNC_BRANCH = 'agentic-swe-memory';
 const EVENTS_DIR = '.agentic-swe/sync/events';

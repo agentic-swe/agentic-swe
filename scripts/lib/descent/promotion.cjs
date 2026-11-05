@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { annotateTrust, promoteTrust } = require('../memory/trust.cjs');
-const { writeJsonAtomic } = require('./atomic-json.cjs');
+const { writeJsonAtomic } = require('../shared/atomic-json.cjs');
 
 const DEFAULT_STORE = '.agentic-swe/procedures.json';
 
