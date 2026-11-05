@@ -8,7 +8,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { captureOrganicWorklogs } = require('../scripts/lib/descent/capture-organic-worklogs.cjs');
 const { runEvolveCycle } = require('../scripts/evolve-cycle.cjs');
-const { runDescentOnImplementationEntry } = require('../scripts/lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../scripts/lib/context/implementation-descent.cjs');
 const { discoverActiveWorkDir } = require('../scripts/lib/work-engine/discover-workdir.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');

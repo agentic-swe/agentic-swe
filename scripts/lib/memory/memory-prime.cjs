@@ -212,7 +212,7 @@ function appendAdvisoryDigests(lines, projectRoot) {
     }
   }
   try {
-    const { muscleMemoryDigestMarkdown } = require('../descent/muscle-memory-digest.cjs');
+    const { muscleMemoryDigestMarkdown } = require('./muscle-memory-digest.cjs');
     const mm = muscleMemoryDigestMarkdown(projectRoot);
     if (mm) lines.push(mm);
   } catch {
