@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentic-swe.github.io/schemas/journal-event.schema.json",
+  "title": "Journal Event Envelope and Side Payloads",
+  "description": "Typed journal events for ADR-004a / AE-020a. Snapshot events embed full state; side events carry payload only.",
+  "definitions": {
+    "snapshotState": {
+      "type": "object",
+      "description": "Full projected state embedded by commitState."
+    },
+    "leaseReclaimedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["previous_holder", "previous_pid", "previous_epoch", "new_epoch", "reason"],
+      "properties": {
+        "previous_holder": { "type": "string" },
+        "previous_pid": { "type": "integer" },
+        "previous_epoch": { "type": "integer", "minimum": 1 },
+        "new_epoch": { "type": "integer", "minimum": 1 },
+        "reason": { "type": "string", "enum": ["expired_dead"] }
+      }
+    },
+    "policyDecidedPayload": {
+      "type": "object",
+      "required": ["decision"],
+      "properties": {
+        "decision": { "type": "string", "enum": ["allow", "deny", "require_approval"] }
+      },
+      "additionalProperties": true
+    },
+    "usageRecordedPayload": {
+      "type": "object",
+      "required": ["provider", "model"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "toolRequestedPayload": {
+      "type": "object",
+      "required": ["tool_id"],
+      "properties": {
+        "tool_id": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "toolCompletedPayload": {
+      "type": "object",
+      "required": ["tool_id"],
+      "properties": {
+        "tool_id": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "testSidePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "n": { "type": "number" },
+        "note": { "type": "string" }
+      },
+      "anyOf": [
+        { "required": ["n"] },
+        { "required": ["note"] }
+      ]
+    }
+  }
+}
