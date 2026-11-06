@@ -3,6 +3,7 @@
 const { ToolRegistry } = require('./registry.cjs');
 const { ToolRunner, runTool } = require('./runner.cjs');
 const { createGitHubTools, createTestRunnerTool } = require('./connectors.cjs');
+const remaining = require('./connectors-remaining.cjs');
 
 function createDefaultRegistry({ github, projectRoot } = {}) {
   const entries = [];
@@ -19,4 +20,5 @@ module.exports = {
   ...require('./registry.cjs'),
   ...require('./types.cjs'),
   ...require('./connectors.cjs'),
+  ...remaining,
 };
