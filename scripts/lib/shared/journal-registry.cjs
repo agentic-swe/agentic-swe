@@ -19,6 +19,7 @@ const SNAPSHOT_TYPES = [
   'github.verified',
   'history.imported',
   'test.seed',
+  'executor.starting',
 ];
 
 const SIDE_PAYLOAD_KEYS = {

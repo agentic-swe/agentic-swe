@@ -9,6 +9,8 @@
  *   node scripts/dispatch.cjs status --goal-dir <dir> [--json]
  *   node scripts/dispatch.cjs start --goal-dir <dir> --actor <id> [--item <id>] [--json]
  *   node scripts/dispatch.cjs resume --goal-dir <dir> --item <id> --actor <id> [--json]
+ *   node scripts/dispatch.cjs cancel --goal-dir <dir> --actor <id> [--item <id>] [--json]
+ *   node scripts/dispatch.cjs retry --goal-dir <dir> --item <id> --actor <id> [--json]
  */
 'use strict';
 
@@ -34,6 +36,7 @@ function parseArgs(argv) {
     else if (a === '--depends-on') out.dependsOn = argv[++i];
     else if (a === '--paths') out.paths = argv[++i];
     else if (a === '--note') out.note = argv[++i];
+    else if (a === '--reason') out.reason = argv[++i];
     else if (!a.startsWith('-')) rest.push(a);
   }
   out.command = rest[0];
@@ -82,6 +85,10 @@ Commands:
       predecessor is not completed or another child is still open.
   resume --goal-dir <dir> --item <id> --actor <id>
       Rebuild an interrupted child's state.json from its journal; predecessors are untouched.
+  cancel --goal-dir <dir> --actor <id> [--item <id>]
+      Cooperatively cancel active children. Restart requires a new human approval.
+  retry --goal-dir <dir> --item <id> --actor <id>
+      Start a new attempt for a retryable pipeline-failed child.
 
 Every decision, including refusals, is a dispatch.* event in the goal journal.
 `;
@@ -126,6 +133,16 @@ function main() {
   if (cmd === 'resume') {
     const r = dispatcher.resume({ goalDir, actor: args.actor, item: args.item });
     return finish(args, r, (o) => `OK resumed ${o.item} at ${o.current_state}${o.recovered ? ' (state.json rebuilt from journal)' : ''}`);
+  }
+
+  if (cmd === 'cancel') {
+    const r = dispatcher.cancel({ goalDir, actor: args.actor, item: args.item, reason: args.reason });
+    return finish(args, r, (o) => `OK cancelled dispatch at epoch ${o.epoch}`);
+  }
+
+  if (cmd === 'retry') {
+    const r = dispatcher.retry({ goalDir, actor: args.actor, item: args.item, pluginRoot });
+    return finish(args, r, (o) => `OK started retry ${o.item} → ${o.workDir}`);
   }
 
   if (cmd === 'enqueue') {
