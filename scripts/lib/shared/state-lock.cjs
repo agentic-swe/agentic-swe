@@ -1,9 +1,15 @@
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
 
-const LOCK_BASENAME = '.agentic-swe-write.lock';
+const {
+  LEASE_BASENAME,
+  acquireLease,
+  releaseLease,
+} = require('./lease.cjs');
+
+/** @deprecated Prefer LEASE_BASENAME; kept for callers that referenced the old lock file name. */
+const LOCK_BASENAME = LEASE_BASENAME;
 
 /** @param {number} ms */
 function sleepSync(ms) {
@@ -14,52 +20,52 @@ function sleepSync(ms) {
 }
 
 /**
- * @param {string} workDir
- * @returns {{ fd: number, lockPath: string } | null}
- */
-function tryAcquireLock(workDir) {
-  const lockPath = path.join(workDir, LOCK_BASENAME);
-  try {
-    const fd = fs.openSync(lockPath, 'wx', 0o644);
-    return { fd, lockPath };
-  } catch (e) {
-    if (e && e.code === 'EEXIST') return null;
-    throw e;
-  }
-}
-
-/**
  * Best-effort exclusive lock for state.json writers in this work dir (cross-process).
+ * Backed by an expiring lease file (ADR-004a). Reclaim here does not journal —
+ * journal writers must use withJournalWriter / appendEvent for lease.reclaimed events.
  * @param {string} workDir absolute .worklogs/<id>
- * @param {{ maxAttempts?: number, baseDelayMs?: number }} [opts]
- * @returns {{ fd: number, lockPath: string }}
+ * @param {{ maxAttempts?: number, baseDelayMs?: number, ttlMs?: number, holder?: string }} [opts]
+ * @returns {{ lease: object, lockPath: string, token: string, reclaimed: boolean, previous: object | null }}
  */
 function acquireWriteLockSync(workDir, opts = {}) {
   const maxAttempts = opts.maxAttempts != null ? opts.maxAttempts : 50;
   const baseDelayMs = opts.baseDelayMs != null ? opts.baseDelayMs : 12;
+  let lastErr = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const got = tryAcquireLock(workDir);
-    if (got) return got;
-    const delay = Math.min(200, Math.floor(baseDelayMs + attempt * 4));
-    sleepSync(delay);
+    try {
+      const got = acquireLease(workDir, opts);
+      return {
+        lease: got.lease,
+        lockPath: path.join(workDir, LEASE_BASENAME),
+        token: got.lease.token,
+        reclaimed: got.reclaimed,
+        previous: got.previous,
+      };
+    } catch (err) {
+      if (!err || err.code !== 'LOCK_TIMEOUT') throw err;
+      lastErr = err;
+      const delay = Math.min(200, Math.floor(baseDelayMs + attempt * 4));
+      sleepSync(delay);
+    }
   }
-  const err = new Error(`write lock timeout after ${maxAttempts} attempts (${path.join(workDir, LOCK_BASENAME)})`);
+  const err = new Error(
+    `write lock timeout after ${maxAttempts} attempts (${path.join(workDir, LOCK_BASENAME)})`
+  );
   err.code = 'LOCK_TIMEOUT';
+  if (lastErr) err.cause = lastErr;
   throw err;
 }
 
 /**
- * @param {{ fd: number, lockPath: string } | null} h
+ * @param {{ lease?: object, token?: string, lockPath?: string } | null} h
  */
 function releaseWriteLockSync(h) {
   if (!h) return;
+  const token = h.token || (h.lease && h.lease.token);
+  if (!token || !h.lockPath) return;
+  const workDir = path.dirname(h.lockPath);
   try {
-    fs.closeSync(h.fd);
-  } catch {
-    /* ignore */
-  }
-  try {
-    fs.unlinkSync(h.lockPath);
+    releaseLease(workDir, token);
   } catch {
     /* ignore */
   }
@@ -69,13 +75,13 @@ function releaseWriteLockSync(h) {
  * @template T
  * @param {string} workDir
  * @param {() => T} fn
- * @param {{ maxAttempts?: number, baseDelayMs?: number }} [opts]
+ * @param {{ maxAttempts?: number, baseDelayMs?: number, ttlMs?: number, holder?: string }} [opts]
  * @returns {T}
  */
 function withWriteLockSync(workDir, fn, opts) {
   const h = acquireWriteLockSync(workDir, opts);
   try {
-    return fn();
+    return fn(h);
   } finally {
     releaseWriteLockSync(h);
   }
@@ -83,6 +89,7 @@ function withWriteLockSync(workDir, fn, opts) {
 
 module.exports = {
   LOCK_BASENAME,
+  LEASE_BASENAME,
   acquireWriteLockSync,
   releaseWriteLockSync,
   withWriteLockSync,
