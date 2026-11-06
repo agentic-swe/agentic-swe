@@ -162,6 +162,7 @@ function shellCommand(toolName, toolInput) {
  */
 function privilegedActions(toolName, toolInput) {
   const out = new Set();
+  if (PRIVILEGED_ACTIONS.includes(String(toolName || ''))) out.add(String(toolName));
   const command = shellCommand(toolName, toolInput);
   if (command != null) {
     for (const segment of splitShellSegments(command)) {
