@@ -13,6 +13,8 @@ const { resolveCost, PRICE_TABLE, priceTableKeys } = require('./cost.cjs');
 const fixture = require('./adapters/fixture.cjs');
 const anthropicFixture = require('./adapters/anthropic-fixture.cjs');
 const broken = require('./adapters/broken.cjs');
+const ollama = require('./adapters/ollama.cjs');
+const llamacpp = require('./adapters/llamacpp.cjs');
 
 module.exports = {
   createModelGateway,
@@ -29,8 +31,13 @@ module.exports = {
   adapters: {
     fixture,
     'anthropic-fixture': anthropicFixture,
+    ollama,
+    'llama.cpp': llamacpp,
+    llamacpp,
     broken,
   },
   createFixtureAdapter: fixture.createFixtureAdapter,
   createAnthropicFixtureAdapter: anthropicFixture.createAnthropicFixtureAdapter,
+  createOllamaAdapter: ollama.createOllamaAdapter,
+  createLlamaCppAdapter: llamacpp.createLlamaCppAdapter,
 };
