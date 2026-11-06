@@ -14,6 +14,7 @@ Render a completed work item as a shareable markdown summary — drop into a PR 
 /receipt <work-id>             # specific work item
 /receipt <work-id> --format=json
 /receipt <work-id> --output=receipt.md
+/receipt verify <work-dir>
 ```
 
 ## Behavior
@@ -24,6 +25,9 @@ Render a completed work item as a shareable markdown summary — drop into a PR 
 2. Read `state.json`, `audit.log`, and `pr-link.txt` (if present).
 3. Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/render-receipt.cjs --work-dir <resolved> --format=<markdown|json>`.
 4. If `--output=<path>` was passed, the script writes to that path; otherwise print to chat.
+
+`receipt verify` checks the copied work directory's journal chain locally and exits
+non-zero on tampering. It does not read network, git, or pack state.
 
 ## Constraints
 
