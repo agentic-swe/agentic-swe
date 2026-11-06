@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { verifyWorkJournal, readJournal } = require('../shared/journal.cjs');
+const { localAnchorReport } = require('../github/anchor.cjs');
 
 /**
  * Verify only the copied work directory. This deliberately does not read
@@ -26,9 +27,14 @@ function verifyReceipt(workDir) {
     };
   }
   const imported = chain.events.some((event) => event.integrity === 'unverified-import');
+  const anchor = localAnchorReport(workDir, state);
+  if (anchor.anchor === 'ANCHOR_MISMATCH') {
+    return { ok: false, integrity: 'ANCHOR_MISMATCH', code: 'ANCHOR_MISMATCH', workId: state.work_id || path.basename(workDir) };
+  }
   return {
     ok: true,
     integrity: imported || chain.missing ? 'unanchored' : 'verified',
+    anchor: anchor.anchor,
     head: chain.head,
     events: chain.events.length,
     workId: state.work_id || path.basename(workDir),

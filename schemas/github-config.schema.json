@@ -19,6 +19,14 @@
       },
       "additionalProperties": false
     },
+    "anchor": {
+      "type": "object",
+      "properties": {
+        "check_name": { "type": "string", "minLength": 1 },
+        "app_slug": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "permissions": {
       "type": "object",
       "properties": {

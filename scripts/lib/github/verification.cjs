@@ -11,6 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { readJournal, commitState } = require('../shared/journal.cjs');
 const { withWriteLockSync } = require('../shared/state-lock.cjs');
+const { anchorAndJournal } = require('./anchor.cjs');
 
 const PR_URL = /https:\/\/github\.com\/([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})\/pull\/(\d+)\b/;
 const EVENT_TYPE = 'github.verified';
@@ -60,15 +61,22 @@ function assertGitHubVerification({ workDir, state }) {
   if (v.approval_iter !== iter) return deny(`verification is from approval round ${v.approval_iter}, current round is ${iter}`);
   const historyLength = Array.isArray(state && state.history) ? state.history.length : 0;
   if (v.history_length !== historyLength) return deny('the work item changed after verification');
+  const track = state.pipeline && state.pipeline.track;
+  if (track !== 'lean' && track !== 'standard' &&
+      (!v.anchor || v.anchor.status !== 'anchored')) {
+    return deny('rigorous track requires an externally anchored journal head');
+  }
   return { ok: true, applies: true, verification: v };
 }
 
 /**
  * Run ApprovalService.verify for the work item's PR and journal the verdict (approved or not).
  * @param {{ workDir: string, service: { verify: Function }, link: object, actor: string,
- *           headSha?: string, humanOk?: boolean, calls?: object[] }} opts
+ *           headSha?: string, humanOk?: boolean, calls?: object[], connector?: object, config?: object }} opts
  */
-async function verifyAndJournal({ workDir, service, link, actor, headSha, humanOk = false, calls }) {
+async function verifyAndJournal({
+  workDir, service, link, actor, headSha, humanOk = false, calls, connector, config,
+}) {
   const result = await service.verify({
     repo: link.repo,
     pr: link.pr,
@@ -102,11 +110,34 @@ async function verifyAndJournal({ workDir, service, link, actor, headSha, humanO
       actor,
       calls: (calls || []).slice(),
     };
+    return v;
+  });
+  if (verification.verdict === 'approved' || verification.verdict === 'approved_solo_founder') {
+    const anchor = connector
+      ? await anchorAndJournal({
+        workDir,
+        state: JSON.parse(fs.readFileSync(statePath, 'utf8')),
+        connector,
+        link,
+        headSha: verification.head_sha,
+        config,
+      })
+      : { ok: false, status: 'unanchored', code: 'ANCHOR_NOT_CONFIGURED' };
+    verification.anchor = anchor;
+  } else {
+    verification.anchor = { ok: false, status: 'unanchored', code: 'VERIFICATION_NOT_APPROVED' };
+  }
+  withWriteLockSync(workDir, () => {
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    if (state.current_state !== 'approval-wait') {
+      const err = new Error(`work item is at ${state.current_state}, not approval-wait`);
+      err.code = 'NOT_AT_APPROVAL_WAIT';
+      throw err;
+    }
     state.approvals = state.approvals || {};
-    state.approvals.github_verification = v;
+    state.approvals.github_verification = verification;
     const snapshot = commitState(workDir, state, { type: EVENT_TYPE, at, expectCurrent: 'approval-wait' });
     fs.writeFileSync(statePath, `${JSON.stringify(snapshot, null, 2)}\n`);
-    return v;
   });
   fs.appendFileSync(
     path.join(workDir, 'audit.log'),
