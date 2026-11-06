@@ -16,6 +16,8 @@
   "budget": {
     "max_child_items": 5,
     "child_items_used": 0,
+    "max_parallel": 1,
+    "max_attempts": 1,
     "max_loop_turns": 12,
     "loop_turns_used": 0,
     "cost_budget_usd": 15.0,
