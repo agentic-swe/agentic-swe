@@ -106,49 +106,78 @@ function main() {
 
   let verdict = null;
   let summary = '';
+  const track = state && state.pipeline ? state.pipeline.track : null;
   try {
     const { resolvePolicyChecked } = require('./lib/policy/merge.cjs');
-    const { evaluateToolCall, summarizeInput } = require('./lib/policy/runtime.cjs');
+    const { summarizeInput } = require('./lib/policy/runtime.cjs');
+    const { evaluate } = require('./lib/policy/pdp.cjs');
+    const roles = require('./lib/policy/roles.cjs');
     const resolved = resolvePolicyChecked(projectRoot, packRoot);
     errors.push(...resolved.errors);
-    if (toolName) {
-      verdict = evaluateToolCall({
-        policy: resolved.policy,
-        toolName,
-        toolInput: normalized.toolInput,
-        state: currentState,
-      });
-      summary = summarizeInput(toolName, normalized.toolInput);
-      for (const w of verdict.warnings) process.stderr.write(`agentic-swe policy: ${w}\n`);
-    }
-  } catch (e) {
-    errors.push(String(e && e.message ? e.message : e));
-  }
 
-  if (toolName && verdict && verdict.decision !== 'deny') {
+    let loadedRoles = { roles: new Map(), errors: [] };
+    let actor = { role: null, agentType: null };
+    let authorized = new Set();
     try {
-      const roles = require('./lib/policy/roles.cjs');
-      const loaded = roles.loadRoles(process.env.AGENTIC_SWE_ROLES_DIR || undefined);
-      errors.push(...loaded.errors);
-      const actor = roles.resolveActor({
-        roles: loaded.roles,
+      loadedRoles = roles.loadRoles(process.env.AGENTIC_SWE_ROLES_DIR || undefined);
+      errors.push(...loadedRoles.errors);
+      actor = roles.resolveActor({
+        roles: loadedRoles.roles,
         agentType: input && input.agent_type,
         hasWorkItem: Boolean(workDir),
       });
       if (actor.error) errors.push(actor.error);
       const auth = roles.readAuthorizations(workDir);
       if (auth.error) errors.push(auth.error);
-      const roleVerdict = roles.evaluateRoleCall({
-        roles: loaded.roles,
-        actor,
-        toolName,
-        toolInput: normalized.toolInput,
-        authorized: auth.actions,
-      });
-      if (roleVerdict.decision === 'deny') verdict = { ...verdict, ...roleVerdict };
+      authorized = auth.actions;
     } catch (e) {
       errors.push(`role check failed (${e && e.message ? e.message : e})`);
     }
+
+    if (toolName) {
+      // Still evaluate when some policy sources are broken (partial merge), matching
+      // pre-AE-022 behavior; source errors are handled below via fail-mode.
+      const pdp = evaluate({
+        policy: resolved.policy,
+        toolName,
+        toolInput: normalized.toolInput,
+        state: currentState,
+        track,
+        workDir,
+        roles: loadedRoles.roles,
+        actor,
+        authorized,
+        pinned_digest: process.env.AGENTIC_SWE_POLICY_DIGEST || null,
+      });
+      summary = pdp.input_summary || summarizeInput(toolName, normalized.toolInput);
+      for (const w of pdp.warnings || []) process.stderr.write(`agentic-swe policy: ${w}\n`);
+      // Legacy shape for audit/host messages (rule vs rule_id).
+      verdict = {
+        decision: pdp.decision === 'require_approval' ? 'deny' : pdp.decision,
+        rule: pdp.rule_id,
+        reason: pdp.reason,
+        warnings: pdp.warnings || [],
+        pdp,
+      };
+      if (!pdp.critical_failure) {
+        try {
+          const { recordPolicyDecision } = require('./lib/policy/record-decision.cjs');
+          recordPolicyDecision({
+            workDir,
+            decision: pdp,
+            toolName,
+            state: currentState,
+            track,
+            toolInput: normalized.toolInput,
+            write_audit: false,
+          });
+        } catch (e) {
+          errors.push(`policy journal failed (${e && e.message ? e.message : e})`);
+        }
+      }
+    }
+  } catch (e) {
+    errors.push(String(e && e.message ? e.message : e));
   }
 
   const { formatAuditLine } = require('./lib/policy/runtime.cjs');
