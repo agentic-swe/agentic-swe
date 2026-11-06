@@ -28,6 +28,7 @@ const SIDE_PAYLOAD_KEYS = {
   'usage.recorded': 'usageRecordedPayload',
   'tool.requested': 'toolRequestedPayload',
   'tool.completed': 'toolCompletedPayload',
+  'runtime.step': null,
   'test.side': 'testSidePayload',
   'github.anchored': null,
 };
