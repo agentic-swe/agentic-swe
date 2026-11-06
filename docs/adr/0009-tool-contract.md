@@ -30,7 +30,7 @@ Every tool the pack executes is a `Tool` with a schema-valid `ToolManifest`. Exe
 
 **Results:** `ToolResult` adds `pending_approval`, `tool_id`, `tool_version`, `idempotency_key`, `duration_ms`, `policy_decision_ref`, a sha256 per output ref, `partial`, and `effects: none|applied|unknown`. A timeout on a tool with `side_effects ≠ none` yields `effects: unknown`, which is never auto-retried. Remote non-idempotent tools reconcile via a read before any retry and journal `tool.reconciled`. A local idempotency key is not remote idempotency. Tool events go into `journal.jsonl`; `github-calls.jsonl` is frozen as verified read-only legacy.
 
-**Migration:** typed-actions `RUN` gains `argv[]` and the string `command` is deprecated. Every `shell: true` / `execSync` under `scripts/` moves to the runner: `descent/replay.cjs`, `bench/score-dimension.cjs`, `sync/git-sync.cjs`, `cross-model/probe.cjs`, `scope/diff-scope-check.cjs`, `memory/style-profile.cjs`, `fleet-submit.cjs`, `seed-memory-corpus.cjs`. A CI lint blocks new ones.
+**Migration:** typed-actions `RUN` gains `argv[]` and the string `command` is deprecated. Every `shell: true` / `execSync` under `scripts/` moves to the runner: `descent/replay.cjs`, `bench/score-dimension.cjs`, `sync/git-sync.cjs`, `scope/diff-scope-check.cjs`, `memory/style-profile.cjs`, `fleet-submit.cjs`, `seed-memory-corpus.cjs`. (`cross-model/probe.cjs` was retired by AE-019a in favor of `scripts/lib/model-gateway/`.) A CI lint blocks new ones.
 
 **Applicability (ADR-001):** in hosted mode, enforced for every runner-dispatched call. In in-host mode, enforced only for pack-executed tools; host-native tools stay cooperative and are evaluated through the pre-tool hook mapping only.
 
