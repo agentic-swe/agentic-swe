@@ -4,6 +4,7 @@ const { GatewayError, asGatewayError } = require('./types.cjs');
 const { resolveCost } = require('./cost.cjs');
 const { redactSecrets, redactDeep } = require('../shared/redact.cjs');
 const { appendEvent } = require('../shared/journal.cjs');
+const { isLoopbackBaseUrl } = require('./adapters/local.cjs');
 
 /**
  * @param {{
@@ -14,6 +15,8 @@ const { appendEvent } = require('../shared/journal.cjs');
  *   workDir?: string,
  *   now?: () => number,
  *   sleep?: (ms: number) => Promise<void>,
+ *   policy?: object,
+ *   policyEvaluator?: (input: object) => object,
  * }} opts
  */
 function createModelGateway(opts) {
@@ -30,6 +33,12 @@ function createModelGateway(opts) {
     typeof opts.sleep === 'function'
       ? opts.sleep
       : (ms) => new Promise((r) => setTimeout(r, ms));
+  const policyEvaluator =
+    typeof opts.policyEvaluator === 'function'
+      ? opts.policyEvaluator
+      : opts.pdp && typeof opts.pdp.evaluate === 'function'
+        ? opts.pdp.evaluate.bind(opts.pdp)
+        : null;
 
   const provider = config.provider || 'fixture';
   const adapter = adapters[provider];
@@ -165,6 +174,42 @@ function createModelGateway(opts) {
     const need = requiredCapabilities(req);
     const selected = selectModel(req.tier, need);
 
+    if (LOCAL_PROVIDERS.has(provider) && config.base_url && !isLoopbackBaseUrl(config.base_url)) {
+      const decision = policyEvaluator
+        ? policyEvaluator({
+            policy: opts.policy,
+            provider,
+            model: selected.model,
+            cost_source: 'local',
+            flags: { non_loopback_base_url: true },
+          })
+        : null;
+      if (!policyEvaluator || decision?.decision === 'deny') {
+        const err = new GatewayError(
+          'POLICY_DENIED',
+          decision?.reason || 'local provider base_url must target loopback',
+          { retryable: false, details: decision || { code: 'PROVIDER_DENIED' } }
+        );
+        await recordUsage(
+          {
+            provider,
+            model: selected.model,
+            input: null,
+            output: null,
+            usage_source: 'absent',
+            usd: 0,
+            cost_source: 'local',
+            latency_ms: Math.max(0, now() - started),
+            status: 'error',
+            finish_reason: 'error',
+            error_code: 'PROVIDER_DENIED',
+          },
+          req.idempotency_key
+        );
+        throw sanitizeError(err);
+      }
+    }
+
     if (selected.unsupported) {
       const capability = selected.capability || 'unknown';
       const err = new GatewayError(
@@ -225,6 +270,7 @@ function createModelGateway(opts) {
             signal: controller.signal,
             transport,
             scenario: req.scenario,
+            base_url: config.base_url,
           });
 
           if (controller.signal.aborted) {
@@ -354,7 +400,7 @@ function createModelGateway(opts) {
       input,
       output,
       cache_read,
-      local: prov === 'fixture',
+      local: LOCAL_PROVIDERS.has(prov),
     });
     return {
       content: raw.content ?? null,
@@ -397,7 +443,7 @@ function createModelGateway(opts) {
   }
 
   function costFields(prov, model, input, output) {
-    const cost = resolveCost({ provider: prov, model, input, output, local: prov === 'fixture' });
+    const cost = resolveCost({ provider: prov, model, input, output, local: LOCAL_PROVIDERS.has(prov) });
     return { usd: cost.usd, cost_source: cost.cost_source };
   }
 
@@ -472,5 +518,7 @@ function sanitizeError(err) {
   if (err.details) err.details = redactDeep(err.details);
   return err;
 }
+
+const LOCAL_PROVIDERS = new Set(['fixture', 'ollama', 'llamacpp', 'llama.cpp', 'local']);
 
 module.exports = { createModelGateway, validateAgainstSchema };
