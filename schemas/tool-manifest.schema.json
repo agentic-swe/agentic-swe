@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentic-swe.github.io/schemas/tool-manifest.schema.json",
+  "title": "AutoEng Tool Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "permissions",
+    "input_schema",
+    "side_effects",
+    "idempotency",
+    "timeout_ms"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{1,127}$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "description": { "type": "string" },
+    "permissions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "input_schema": { "type": "object" },
+    "side_effects": { "type": "string", "enum": ["none", "local", "remote"] },
+    "idempotency": { "type": "string", "enum": ["idempotent", "non-idempotent"] },
+    "timeout_ms": { "type": "integer", "minimum": 1, "maximum": 3600000 },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cwd_root": { "type": "string" },
+        "fs_write": { "type": "array", "items": { "type": "string" } },
+        "env": { "type": "array", "items": { "type": "string" } },
+        "net_hosts": { "type": "array", "items": { "type": "string" } },
+        "exec": { "type": "array", "items": { "type": "string" } },
+        "output_cap": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
