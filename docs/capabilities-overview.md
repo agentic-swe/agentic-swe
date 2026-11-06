@@ -7,7 +7,7 @@ A summary of all capabilities introduced in the "#1 Moves" release.
 | Capability | Files | Description |
 |---|---|---|
 | **Doubt-Driven Verification** | `references/doubt-driven-verification.md`, `agents/prompts/adversarial-reviewer-prompt.md`, `commands/doubt.md` | Bounded in-flight adversarial review (CLAIM → EXTRACT → DOUBT → RECONCILE → STOP). Wired into design-review, code-review, and validation phases. Counter-capped at 3 cycles. |
-| **Cross-Model Panel** | `references/cross-model-escalation.md`, `agents/panel/cross-model-reviewer.md`, `scripts/lib/cross-model/` | Fourth panel axis using external CLIs (Codex, Gemini) with sandbox-read-only safety, stdin piping, per-invocation authorization. |
+| **Cross-Model Panel** | `references/cross-model-escalation.md`, `agents/panel/cross-model-reviewer.md`, `scripts/lib/model-gateway/` | Fourth panel axis; model calls go through the provider-agnostic model gateway (AE-019a). External CLI probe/invoke helpers were retired. |
 | **Context Pack** | `references/context-engineering.md`, `templates/context-pack.md`, `schemas/context-pack.schema.json` | Typed artifact produced before every delegation — five-level hierarchy, trust levels, untrusted-content quarantine. |
 | **Phase Anatomy Lint** | `test/phase-anatomy.test.js`, `scripts/lib/phase-lint/lint.cjs`, `schemas/phase-prompt.schema.json` | Every phase file must have Rationalizations + Red Flags sections, enforced in CI. |
 | **Slicing Strategies** | `references/slicing-strategies.md`, `scripts/lib/scope/diff-scope-check.cjs` | Vertical / contract-first / risk-first slicing. Scope-creep tripwire fails CI on undeclared file edits. |
@@ -39,5 +39,5 @@ A summary of all capabilities introduced in the "#1 Moves" release.
 
 | Capability | Files | Description |
 |---|---|---|
-| **Test Coverage** | `test/phase-anatomy.test.js`, `test/cross-model-probe.test.js`, `test/replay.test.js`, `test/policy-merge.test.js`, `test/owai-conformance.test.js` | Deterministic tests for all new capabilities. |
+| **Test Coverage** | `test/phase-anatomy.test.js`, `test/model-gateway.test.js`, `test/replay.test.js`, `test/policy-merge.test.js`, `test/owai-conformance.test.js` | Deterministic tests for all new capabilities. |
 | **Per-Phase Cost** | `scripts/lib/work-engine/transcript-cost.cjs` (`attributeCostByPhase`) | Cost attribution broken down by pipeline phase. |

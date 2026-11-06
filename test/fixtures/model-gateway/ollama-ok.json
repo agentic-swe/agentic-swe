@@ -1,0 +1,8 @@
+{
+  "model": "fixture-balanced",
+  "created_at": "2026-11-06T00:00:00.000Z",
+  "message": { "role": "assistant", "content": "{\"ok\":true}" },
+  "done": true,
+  "prompt_eval_count": 11,
+  "eval_count": 3
+}

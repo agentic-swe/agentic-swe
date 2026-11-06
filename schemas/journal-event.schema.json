@@ -33,7 +33,20 @@
       "required": ["provider", "model"],
       "properties": {
         "provider": { "type": "string", "minLength": 1 },
-        "model": { "type": "string", "minLength": 1 }
+        "model": { "type": "string", "minLength": 1 },
+        "input": { "type": ["number", "null"] },
+        "output": { "type": ["number", "null"] },
+        "cache_read": { "type": ["number", "null"] },
+        "usage_source": { "type": "string", "enum": ["provider", "absent"] },
+        "usd": { "type": ["number", "null"] },
+        "cost_source": { "type": "string", "enum": ["local", "price_table", "provider", "unknown"] },
+        "latency_ms": { "type": "number", "minimum": 0 },
+        "status": { "type": "string", "enum": ["ok", "error", "timeout"] },
+        "finish_reason": { "type": "string", "enum": ["stop", "length", "tool_calls", "error"] },
+        "usage_known": { "type": "boolean" },
+        "error_code": { "type": "string" },
+        "capability": { "type": "string" },
+        "fallback_from": { "type": "string" }
       },
       "additionalProperties": true
     },
