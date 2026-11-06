@@ -9,7 +9,7 @@ const { spawnSync } = require('node:child_process');
 const {
   aggregateOrganicSessionUsd,
   inferReplayTier,
-} = require('../scripts/lib/bench/session-usd-portfolio.cjs');
+} = require('../scripts/lib/descent/session-usd-portfolio.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');
 

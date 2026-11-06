@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { getDefaultPluginRoot, applyTransition } = require('../work-engine/engine.cjs');
-const { emptyTierTotals } = require('../bench/tier-totals.cjs');
+const { emptyTierTotals } = require('../work-engine/tier-totals.cjs');
 const { captureOrganicWorklogs } = require('../descent/capture-organic-worklogs.cjs');
 
 const FLEET_EVIDENCE_CLASSES = new Set(['independent', 'maintainer_dogfood', 'bootstrap']);

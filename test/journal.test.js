@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { applyTransition } = require('../scripts/lib/work-engine/engine.cjs');
-const { readJournal, verifyWorkJournal } = require('../scripts/lib/work-engine/journal.cjs');
+const { readJournal, verifyWorkJournal } = require('../scripts/lib/shared/journal.cjs');
 
 const pluginRoot = path.join(__dirname, '..');
 const engine = path.join(pluginRoot, 'scripts', 'work-engine.cjs');

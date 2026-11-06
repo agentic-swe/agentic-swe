@@ -13,7 +13,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { getDefaultPluginRoot } = require('../lib/work-engine/engine.cjs');
-const { emptyTierTotals } = require('../lib/bench/tier-totals.cjs');
+const { emptyTierTotals } = require('../lib/work-engine/tier-totals.cjs');
 const { ingestFleetSubmission, summarizeFleetSubmissions } = require('../ingest-fleet-submission.cjs');
 
 function writeOrganicWorkItem(projectRoot, workId) {

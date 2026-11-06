@@ -8,7 +8,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { applyTransition, loadWorkItem, recordReview, recordSpawn, validateTransition } = require('../scripts/lib/work-engine/engine.cjs');
 const { loadMergedBudgetThresholds } = require('../scripts/lib/work-engine/budget-config.cjs');
-const { recordTrackWaiver } = require('../scripts/lib/work-engine/track-guard.cjs');
+const { recordTrackWaiver } = require('../scripts/lib/work-engine/track-waiver.cjs');
 const { checkTrackRules } = require('../scripts/lib/policy/merge.cjs');
 
 const pluginRoot = path.join(__dirname, '..');

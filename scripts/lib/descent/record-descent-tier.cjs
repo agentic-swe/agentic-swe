@@ -3,8 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadTierTokenEstimates } = require('./ladder.cjs');
-const { addUsageToTierTotals, mergeTierTotals, emptyTierTotals } = require('../bench/tier-totals.cjs');
-const { withWriteLockSync } = require('../work-engine/state-lock.cjs');
+const { addUsageToTierTotals, mergeTierTotals, emptyTierTotals } = require('../work-engine/tier-totals.cjs');
+const { withWriteLockSync } = require('../shared/state-lock.cjs');
 
 /**
  * Map descent ladder result to synthetic usage for tier_totals attribution.

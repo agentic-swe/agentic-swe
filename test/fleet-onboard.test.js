@@ -88,7 +88,7 @@ describe('buildSubmissionReadiness', () => {
 describe('fleet-submit', () => {
   it('exits 0 for consumer repo passing submission gate', () => {
     const { spawnSync } = require('node:child_process');
-    const { emptyTierTotals } = require('../scripts/lib/bench/tier-totals.cjs');
+    const { emptyTierTotals } = require('../scripts/lib/work-engine/tier-totals.cjs');
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fleet-sub-'));
     const verify = 'npm test';
     for (const id of ['feat-sub-a', 'feat-sub-b', 'feat-sub-c']) {

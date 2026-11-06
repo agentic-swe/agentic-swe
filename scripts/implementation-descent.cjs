@@ -4,7 +4,7 @@
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { projectRootFromWorkDir } = require('./lib/work-engine/budget-config.cjs');
-const { runDescentOnImplementationEntry } = require('./lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('./lib/context/implementation-descent.cjs');
 
 function parseArgs(argv) {
   const out = { json: false };

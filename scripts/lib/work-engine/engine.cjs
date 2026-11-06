@@ -5,7 +5,7 @@ const path = require('node:path');
 const { checkBudgets } = require('./budget.cjs');
 const { loadMergedBudgetThresholds, getCounterCaps, projectRootFromWorkDir } = require('./budget-config.cjs');
 const { counterMismatches, decideSpawn, rejectionCapBlock } = require('./counters.cjs');
-const { assertProjection, commitState } = require('./journal.cjs');
+const { assertProjection, commitState } = require('../shared/journal.cjs');
 const { decideTransition } = require('./decide.cjs');
 const { runPostTransitionHooks } = require('./post-transition.cjs');
 const { assertTransition } = require('./transitions.cjs');
@@ -248,7 +248,7 @@ function applyTransition(opts) {
   }
 
   const tmp = `${statePath}.tmp.${process.pid}`;
-  const { withWriteLockSync } = require('./state-lock.cjs');
+  const { withWriteLockSync } = require('../shared/state-lock.cjs');
   try {
     withWriteLockSync(opts.workDir, () => {
       const snapshot = commitState(opts.workDir, next, { type: 'transition', expectCurrent: from });
@@ -334,7 +334,7 @@ function recordSpawn(opts) {
     now: new Date().toISOString(),
   });
   const tmp = `${loaded.statePath}.tmp.${process.pid}`;
-  const { withWriteLockSync } = require('./state-lock.cjs');
+  const { withWriteLockSync } = require('../shared/state-lock.cjs');
   try {
     withWriteLockSync(opts.workDir, () => {
       const snapshot = commitState(opts.workDir, next, {
@@ -367,7 +367,7 @@ function recordReview(opts) {
   if (!decided.ok) return decided;
   const { next, review } = decided;
   const tmp = `${loaded.statePath}.tmp.${process.pid}`;
-  const { withWriteLockSync } = require('./state-lock.cjs');
+  const { withWriteLockSync } = require('../shared/state-lock.cjs');
   try {
     withWriteLockSync(opts.workDir, () => {
       const snapshot = commitState(opts.workDir, next, { type: review.type, at: review.at, expectCurrent: loaded.state.current_state });

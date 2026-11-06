@@ -2,11 +2,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { recordDescentTierUsage } = require('./record-descent-tier.cjs');
-const { resolveVerifyCommand } = require('./capture-procedure.cjs');
+const { recordDescentTierUsage } = require('../descent/record-descent-tier.cjs');
+const { resolveVerifyCommand } = require('../descent/capture-procedure.cjs');
 const { extractDeclaredFiles } = require('../scope/diff-scope-check.cjs');
 const { projectRootFromWorkDir } = require('../work-engine/budget-config.cjs');
-const { tryLadderThenOverlap, procedureVerifyCommand } = require('./overlap-procedure.cjs');
+const { tryLadderThenOverlap, procedureVerifyCommand } = require('../descent/overlap-procedure.cjs');
 
 /**
  * Descent at implementation entry: fingerprint-only L0/L1 (no verify-only L0, no L2).
@@ -48,7 +48,7 @@ async function runDescentOnImplementationEntry(opts) {
   if (!files || !files.length) {
     let context_pack = null;
     try {
-      const { writeContextPack } = require('../context/write-context-pack.cjs');
+      const { writeContextPack } = require('./write-context-pack.cjs');
       context_pack = writeContextPack({ workDir, projectRoot, pluginRoot });
     } catch {
       /* optional */
@@ -94,7 +94,7 @@ async function runDescentOnImplementationEntry(opts) {
 
   let context_pack = null;
   try {
-    const { writeContextPack } = require('../context/write-context-pack.cjs');
+    const { writeContextPack } = require('./write-context-pack.cjs');
     context_pack = writeContextPack({ workDir, projectRoot, pluginRoot });
   } catch {
     /* optional */
@@ -103,7 +103,7 @@ async function runDescentOnImplementationEntry(opts) {
   let pack_replay = null;
   if (skipLlm && context_pack && context_pack.ok) {
     try {
-      const { replayContextPack, writeDescentReplayArtifact } = require('../context/delegate-from-pack.cjs');
+      const { replayContextPack, writeDescentReplayArtifact } = require('./delegate-from-pack.cjs');
       pack_replay = replayContextPack({
         pack: context_pack.pack,
         workDir,

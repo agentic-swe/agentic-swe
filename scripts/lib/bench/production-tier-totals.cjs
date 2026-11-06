@@ -7,7 +7,7 @@ const {
   emptyTierTotals,
   frontierTokenTotal,
   LADDER_TIERS,
-} = require('./tier-totals.cjs');
+} = require('../work-engine/tier-totals.cjs');
 
 function isDogfoodLiveWorkItem(name, state) {
   if (String(name).startsWith('live-mined-') || String(name).startsWith('live-ritual-')) return true;

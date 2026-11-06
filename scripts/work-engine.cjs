@@ -106,9 +106,9 @@ async function runApprove(args, pluginRoot) {
   const {
     detectAgentContext,
     resolveUserIdentity,
-    recordApproval,
     DECISION_TARGET,
   } = require('./lib/approval/human-approval.cjs');
+  const { recordApproval } = require('./lib/work-engine/record-approval.cjs');
   const { collectRiskFlags, formatRiskFlags } = require('./lib/approval/risk-flags.cjs');
 
   const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
@@ -297,8 +297,8 @@ Commands:
   if (cmd === 'migrate' && args.journal) {
     if (!args.workDir) fail('migrate --journal requires --work-dir', 2);
     const journalWorkDir = path.resolve(args.workDir);
-    const { commitState, readJournal } = require('./lib/work-engine/journal.cjs');
-    const { withWriteLockSync } = require('./lib/work-engine/state-lock.cjs');
+    const { commitState, readJournal } = require('./lib/shared/journal.cjs');
+    const { withWriteLockSync } = require('./lib/shared/state-lock.cjs');
     const existing = readJournal(journalWorkDir);
     if (!existing.ok) fail(`FAILED at seq ${existing.seq}`, 1);
     if (existing.events.length) {
@@ -493,7 +493,7 @@ Commands:
       state.pipeline.track = 'lean';
       applyTrackBudgetProfile(state, 'lean', mergedInit, { updateMoney: true });
     }
-    const { commitState } = require('./lib/work-engine/journal.cjs');
+    const { commitState } = require('./lib/shared/journal.cjs');
     const snapshot = commitState(workDir, state, { type: 'init', at: nowIso });
     fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify(snapshot, null, 2) + '\n');
     fs.copyFileSync(progressTpl, path.join(workDir, 'progress.md'));
@@ -676,7 +676,7 @@ Commands:
 
   if (cmd === 'waive-track') {
     const { detectAgentContext, resolveUserIdentity } = require('./lib/approval/human-approval.cjs');
-    const { recordTrackWaiver } = require('./lib/work-engine/track-guard.cjs');
+    const { recordTrackWaiver } = require('./lib/work-engine/track-waiver.cjs');
     const refusal = detectAgentContext({ env: process.env, isTTY: Boolean(process.stdin.isTTY) });
     if (refusal) fail(`refusing track waiver: ${refusal}`, 3, { code: 'AGENT_CONTEXT' });
     const wdArg = args.workDir || process.env.AGENTIC_SWE_WORK_DIR;
@@ -712,7 +712,7 @@ Commands:
   }
 
   if (cmd === 'verify-journal') {
-    const { verifyWorkJournal } = require('./lib/work-engine/journal.cjs');
+    const { verifyWorkJournal } = require('./lib/shared/journal.cjs');
     const v = verifyWorkJournal(workDir);
     if (!v.ok) {
       const payload = { ok: false, code: 'INTEGRITY_FAILED', message: `FAILED at seq ${v.seq}`, seq: v.seq };
@@ -727,7 +727,7 @@ Commands:
   }
 
   if (cmd === 'recover') {
-    const { recoverState } = require('./lib/work-engine/journal.cjs');
+    const { recoverState } = require('./lib/shared/journal.cjs');
     const r = recoverState(workDir);
     if (!r.ok) {
       if (args.json) printJson(r);

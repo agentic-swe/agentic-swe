@@ -12,7 +12,8 @@ const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { runMemoryIndex } = require('./lib/memory/memory-pipeline.cjs');
 const { ingestTranscripts } = require('./lib/memory/session-ingest.cjs');
 const { discoverTranscriptSources } = require('./lib/memory/discover-transcripts.cjs');
-const { ingestTeamEvents, ingestPersonalProfile, ingestOrganicWorklogs, ingestGitTeamHistory, ingestMuscleReplayWorklogs, ingestProjectSkills } = require('./lib/memory/ingest-scopes.cjs');
+const { ingestTeamEvents, ingestPersonalProfile, ingestOrganicWorklogs, ingestGitTeamHistory, ingestMuscleReplayWorklogs } = require('./lib/memory/ingest-scopes.cjs');
+const { ingestProjectSkills } = require('./lib/skills/ingest-project-skills.cjs');
 const { syncArchivedFleetSubmissionsMemory } = require('./lib/fleet/ingest-fleet-memory.cjs');
 
 function parseArgs(argv) {

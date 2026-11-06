@@ -8,7 +8,7 @@ const path = require('node:path');
 const { promoteOrDemote } = require('../scripts/lib/descent/promotion.cjs');
 const { buildFingerprint } = require('../scripts/lib/descent/fingerprint.cjs');
 const { tryLadderThenOverlap } = require('../scripts/lib/descent/overlap-procedure.cjs');
-const { runDescentOnImplementationEntry } = require('../scripts/lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../scripts/lib/context/implementation-descent.cjs');
 const { checkMuscleMemoryReadiness } = require('../scripts/lib/doctor/muscle-memory-doctor.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');

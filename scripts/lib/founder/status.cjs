@@ -8,7 +8,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { integrityReport, verifyWorkJournal } = require('../work-engine/journal.cjs');
+const { integrityReport, verifyWorkJournal } = require('../shared/journal.cjs');
 const { reviewSummary } = require('../work-engine/reviews.cjs');
 const { parsePrLink, latestVerification } = require('../github/verification.cjs');
 

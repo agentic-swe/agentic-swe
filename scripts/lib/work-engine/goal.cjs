@@ -9,8 +9,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./engine.cjs');
-const { assertProjection, commitState } = require('./journal.cjs');
-const { withWriteLockSync } = require('./state-lock.cjs');
+const { assertProjection, commitState } = require('../shared/journal.cjs');
+const { withWriteLockSync } = require('../shared/state-lock.cjs');
 
 const GOAL_DECISION_TARGET = {
   approved: 'goal-met',

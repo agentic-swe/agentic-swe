@@ -19,7 +19,7 @@ const {
   readJournal,
   projectedState,
   recoverState,
-} = require('../work-engine/journal.cjs');
+} = require('../shared/journal.cjs');
 const { resolvePolicyChecked, checkTrackRules } = require('../policy/merge.cjs');
 const { loadRoles } = require('../policy/roles.cjs');
 

@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { writeJsonAtomic } = require('../scripts/lib/descent/atomic-json.cjs');
+const { writeJsonAtomic } = require('../scripts/lib/shared/atomic-json.cjs');
 const { saveStore, loadStore } = require('../scripts/lib/descent/promotion.cjs');
 
 function tmpDir(prefix) {
@@ -45,7 +45,7 @@ test('a concurrent reader never parses a partial procedures file', async () => {
   const dir = tmpDir('ae-r16-race-');
   const file = path.join(dir, 'procedures.json');
   fs.writeFileSync(file, '{"procedures":[]}\n');
-  const helper = path.join(__dirname, '..', 'scripts', 'lib', 'descent', 'atomic-json.cjs');
+  const helper = path.join(__dirname, '..', 'scripts', 'lib', 'shared', 'atomic-json.cjs');
   const writer = spawn(process.execPath, ['-e', `
     const { writeJsonAtomic } = require(${JSON.stringify(helper)});
     const file = ${JSON.stringify(file)};

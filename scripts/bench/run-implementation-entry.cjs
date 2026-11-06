@@ -16,7 +16,7 @@ const path = require('node:path');
 const { getDefaultPluginRoot } = require('../lib/work-engine/engine.cjs');
 const { buildFingerprint } = require('../lib/descent/fingerprint.cjs');
 const { promoteOrDemote } = require('../lib/descent/promotion.cjs');
-const { runDescentOnImplementationEntry } = require('../lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../lib/context/implementation-descent.cjs');
 const { loadTierTokenEstimates } = require('../lib/descent/ladder.cjs');
 
 const TARGET = 0.02;

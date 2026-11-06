@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { mineGitProcedures } = require('../scripts/lib/descent/mine-git-procedures.cjs');
-const { runDescentOnImplementationEntry } = require('../scripts/lib/descent/implementation-descent.cjs');
+const { runDescentOnImplementationEntry } = require('../scripts/lib/context/implementation-descent.cjs');
 const { runDescentOnValidationApproval } = require('../scripts/lib/descent/validation-descent.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');

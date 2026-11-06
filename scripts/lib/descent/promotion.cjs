@@ -3,23 +3,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { annotateTrust, promoteTrust } = require('../memory/trust.cjs');
-const { writeJsonAtomic } = require('./atomic-json.cjs');
-
-const DEFAULT_STORE = '.agentic-swe/procedures.json';
+const { DEFAULT_STORE, loadStore, saveStore } = require('../memory/procedure-store.cjs');
 
 /**
  * @typedef {{ fingerprint: string, tier: string, procedure: object, failures: number, promoted_at?: string, human_approved?: boolean }} ProcedureRecord
  */
-
-function loadStore(projectRoot) {
-  const p = path.join(projectRoot, DEFAULT_STORE);
-  if (!fs.existsSync(p)) return { procedures: [] };
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
-}
-
-function saveStore(projectRoot, data) {
-  writeJsonAtomic(path.join(projectRoot, DEFAULT_STORE), data);
-}
 
 /**
  * Promotion pipeline: L3 → L1 candidate → L0 after eval + human approval.

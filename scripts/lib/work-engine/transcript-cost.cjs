@@ -3,13 +3,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { usdForUsage } = require('./pricing.cjs');
-const { withWriteLockSync } = require('./state-lock.cjs');
+const { withWriteLockSync } = require('../shared/state-lock.cjs');
 const {
   ladderTierForModel,
   emptyTierTotals,
   addUsageToTierTotals,
   mergeTierTotals,
-} = require('../bench/tier-totals.cjs');
+} = require('./tier-totals.cjs');
 
 /**
  * @param {object} line parsed JSON line from Claude Code transcript

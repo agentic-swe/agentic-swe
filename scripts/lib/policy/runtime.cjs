@@ -7,7 +7,7 @@
 
 const path = require('node:path');
 const { minimatch } = require('minimatch');
-const { redactSecrets } = require('../memory/session-capture.cjs');
+const { redactSecrets } = require('../shared/redact.cjs');
 
 const SHELL_TOOLS = new Set([
   'Bash',

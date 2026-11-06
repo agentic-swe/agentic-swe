@@ -1,6 +1,6 @@
 'use strict';
 
-const { tierForModel } = require('../work-engine/pricing.cjs');
+const { tierForModel } = require('./pricing.cjs');
 
 const LADDER_TIERS = ['L0', 'L1', 'L2', 'L3'];
 
