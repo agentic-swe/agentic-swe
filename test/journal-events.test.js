@@ -253,7 +253,15 @@ describe('AE-020a journal events, idempotency, and leases', () => {
     const { root, workDir } = tmpWork('ae020a-types');
     seedSnapshot(workDir);
     const events = [
-      appendEvent(workDir, { type: 'policy.decided', payload: { decision: 'allow' }, idempotency_key: 'pol' }),
+      appendEvent(workDir, {
+        type: 'policy.decided',
+        payload: {
+          decision: 'allow',
+          rule_id: 'pdp.allow',
+          policy_digest: 'a'.repeat(64),
+        },
+        idempotency_key: 'pol',
+      }),
       appendEvent(workDir, { type: 'tool.requested', payload: { tool_id: 'shell' }, idempotency_key: 'tr' }),
       appendEvent(workDir, { type: 'tool.completed', payload: { tool_id: 'shell' }, idempotency_key: 'tc' }),
     ];
