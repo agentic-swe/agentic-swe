@@ -1,4 +1,5 @@
 const path = require('node:path');
+const { redactSecrets } = require('../shared/redact.cjs');
 
 function formatCost(usd) {
   return `$${Number(usd).toFixed(2)}`;
@@ -23,25 +24,27 @@ function formatDurationHuman(seconds) {
 }
 
 function formatMarkdown(data) {
+  const safe = (value) => redactSecrets(String(value ?? '')).redacted;
   const lines = [];
-  const headline = data.task ? `# /work ${data.workId} — ${data.task}` : `# /work ${data.workId}`;
+  const headline = data.task ? `# /work ${safe(data.workId)} — ${safe(data.task)}` : `# /work ${safe(data.workId)}`;
   lines.push(headline, '');
   lines.push('| Field | Value |');
   lines.push('|---|---|');
-  lines.push(`| Work ID | ${data.workId} |`);
-  lines.push(`| Track | ${data.track} |`);
-  lines.push(`| Status | ${data.status} |`);
-  if (data.integrity) lines.push(`| Integrity | ${data.integrity} |`);
-  if (data.historyGap) lines.push(`| History gap | ${data.historyGap} |`);
+  lines.push(`| Work ID | ${safe(data.workId)} |`);
+  lines.push(`| Track | ${safe(data.track)} |`);
+  lines.push(`| Status | ${safe(data.status)} |`);
+  if (data.integrity) lines.push(`| Integrity | ${safe(data.integrity)} |`);
+  if (data.historyGap) lines.push(`| History gap | ${safe(data.historyGap)} |`);
   if (data.durationSeconds != null) lines.push(`| Duration | ${formatDurationHuman(data.durationSeconds)} |`);
   lines.push(`| Cost | ${formatCost(data.costUsd)} |`);
-  if (data.prUrl) lines.push(`| PR | ${data.prUrl} |`);
+  if (data.prUrl) lines.push(`| PR | ${safe(data.prUrl)} |`);
   lines.push('');
   if (data.decisions.length > 0) {
     lines.push(`## Decisions made (${data.decisions.length})`, '');
     data.decisions.forEach((d, i) => {
-      const line = `${i + 1}. **${d.phase} → ${d.destination}** (${formatCost(d.costUsd)}) — ${d.reason || 'no reason recorded'}`;
-      const evidence = d.evidenceRefs.length > 0 ? ` → ${d.evidenceRefs.join(', ')}` : '';
+      const source = d.source_seq != null ? ` [source_seq: ${d.source_seq}]` : '';
+      const line = `${i + 1}. **${safe(d.phase)} → ${safe(d.destination)}** (${formatCost(d.costUsd)}) — ${safe(d.reason || 'no reason recorded')}${source}`;
+      const evidence = d.evidenceRefs.length > 0 ? ` → ${safe(d.evidenceRefs.join(', '))}` : '';
       lines.push(line + evidence);
     });
     lines.push('');
@@ -49,7 +52,7 @@ function formatMarkdown(data) {
   if (data.humanGates.length > 0) {
     lines.push(`## Human gates respected (${data.humanGates.length})`, '');
     data.humanGates.forEach((g) => {
-      lines.push(`- \`${g.state}\` resolved by ${g.resolvedBy} at ${g.at} — ${g.reason}`);
+      lines.push(`- \`${safe(g.state)}\` resolved by ${safe(g.resolvedBy)} at ${safe(g.at)} — ${safe(g.reason)}`);
     });
     lines.push('');
   }
@@ -65,6 +68,15 @@ function formatMarkdown(data) {
   lines.push(`- Audit log: \`${wd}/audit.log\` (${data.auditEntryCount} entries)`);
   if (data.toolCallCount) {
     lines.push(`- Policy-checked tool calls: ${data.toolCallCount} (${data.toolCallDenied || 0} denied by policy)`);
+  }
+  if (data.policyDecisions && data.policyDecisions.length) {
+    lines.push(`- Policy decisions: ${data.policyDecisions.length}`);
+  }
+  if (data.usage && data.usage.length) {
+    lines.push(`- Usage events: ${data.usage.length}`);
+  }
+  if (data.artifacts && data.artifacts.length) {
+    lines.push(`- Artifacts with SHA-256 digests: ${data.artifacts.length}`);
   }
   lines.push('');
   return lines.join('\n');
