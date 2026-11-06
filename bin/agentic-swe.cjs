@@ -31,6 +31,7 @@ function usage() {
   process.stderr.write(`  agentic-swe github [args]       Read-only GitHub connector (issues, PRs, reviews, checks, approval verify)\n`);
   process.stderr.write(`  agentic-swe founder [args]      Human-only control: status (goals, approvals, findings, cost, integrity) and approve\n`);
   process.stderr.write(`  agentic-swe policy [args]       Policy PDP helpers (replay policy.decided events)\n`);
+  process.stderr.write(`  agentic-swe runtime [args]      Hosted runtime loop (run --work-dir <dir>)\n`);
   process.stderr.write(`  agentic-swe context-budget [args]  Estimate always-loaded context tokens for the install profile\n`);
   process.stderr.write(`  agentic-swe host-parity [args]     Report stable / partial / instruction-only status per supported host\n`);
   process.stderr.write(`  agentic-swe scan [args]          Scan a destination for agent-surface findings\n`);
@@ -97,6 +98,12 @@ if (cmd === 'founder') {
 
 if (cmd === 'policy') {
   const script = path.join(root, 'scripts', 'policy-cli.cjs');
+  const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
+  process.exit(res.status == null ? 1 : res.status);
+}
+
+if (cmd === 'runtime') {
+  const script = path.join(root, 'scripts', 'runtime.cjs');
   const res = spawnSync(process.execPath, [script, ...argv.slice(1)], { stdio: 'inherit' });
   process.exit(res.status == null ? 1 : res.status);
 }

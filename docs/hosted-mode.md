@@ -12,6 +12,14 @@ In-host mode (Claude Code, Cursor, Codex, …) remains **cooperative**: the agen
 4. Agents interact via IPC/CLI that appends through the runtime; they never get write access to `journal.jsonl`.
 5. Optionally pin the policy digest with `AGENTIC_SWE_POLICY_DIGEST=<sha256>` from a file the agent cannot modify.
 
+The deterministic fixture/local-provider loop can be started with:
+
+```sh
+agentic-swe runtime run --work-dir .worklogs/<id> --track lean --provider fixture
+```
+
+The loop stops at `approval-wait`; only the human approval command can leave that state.
+
 ## Digest pinning
 
 When `AGENTIC_SWE_POLICY_DIGEST` is set, the PDP denies with `policy.digest_mismatch` / `POLICY_CRITICAL` if the merged policy hash differs. Pinning is meaningful only when the env/file is outside the agent's write scope (hosted). In in-host mode the pin is advisory.
