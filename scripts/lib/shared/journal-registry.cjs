@@ -29,6 +29,7 @@ const SIDE_PAYLOAD_KEYS = {
   'tool.requested': 'toolRequestedPayload',
   'tool.completed': 'toolCompletedPayload',
   'test.side': 'testSidePayload',
+  'github.anchored': null,
 };
 
 let schemaDoc = null;

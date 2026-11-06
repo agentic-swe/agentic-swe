@@ -160,6 +160,8 @@ async function runApprove(args, pluginRoot) {
       headSha: args.headSha,
       humanOk: true,
       calls: journal.calls,
+      connector,
+      config,
     });
     const lines = v.verification.reasons.map((r) => `  - ${r.code}: ${r.detail}`);
     const modeNote = v.verification.mode === 'solo_founder' ? ' (solo-founder mode)' : '';

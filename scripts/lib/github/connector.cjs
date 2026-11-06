@@ -46,6 +46,7 @@ function loadGitHubConfig({ pluginRoot = PACK_ROOT, projectRoot } = {}) {
   const pack = readJsonOrNull(path.join(pluginRoot, 'config', 'github.json')) || {};
   const repo = projectRoot ? readJsonOrNull(path.join(projectRoot, '.agentic-swe', 'github.json')) || {} : {};
   const authorization = { ...(pack.authorization || {}), ...(repo.authorization || {}) };
+  const anchor = { ...(pack.anchor || {}), ...(repo.anchor || {}) };
   const solo = mergeSoloFounder(pack.approval, repo.approval);
   return {
     api_base: pack.api_base || 'https://api.github.com',
@@ -53,6 +54,10 @@ function loadGitHubConfig({ pluginRoot = PACK_ROOT, projectRoot } = {}) {
     permissions: pack.permissions || { read: [], write: [] },
     codeowners_paths: repo.codeowners_paths || pack.codeowners_paths || ['.github/CODEOWNERS', 'CODEOWNERS', 'docs/CODEOWNERS'],
     authorization: { github_write: authorization.github_write === true },
+    anchor: {
+      check_name: anchor.check_name || 'agentic-swe journal anchor',
+      app_slug: anchor.app_slug || 'agentic-swe',
+    },
     approval: {
       solo_founder: {
         // Fail closed: only an explicit true enables; login must be non-empty.

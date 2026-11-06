@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { integrityReport, readJournal } = require('../shared/journal.cjs');
+const { localAnchorReport } = require('../github/anchor.cjs');
 const { redactDeep } = require('../shared/redact.cjs');
 
 function digestFile(file) {
@@ -130,8 +131,10 @@ function extractReceipt(workDir) {
   const toolCallDenied = toolCalls.filter((l) => / decision=deny /.test(l)).length;
 
   const integrity = integrityReport(workDir, state);
+  const anchor = localAnchorReport(workDir, state);
   const data = {
     integrity: integrity.integrity,
+    anchor: anchor.anchor,
     historyGap: integrity.historyGap,
     workId: state.work_id || path.basename(workDir),
     task: state.task || '',

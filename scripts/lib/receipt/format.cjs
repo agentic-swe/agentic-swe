@@ -34,6 +34,7 @@ function formatMarkdown(data) {
   lines.push(`| Track | ${safe(data.track)} |`);
   lines.push(`| Status | ${safe(data.status)} |`);
   if (data.integrity) lines.push(`| Integrity | ${safe(data.integrity)} |`);
+  if (data.anchor) lines.push(`| Anchor | ${safe(data.anchor)} |`);
   if (data.historyGap) lines.push(`| History gap | ${safe(data.historyGap)} |`);
   if (data.durationSeconds != null) lines.push(`| Duration | ${formatDurationHuman(data.durationSeconds)} |`);
   lines.push(`| Cost | ${formatCost(data.costUsd)} |`);

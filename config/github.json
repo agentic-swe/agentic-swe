@@ -5,6 +5,10 @@
   "authorization": {
     "github_write": false
   },
+  "anchor": {
+    "check_name": "agentic-swe journal anchor",
+    "app_slug": "agentic-swe"
+  },
   "permissions": {
     "read": [
       "metadata:read",
