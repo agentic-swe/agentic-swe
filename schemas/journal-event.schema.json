@@ -22,9 +22,24 @@
     },
     "policyDecidedPayload": {
       "type": "object",
-      "required": ["decision"],
+      "required": ["decision", "rule_id", "policy_digest"],
       "properties": {
-        "decision": { "type": "string", "enum": ["allow", "deny", "require_approval"] }
+        "decision": { "type": "string", "enum": ["allow", "deny", "require_approval"] },
+        "rule_id": { "type": "string", "minLength": 1 },
+        "policy_digest": { "type": "string", "minLength": 16 },
+        "risk_class": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "reason": { "type": "string" },
+        "input_summary": { "type": "string" },
+        "code": { "type": "string" },
+        "critical_failure": { "type": "boolean" },
+        "tool_name": { "type": "string" },
+        "state": { "type": ["string", "null"] },
+        "track": { "type": ["string", "null"] },
+        "op": { "type": "string" },
+        "provider": { "type": "string" },
+        "cost_source": { "type": "string" },
+        "flags": { "type": "object" },
+        "tool_input": { "type": "object" }
       },
       "additionalProperties": true
     },
