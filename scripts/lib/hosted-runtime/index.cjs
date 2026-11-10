@@ -271,7 +271,13 @@ function createRuntime(options = {}) {
         track: state.pipeline?.track || track,
       }));
     }
-    return { response, calls, results };
+    const critical = results.find((r) => r && r.critical_failure === true) || null;
+    return { response, calls, results, critical_failure: Boolean(critical), critical };
+  }
+
+  function escalateTarget(from) {
+    if (from === 'validation') return 'escalate-validation';
+    return 'escalate-code';
   }
 
   async function run(runOptions = {}) {
@@ -286,12 +292,78 @@ function createRuntime(options = {}) {
         const journal = readJournal(workDir);
         return { ok: true, current_state: state.current_state, steps: executed, journal };
       }
+      if (String(state.current_state || '').startsWith('escalate-')) {
+        const journal = readJournal(workDir);
+        return {
+          ok: false,
+          code: 'CRITICAL_POLICY_FAILURE',
+          current_state: state.current_state,
+          steps: executed,
+          journal,
+        };
+      }
       const edge = TRACK_PATHS[track].find(([from]) => from === state.current_state);
       if (!edge) {
         return { ok: false, code: 'RUNTIME_NO_EDGE', message: `no runtime edge from ${state.current_state}` };
       }
       const [from, to] = edge;
       const stepResult = await executeStep(state, from, to);
+      if (stepResult.critical_failure) {
+        const escalateTo = escalateTarget(from);
+        appendEvent(workDir, {
+          type: 'runtime.critical_failure',
+          payload: {
+            from,
+            intended_to: to,
+            escalate_to: escalateTo,
+            tool_id: stepResult.critical?.tool_id || null,
+            policy_rule_id: stepResult.critical?.policy_rule_id || null,
+            error: stepResult.critical?.error || null,
+          },
+          idempotency_key: `critical:${state.work_id}:${from}:${executed.length}`,
+        });
+        // Satisfy outbound artifact gates for the source phase + escalate target.
+        if (from === 'lean-track-implementation' || from === 'implementation' || from === 'self-review') {
+          writeArtifact(workDir, 'implementation.md', `# implementation.md\nStopped by critical_failure on ${from}.\n`);
+        }
+        if (from === 'validation' || escalateTo === 'escalate-validation') {
+          writeArtifact(workDir, 'validation-results.md', `# validation-results.md\nCritical policy failure on ${from}.\n`);
+        } else {
+          writeArtifact(
+            workDir,
+            'review-feedback.md',
+            `# review-feedback.md\nCritical policy failure on ${from}: ${stepResult.critical?.error?.message || 'critical_failure'}\n`
+          );
+        }
+        const transition = applyTransition({
+          workDir,
+          pluginRoot,
+          to: escalateTo,
+          actor: options.actor || 'hosted-runtime',
+          reason: `critical_failure from policy on ${from}`,
+          setPipelineTrack: from === 'lean-track-check' ? track : undefined,
+          decrementIterationBudget: false,
+          skipMuscleMemory: true,
+        });
+        if (!transition.ok) {
+          return {
+            ok: false,
+            code: 'CRITICAL_POLICY_FAILURE',
+            message: transition.message || `critical_failure on ${from}; escalate edge unavailable`,
+            current_state: state.current_state,
+            escalate_to: escalateTo,
+            steps: executed,
+            transition,
+          };
+        }
+        return {
+          ok: false,
+          code: 'CRITICAL_POLICY_FAILURE',
+          current_state: escalateTo,
+          escalate_to: escalateTo,
+          steps: executed,
+        };
+      }
       ensurePhaseArtifacts(workDir, state, to, stepFor(options.steps, state, to));
       if (from === 'implementation' && state.pipeline?.track === 'rigorous') {
         // The implementer model is recorded before the independent code-review run.

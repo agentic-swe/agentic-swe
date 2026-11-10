@@ -9,21 +9,25 @@ const RUNTIME_FILE = path.join('.agentic-swe', 'runtime.json');
  * Decide whether a policy-hook error (bad input, unreadable or invalid policy, crash)
  * denies the tool call.
  *
- * Closed when the active work item is rigorous, has no track, or has unreadable state;
- * in lean/standard (or with no work item) only when `.agentic-swe/runtime.json` sets
- * `policy.fail_closed: true` or `AGENTIC_SWE_POLICY_FAIL_CLOSED=1`. Neither setting can
- * open a mode that is already closed.
+ * Default is fail-closed on every track (and with no work item). Cooperative fail-open
+ * is opt-in only via an explicit human runtime flag:
+ *   - `AGENTIC_SWE_POLICY_FAIL_OPEN=1`, or
+ *   - `.agentic-swe/runtime.json` → `{ "policy": { "fail_open": true } }`
+ * `AGENTIC_SWE_POLICY_FAIL_CLOSED=1` / `policy.fail_closed: true` remain closed (tighten-only).
  *
  * @param {{ hasWorkItem: boolean, state: object|null, projectRoot: string, env?: object }} p
  * @returns {{ closed: boolean, why: string }}
  */
 function hookErrorMode({ hasWorkItem, state, projectRoot, env = process.env }) {
-  if (hasWorkItem) {
-    const track = state && state.pipeline ? state.pipeline.track : undefined;
-    if (!state) return { closed: true, why: 'work item state is unreadable' };
-    if (track !== 'lean' && track !== 'standard') return { closed: true, why: `track is ${track || 'missing'}` };
+  if (hasWorkItem && !state) {
+    return { closed: true, why: 'work item state is unreadable' };
   }
-  if (env.AGENTIC_SWE_POLICY_FAIL_CLOSED === '1') return { closed: true, why: 'AGENTIC_SWE_POLICY_FAIL_CLOSED=1' };
+
+  // Explicit cooperative fail-open (human-only). Never inferred from track.
+  if (env.AGENTIC_SWE_POLICY_FAIL_OPEN === '1') {
+    return { closed: false, why: 'AGENTIC_SWE_POLICY_FAIL_OPEN=1 (cooperative)' };
+  }
+
   const file = path.join(projectRoot, RUNTIME_FILE);
   if (fs.existsSync(file)) {
     let runtime;
@@ -35,8 +39,22 @@ function hookErrorMode({ hasWorkItem, state, projectRoot, env = process.env }) {
     if (runtime && runtime.policy && runtime.policy.fail_closed === true) {
       return { closed: true, why: `${RUNTIME_FILE} policy.fail_closed` };
     }
+    if (runtime && runtime.policy && runtime.policy.fail_open === true) {
+      return { closed: false, why: `${RUNTIME_FILE} policy.fail_open (cooperative)` };
+    }
   }
-  return { closed: false, why: hasWorkItem ? `track is ${state.pipeline.track}` : 'no active work item' };
+
+  if (env.AGENTIC_SWE_POLICY_FAIL_CLOSED === '1') {
+    return { closed: true, why: 'AGENTIC_SWE_POLICY_FAIL_CLOSED=1' };
+  }
+
+  const track = state && state.pipeline ? state.pipeline.track : undefined;
+  return {
+    closed: true,
+    why: hasWorkItem
+      ? `default fail-closed (track ${track || 'missing'})`
+      : 'default fail-closed (no active work item)',
+  };
 }
 
 module.exports = { hookErrorMode, RUNTIME_FILE };

@@ -89,22 +89,30 @@ describe('PreToolUse policy hook', () => {
     writeState({ track: 'rigorous' });
     const rigorous = runHook('not json', withWork());
     assert.equal(rigorous.status, 2, rigorous.stderr);
-    assert.match(rigorous.stderr, /fail-closed: track is rigorous/);
+    assert.match(rigorous.stderr, /fail-closed: default fail-closed \(track rigorous\)/);
     assert.match(audit(), /action=tool_call_hook_error tool=unknown decision=deny mode=fail-closed/);
     writeState({});
     const missing = runHook('not json', withWork());
     assert.equal(missing.status, 2);
-    assert.match(missing.stderr, /fail-closed: track is missing/);
+    assert.match(missing.stderr, /fail-closed: default fail-closed \(track missing\)/);
   });
 
-  it('warns and allows on malformed stdin in lean/standard unless runtime.json fails closed', () => {
+  it('F-M2-03b: lean/standard deny by default; cooperative fail-open is opt-in only', () => {
     for (const track of ['lean', 'standard']) {
       writeState({ track });
-      const open = runHook('not json', withWork());
-      assert.equal(open.status, 0, `${track}: ${open.stderr}`);
-      assert.match(open.stderr, /policy hook error \(fail-open/);
+      const closed = runHook('not json', withWork());
+      assert.equal(closed.status, 2, `${track}: ${closed.stderr}`);
+      assert.match(closed.stderr, /fail-closed: default fail-closed/);
     }
-    assert.match(audit(), /action=tool_call_hook_error tool=unknown decision=allow mode=fail-open/);
+    assert.match(audit(), /action=tool_call_hook_error tool=unknown decision=deny mode=fail-closed/);
+
+    writeState({ track: 'lean' });
+    fs.writeFileSync(path.join(repo, '.agentic-swe', 'runtime.json'), JSON.stringify({ policy: { fail_open: true } }));
+    const open = runHook('not json', withWork({ CLAUDE_PROJECT_DIR: repo }));
+    assert.equal(open.status, 0, open.stderr);
+    assert.match(open.stderr, /fail-open:.*policy\.fail_open/);
+    assert.match(audit(), /decision=allow mode=fail-open/);
+
     fs.writeFileSync(path.join(repo, '.agentic-swe', 'runtime.json'), JSON.stringify({ policy: { fail_closed: true } }));
     const r = runHook('{}', withWork({ CLAUDE_PROJECT_DIR: repo }));
     assert.equal(r.status, 2);
@@ -127,14 +135,20 @@ describe('PreToolUse policy hook', () => {
     }
   });
 
-  it('allows with a warning on malformed stdin when there is no work item', () => {
+  it('F-M2-03b: denies malformed stdin with no work item unless cooperative fail-open is set', () => {
     fs.rmSync(path.join(repo, '.worklogs'), { recursive: true, force: true });
-    const r = spawnSync(process.execPath, [hook], { input: 'not json', encoding: 'utf8', cwd: repo, env: cleanEnv() });
-    assert.equal(r.status, 0);
-    assert.match(r.stderr, /fail-open: no active work item/);
+    const denied = spawnSync(process.execPath, [hook], { input: 'not json', encoding: 'utf8', cwd: repo, env: cleanEnv() });
+    assert.equal(denied.status, 2);
+    assert.match(denied.stderr, /fail-closed: default fail-closed \(no active work item\)/);
+    const open = spawnSync(process.execPath, [hook], {
+      input: 'not json', encoding: 'utf8', cwd: repo,
+      env: { ...cleanEnv(), AGENTIC_SWE_POLICY_FAIL_OPEN: '1' },
+    });
+    assert.equal(open.status, 0);
+    assert.match(open.stderr, /fail-open: AGENTIC_SWE_POLICY_FAIL_OPEN=1/);
   });
 
-  it('denies every call in rigorous when a policy file is unreadable, allows with a warning in standard', () => {
+  it('F-M2-03b: unreadable policy denies on rigorous and standard (fail-closed)', () => {
     fs.writeFileSync(path.join(repo, '.agentic-swe', 'policy.json'), '{ not json');
     const call = { tool_name: 'Bash', tool_input: { command: 'git status' }, cwd: repo };
     writeState({ track: 'rigorous' });
@@ -142,9 +156,9 @@ describe('PreToolUse policy hook', () => {
     assert.equal(denied.status, 2);
     assert.match(denied.stderr, /repo policy .* is unreadable/);
     writeState({ track: 'standard' });
-    const allowed = runHook(call, withWork());
-    assert.equal(allowed.status, 0);
-    assert.match(allowed.stderr, /fail-open/);
+    const alsoDenied = runHook(call, withWork());
+    assert.equal(alsoDenied.status, 2);
+    assert.match(alsoDenied.stderr, /repo policy .* is unreadable|fail-closed/);
   });
 
   it('denies every call in rigorous when the policy fails schema validation', () => {
@@ -236,9 +250,10 @@ describe('PreToolUse policy hook', () => {
       assert.equal(out.user_message, out.agent_message);
     });
 
-    it('still prints allow JSON when a hook error fails open', () => {
+    it('still prints allow JSON when a hook error fails open (cooperative opt-in)', () => {
       writeState({ track: 'lean' });
-      const r = runHook('not json', withWork(), ['--host', 'cursor']);
+      fs.writeFileSync(path.join(repo, '.agentic-swe', 'runtime.json'), JSON.stringify({ policy: { fail_open: true } }));
+      const r = runHook('not json', withWork({ CLAUDE_PROJECT_DIR: repo }), ['--host', 'cursor']);
       assert.equal(r.status, 0);
       assert.deepEqual(JSON.parse(r.stdout), { permission: 'allow' });
     });

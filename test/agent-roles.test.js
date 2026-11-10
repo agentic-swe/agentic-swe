@@ -230,14 +230,16 @@ describe('agent roles', () => {
       assert.match(r.stderr, /AGENTIC_SWE_ROLE "nope" is not a role/);
     });
 
-    it('privileged actions stay denied when a role error fails open (lean track)', () => {
+    it('F-M2-03b: unknown role is fail-closed on lean; privileged actions stay denied', () => {
       fs.writeFileSync(path.join(workDir, 'state.json'), JSON.stringify({ work_id: 'w1', current_state: 'implementation', pipeline: { track: 'lean' } }));
       grant('github.branch.push');
       const push = PRIVILEGED_CALLS['github.branch.push'];
       const unknown = asRole('nope', push);
       assert.equal(unknown.status, 2, unknown.stderr);
-      assert.match(unknown.stderr, /agent nope \(no role in config\/roles\) may not perform github\.branch\.push/);
-      assert.equal(asRole('nope', read).status, 0);
+      assert.match(unknown.stderr, /AGENTIC_SWE_ROLE "nope" is not a role|may not perform github\.branch\.push/);
+      const unknownRead = asRole('nope', read);
+      assert.equal(unknownRead.status, 2, unknownRead.stderr);
+      assert.match(unknownRead.stderr, /AGENTIC_SWE_ROLE "nope" is not a role/);
 
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'roles-dir-'));
       fs.cpSync(path.join(pluginRoot, 'config', 'roles'), dir, { recursive: true });
@@ -245,7 +247,7 @@ describe('agent roles', () => {
       const r = runHook({ ...push, cwd: repo }, env({ AGENTIC_SWE_ROLES_DIR: dir }));
       fs.rmSync(dir, { recursive: true, force: true });
       assert.equal(r.status, 2, r.stderr);
-      assert.match(r.stderr, /privileged\[github\.branch\.push\]/);
+      assert.match(r.stderr, /privileged\[github\.branch\.push\]|AGENTIC_SWE_ROLE|fail-closed/);
     });
 
     it('an invalid role file is a hook error', () => {
