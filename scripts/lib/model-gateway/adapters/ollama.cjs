@@ -19,7 +19,8 @@ const DEFAULT_CAPS = {
 };
 
 function createOllamaAdapter(opts = {}) {
-  const baseUrl = opts.baseUrl || process.env.AGENTIC_SWE_OLLAMA_HOST || DEFAULT_BASE_URL;
+  // ADR-008: base URL from opts/config only — env host overrides are ignored.
+  const baseUrl = opts.baseUrl || DEFAULT_BASE_URL;
   const capabilityOverrides = opts.capabilities || {};
   return {
     id: 'ollama',

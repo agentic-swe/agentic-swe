@@ -175,58 +175,34 @@ function createModelGateway(opts) {
     const need = requiredCapabilities(req);
     const selected = selectModel(req.tier, need);
 
-    if (LOCAL_PROVIDERS.has(provider) && config.base_url && !isLoopbackBaseUrl(config.base_url)) {
-      const decision = policyEvaluator
-        ? policyEvaluator({
-            policy: opts.policy,
-            provider,
-            model: selected.model,
-            cost_source: 'local',
-            flags: { non_loopback_base_url: true },
-          })
-        : null;
-      if (!policyEvaluator || decision?.decision === 'deny') {
-        const err = new GatewayError(
-          'POLICY_DENIED',
-          decision?.reason || 'local provider base_url must target loopback',
-          { retryable: false, details: decision || { code: 'PROVIDER_DENIED' } }
-        );
-        await recordUsage(
-          {
-            provider,
-            model: selected.model,
-            input: null,
-            output: null,
-            usage_source: 'absent',
-            usd: 0,
-            cost_source: 'local',
-            latency_ms: Math.max(0, now() - started),
-            status: 'error',
-            finish_reason: 'error',
-            error_code: 'PROVIDER_DENIED',
-          },
-          req.idempotency_key
-        );
-        throw sanitizeError(err);
+    // ADR-008 / AE-022 AC6 / F-M2-09: when a policyEvaluator is configured, every
+    // route() is evaluated before adapter/transport I/O (including local). Without
+    // an evaluator, non-local and non-loopback local stay default-deny (PD-9).
+    {
+      const isLocal = LOCAL_PROVIDERS.has(provider);
+      const nonLoopbackLocal =
+        isLocal && config.base_url && !isLoopbackBaseUrl(config.base_url);
+      let decision = null;
+      if (policyEvaluator) {
+        decision = policyEvaluator({
+          policy: opts.policy,
+          provider,
+          model: selected.model,
+          cost_source: isLocal ? 'local' : 'price_table',
+          authorized: opts.authorized,
+          ...(nonLoopbackLocal ? { flags: { non_loopback_base_url: true } } : {}),
+        });
       }
-    }
-
-    // PD-9 / PD-15 / AE-022 AC6: every non-local provider is policy-checked before
-    // any adapter or transport I/O. No evaluator means deny.
-    if (!LOCAL_PROVIDERS.has(provider)) {
-      const decision = policyEvaluator
-        ? policyEvaluator({
-            policy: opts.policy,
-            provider,
-            model: selected.model,
-            cost_source: 'price_table',
-            authorized: opts.authorized,
-          })
-        : null;
-      if (!decision || decision.decision !== 'allow') {
+      const denied = policyEvaluator
+        ? !decision || decision.decision === 'deny' || (nonLoopbackLocal && decision.decision !== 'allow')
+        : !isLocal || nonLoopbackLocal;
+      if (denied) {
         const err = new GatewayError(
           'POLICY_DENIED',
-          decision?.reason || `non-local provider ${provider} requires a policy evaluator (default deny)`,
+          decision?.reason ||
+            (nonLoopbackLocal
+              ? 'local provider base_url must target loopback'
+              : `non-local provider ${provider} requires a policy evaluator (default deny)`),
           { retryable: false, details: decision || { code: 'PROVIDER_DENIED' } }
         );
         await recordUsage(
@@ -236,8 +212,8 @@ function createModelGateway(opts) {
             input: null,
             output: null,
             usage_source: 'absent',
-            usd: 0,
-            cost_source: 'unknown',
+            usd: isLocal ? 0 : 0,
+            cost_source: isLocal ? 'local' : 'unknown',
             latency_ms: Math.max(0, now() - started),
             status: 'error',
             finish_reason: 'error',
