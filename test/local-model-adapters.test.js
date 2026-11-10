@@ -140,4 +140,114 @@ describe('AE-019b local adapters', () => {
     assert.equal(direct.rule_id, 'provider.non_loopback');
     fs.rmSync(root, { recursive: true, force: true });
   });
+
+  it('F-M2-09: ADR-008 ignores AGENTIC_SWE_*_HOST env overrides', async () => {
+    const prevOllama = process.env.AGENTIC_SWE_OLLAMA_HOST;
+    const prevLlama = process.env.AGENTIC_SWE_LLAMA_CPP_HOST;
+    process.env.AGENTIC_SWE_OLLAMA_HOST = 'http://192.0.2.55:11434';
+    process.env.AGENTIC_SWE_LLAMA_CPP_HOST = 'http://192.0.2.55:8080';
+    try {
+      for (const [provider, adapter, pathSuffix] of [
+        ['ollama', createOllamaAdapter(), '/api/chat'],
+        ['llama.cpp', createLlamaCppAdapter(), '/v1/chat/completions'],
+      ]) {
+        let seen;
+        const r = await adapter.complete({
+          model: 'local-model',
+          messages: [{ role: 'user', content: 'ping' }],
+          transport: async (req) => {
+            seen = req;
+            return {
+              body: provider === 'ollama'
+                ? readFixture('ollama-ok.json')
+                : readFixture('openai-ok.json'),
+            };
+          },
+        });
+        assert.ok(r);
+        assert.match(seen.url, /^http:\/\/127\.0\.0\.1:/);
+        assert.match(seen.url, new RegExp(`${pathSuffix.replace('/', '\\/')}$`));
+        assert.doesNotMatch(seen.url, /192\.0\.2\.55/);
+      }
+    } finally {
+      if (prevOllama === undefined) delete process.env.AGENTIC_SWE_OLLAMA_HOST;
+      else process.env.AGENTIC_SWE_OLLAMA_HOST = prevOllama;
+      if (prevLlama === undefined) delete process.env.AGENTIC_SWE_LLAMA_CPP_HOST;
+      else process.env.AGENTIC_SWE_LLAMA_CPP_HOST = prevLlama;
+    }
+  });
+
+  it('F-M2-09: PDP evaluates before every gateway.route (paid + local)', async () => {
+    const { root, workDir } = tempWork('pdp-every');
+    seed(workDir);
+    let pdpCalls = 0;
+    let transportCalls = 0;
+    const gateway = createModelGateway({
+      config: {
+        provider: 'ollama',
+        models: { balanced: 'local-model' },
+        base_url: 'http://127.0.0.1:11434',
+        timeout_ms: 1000,
+        max_retries: 0,
+      },
+      adapters: { ollama: createOllamaAdapter() },
+      policy,
+      policyEvaluator: (input) => {
+        pdpCalls += 1;
+        return evaluate(input);
+      },
+      workDir,
+      transport: async () => {
+        transportCalls += 1;
+        return { body: readFixture('ollama-ok.json') };
+      },
+    });
+    await gateway.route({
+      tier: 'balanced',
+      messages: [{ role: 'user', content: 'hello' }],
+      idempotency_key: 'pdp-every-1',
+    });
+    assert.ok(pdpCalls >= 1, 'PDP must run before route I/O');
+    assert.equal(transportCalls, 1);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('F-M2-09: optional live smoke when Ollama or llama.cpp is reachable', async (t) => {
+    async function probe(url) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 1500);
+        const res = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(timer);
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
+    const ollamaUp = await probe('http://127.0.0.1:11434/api/tags');
+    const llamaUp = await probe('http://127.0.0.1:8080/v1/models');
+    if (!ollamaUp && !llamaUp) {
+      t.skip('neither Ollama nor llama.cpp is reachable on loopback');
+      return;
+    }
+    if (ollamaUp) {
+      const adapter = createOllamaAdapter({ baseUrl: 'http://127.0.0.1:11434' });
+      const models = await fetch('http://127.0.0.1:11434/api/tags').then((r) => r.json());
+      const model = (models.models && models.models[0] && models.models[0].name) || 'llama3.2';
+      const response = await adapter.complete({
+        model,
+        messages: [{ role: 'user', content: 'Reply with the single word: pong' }],
+      });
+      assert.equal(response.provider, 'ollama');
+      assert.ok(response.content == null || typeof response.content === 'string');
+    }
+    if (llamaUp) {
+      const adapter = createLlamaCppAdapter({ baseUrl: 'http://127.0.0.1:8080' });
+      const response = await adapter.complete({
+        model: 'local-model',
+        messages: [{ role: 'user', content: 'Reply with the single word: pong' }],
+      });
+      assert.equal(response.provider, 'llama.cpp');
+    }
+  });
 });
