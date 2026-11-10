@@ -18,6 +18,9 @@ const {
 const { commitState, readJournal, appendEvent } = require('../scripts/lib/shared/journal.cjs');
 const { redactSecrets } = require('../scripts/lib/shared/redact.cjs');
 const { formatMarkdown } = require('../scripts/lib/receipt/format.cjs');
+const { evaluate } = require('../scripts/lib/policy/pdp.cjs');
+
+const DEFAULT_POLICY = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'default-policy.json'), 'utf8'));
 
 const PLANTED_KEY = 'sk-plantedFAKESECRET99999999999999999999';
 const FIXTURE_DIR = path.join(__dirname, 'fixtures', 'model-gateway');
@@ -587,6 +590,9 @@ describe('AE-019a model gateway', () => {
       transport,
       workDir,
       sleep: async () => {},
+      policy: DEFAULT_POLICY,
+      policyEvaluator: evaluate,
+      authorized: ['model.paid'],
     });
     const res = await gw.route({
       tier: 'balanced',
@@ -611,6 +617,38 @@ describe('AE-019a model gateway', () => {
     assert.equal(local.cost_source, 'local');
     assert.equal(local.usd, 0);
 
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('F-M2-01d: non-local providers hit the PDP before any transport call', async () => {
+    const { root, workDir } = tmpWork('paidpdp');
+    seedSnapshot(workDir);
+    let calls = 0;
+    const transport = async () => {
+      calls += 1;
+      return { body: JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, 'anthropic-ok.json'), 'utf8')) };
+    };
+    const config = {
+      provider: 'anthropic-fixture',
+      models: { balanced: 'claude-sonnet-4-20250514' },
+      capabilities: { 'claude-sonnet-4-20250514': { tools: true, json_schema: true, vision: true, context_tokens: 200000, streaming: false } },
+      timeout_ms: 1000, max_retries: 0, max_repair_attempts: 0, fallback: false,
+    };
+    const base = { config, adapters: { 'anthropic-fixture': createAnthropicFixtureAdapter() }, transport, workDir, sleep: async () => {} };
+    const req = (key) => ({ tier: 'balanced', messages: [{ role: 'user', content: 'hi' }], idempotency_key: key });
+
+    await assert.rejects(createModelGateway(base).route(req('paid-none')), (err) => err.code === 'POLICY_DENIED');
+    await assert.rejects(
+      createModelGateway({ ...base, policy: DEFAULT_POLICY, policyEvaluator: evaluate }).route(req('paid-nogrant')),
+      (err) => err.code === 'POLICY_DENIED'
+    );
+    assert.equal(calls, 0, 'no transport I/O before an allow decision');
+    const denied = readJournal(workDir).events.filter((e) => e.type === 'usage.recorded' && e.payload.error_code === 'PROVIDER_DENIED');
+    assert.equal(denied.length, 2);
+
+    const ok = await createModelGateway({ ...base, policy: DEFAULT_POLICY, policyEvaluator: evaluate, authorized: ['model.paid'] }).route(req('paid-grant'));
+    assert.equal(ok.provider, 'anthropic-fixture');
+    assert.equal(calls, 1);
     fs.rmSync(root, { recursive: true, force: true });
   });
 });
