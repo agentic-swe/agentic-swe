@@ -36,6 +36,22 @@ function priorResult(workDir, key) {
   return null;
 }
 
+/**
+ * ADR-014 §5 / ADR-009: a `tool.requested` with no matching `tool.completed`
+ * means a crash happened before or during the effect. Its outcome is unknown.
+ */
+function orphanedRequest(workDir, key) {
+  if (!workDir) return null;
+  const chain = readJournal(workDir);
+  if (!chain.ok) return null;
+  let requested = null;
+  for (const event of chain.events) {
+    if (event.idempotency_key === `requested:${key}`) requested = event;
+    if (event.idempotency_key === `completed:${key}`) return null;
+  }
+  return requested;
+}
+
 function append(workDir, type, payload, key) {
   if (!workDir) return null;
   return appendEvent(workDir, { type, payload, idempotency_key: key });
@@ -79,6 +95,22 @@ class ToolRunner {
         error: {
           code: 'DENIED_UNAUTHORIZED',
           message: `caller-supplied ${injectedGrant} is not accepted; grants come only from the policy engine`,
+        },
+      });
+    }
+
+    const orphan = manifest.side_effects !== 'none' ? orphanedRequest(this.workDir, key) : null;
+    if (orphan) {
+      append(this.workDir, 'tool.reconciled', {
+        tool_id: toolId, idempotency_key: key, outcome: 'escalated',
+        requested_seq: orphan.seq, side_effects: manifest.side_effects,
+      }, `reconciled:${key}`);
+      return normalizedResult({
+        tool_id: toolId, tool_version: manifest.version, idempotency_key: key,
+        status: 'error', effects: 'unknown',
+        error: {
+          code: 'TOOL_ORPHANED',
+          message: `tool.requested at seq ${orphan.seq} has no tool.completed; side effects are unknown, so the call is not re-executed — a human must reconcile`,
         },
       });
     }

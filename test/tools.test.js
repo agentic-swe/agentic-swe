@@ -9,6 +9,7 @@ const { ToolRegistry, ToolRunner, createGitHubTools, createTestRunnerTool } = re
 const { memoryCallJournal } = require('../scripts/lib/github/call-journal.cjs');
 const { createGitHubConnector } = require('../scripts/lib/github/connector.cjs');
 const { readJournal } = require('../scripts/lib/shared/journal.cjs');
+const { spawnSync } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
 const manifest = (id, extra = {}) => ({
@@ -109,6 +110,45 @@ describe('AE-021a tool contract and runner', () => {
     const result = await runner.run('test.run', { command: [process.execPath, '--version'] });
     assert.equal(result.status, 'ok');
     assert.match(fs.readFileSync(path.join(workDir, result.stdout_ref.path), 'utf8'), /^v\d+/);
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  });
+
+  it('F-M2-01c: a crash after tool.requested never re-executes the side effect on retry', async () => {
+    const { rootDir, workDir } = work();
+    const counter = path.join(rootDir, 'effects.txt');
+    const crashed = spawnSync(process.execPath, [path.join(__dirname, 'helpers', 'tool-crash-worker.cjs'), workDir, counter], { encoding: 'utf8' });
+    assert.equal(crashed.status, 9, crashed.stderr);
+    assert.equal(fs.readFileSync(counter, 'utf8'), 'x');
+    const before = readJournal(workDir).events;
+    assert.equal(before.filter((e) => e.type === 'tool.requested').length, 1);
+    assert.equal(before.filter((e) => e.type === 'tool.completed').length, 0);
+
+    let calls = 0;
+    const registry = new ToolRegistry([{ manifest: manifest('remote.push', { side_effects: 'remote', idempotency: 'non-idempotent' }), execute: async () => { calls++; return { data: 'again' }; } }]);
+    const runner = new ToolRunner({ registry, workDir, pdp: allowPdp });
+    const retry = await runner.run('remote.push', {}, { idempotency_key: 'push-1' });
+    assert.equal(calls, 0);
+    assert.equal(retry.status, 'error');
+    assert.equal(retry.effects, 'unknown');
+    assert.equal(retry.error.code, 'TOOL_ORPHANED');
+    const again = await runner.run('remote.push', {}, { idempotency_key: 'push-1' });
+    assert.equal(calls, 0);
+    assert.equal(again.error.code, 'TOOL_ORPHANED');
+    const events = readJournal(workDir).events;
+    assert.equal(events.filter((e) => e.type === 'tool.reconciled').length, 1);
+    assert.equal(fs.readFileSync(counter, 'utf8'), 'x');
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  });
+
+  it('F-M2-01c: an orphaned read-only request may run again', async () => {
+    const { rootDir, workDir } = work();
+    const { appendEvent } = require('../scripts/lib/shared/journal.cjs');
+    appendEvent(workDir, { type: 'tool.requested', payload: { tool_id: 'fixture.read' }, idempotency_key: 'requested:read-1' });
+    let calls = 0;
+    const registry = new ToolRegistry([{ manifest: manifest('fixture.read'), execute: async () => ({ data: ++calls }) }]);
+    const result = await new ToolRunner({ registry, workDir, pdp: allowPdp }).run('fixture.read', {}, { idempotency_key: 'read-1' });
+    assert.equal(result.status, 'ok');
+    assert.equal(calls, 1);
     fs.rmSync(rootDir, { recursive: true, force: true });
   });
 });
