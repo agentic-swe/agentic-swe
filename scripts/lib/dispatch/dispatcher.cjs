@@ -18,6 +18,7 @@ const {
   commitState,
   assertProjection,
   readJournal,
+  lastSnapshotSeq,
   projectedState,
   recoverState,
 } = require('../shared/journal.cjs');
@@ -287,7 +288,9 @@ function childStatus(workDir) {
   const projected = projectedState(chain);
   if (!projected) return { status: 'interrupted', reason: 'journal is empty' };
   const state = readJsonOrNull(path.join(workDir, 'state.json'));
-  const lastSeq = chain.events[chain.events.length - 1].seq;
+  // Side events (policy/tool/usage) never bump state.journal.seq; compare to the
+  // last snapshot-bearing event, as assertProjection does.
+  const lastSeq = lastSnapshotSeq(chain);
   if (!state) return { status: 'interrupted', reason: 'state.json missing or unreadable', current_state: projected.current_state };
   const proj = assertProjection(workDir, state);
   const seq = state.journal && state.journal.seq;
