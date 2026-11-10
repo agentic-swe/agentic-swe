@@ -10,6 +10,8 @@ const { minimalChildEnv } = require('../shared/child-env.cjs');
 const redactText = (value) => redactSecrets(String(value)).redacted;
 
 const SHELL_META = /[;&|><$`(){}\[\]!*?~\n\r]/;
+/** Argv tokens that imply eval/script injection even without shell metacharacters. */
+const SHELL_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print', '-c', '--command']);
 const PROTECTED_REFS = new Set(['main', 'master', 'develop', 'production', 'release']);
 
 function result(data, error) {
@@ -90,14 +92,33 @@ function createGitConnector({ root = process.cwd(), run = runProcess, protectedR
 }
 
 function shellArgvSafe(argv) {
-  return Array.isArray(argv) && argv.every((arg) => typeof arg === 'string' && !SHELL_META.test(arg));
+  if (!Array.isArray(argv)) return false;
+  for (const arg of argv) {
+    if (typeof arg !== 'string') return false;
+    if (SHELL_META.test(arg)) return false;
+    // Reject -e/--eval/-p/--print/-c and --eval=... / --command=... forms.
+    if (SHELL_EVAL_FLAGS.has(arg)) return false;
+    if (/^--(eval|print|command)=/.test(arg)) return false;
+  }
+  return true;
 }
 
 function createShellConnector({ commands = {}, run = runProcess, cwd = process.cwd(), journal = null } = {}) {
   async function execute(commandId, argv = [], opts = {}) {
     const command = commands[commandId];
-    if (!command || !shellArgvSafe(argv)) {
-      return result(null, { code: !command ? 'SHELL_COMMAND_DENIED' : 'SHELL_METACHARACTER_DENIED', message: !command ? `command id ${commandId} is not allow-listed` : 'shell metacharacters are not allowed' });
+    if (!command) {
+      return result(null, { code: 'SHELL_COMMAND_DENIED', message: `command id ${commandId} is not allow-listed` });
+    }
+    if (!shellArgvSafe(argv)) {
+      const hasEval = Array.isArray(argv) && argv.some((arg) =>
+        typeof arg === 'string' && (SHELL_EVAL_FLAGS.has(arg) || /^--(eval|print|command)=/.test(arg))
+      );
+      return result(null, {
+        code: hasEval ? 'SHELL_EVAL_DENIED' : 'SHELL_METACHARACTER_DENIED',
+        message: hasEval
+          ? 'shell eval/command flags (-e/--eval/-p/-c) are not allowed'
+          : 'shell metacharacters are not allowed',
+      });
     }
     const file = typeof command === 'string' ? command : command.file;
     const fixed = typeof command === 'string' ? [] : (command.args || []);
@@ -303,7 +324,7 @@ function createRemainingTools(options = {}) {
 }
 
 module.exports = {
-  SHELL_META, PROTECTED_REFS, shellArgvSafe, createGitConnector, createShellConnector,
+  SHELL_META, SHELL_EVAL_FLAGS, PROTECTED_REFS, shellArgvSafe, createGitConnector, createShellConnector,
   createShellTool, createCiConnector, createDocsConnector, createRemainingTools,
   createGitLocalTool, createGitPushTool,
   createGitTools: createRemainingTools,
