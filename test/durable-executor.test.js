@@ -188,4 +188,99 @@ describe('durable executor', () => {
     assert.strictEqual(resumed.ok, true, JSON.stringify(resumed));
   });
 
+  it('F-M2-07 AC4: gate and escalate children refuse resume and retry', () => {
+    for (const terminal of [
+      { state: 'approval-wait', status: 'gate', resumeCode: 'DISPATCH_NOTHING_TO_RESUME' },
+      { state: 'ambiguity-wait', status: 'gate', resumeCode: 'DISPATCH_NOTHING_TO_RESUME' },
+      { state: 'escalate-code', status: 'escalated', resumeCode: 'DISPATCH_NOTHING_TO_RESUME' },
+    ]) {
+      const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+      const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+      advance(a.workDir, terminal.state);
+      assert.strictEqual(dispatcher.childStatus(a.workDir).status, terminal.status);
+      const resumed = dispatcher.resume({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'a' });
+      assert.strictEqual(resumed.ok, false, terminal.state);
+      assert.strictEqual(resumed.code, terminal.resumeCode);
+      const retried = dispatcher.retry({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'a' });
+      assert.strictEqual(retried.ok, false, terminal.state);
+      assert.strictEqual(retried.code, 'RETRY_NOT_ALLOWED');
+    }
+  });
+
+  it('F-M2-07 AC5: goalJournalStatuses equals the journal view exposed by status()', () => {
+    const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+    const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+    assert.strictEqual(a.ok, true);
+    const goal = JSON.parse(fs.readFileSync(path.join(ctx.goalDir, 'goal.json'), 'utf8'));
+    const fromFn = dispatcher.goalJournalStatuses(goal, goal.dispatch.plan);
+    const st = dispatcher.status({ goalDir: ctx.goalDir });
+    assert.strictEqual(st.ok, true);
+    assert.deepStrictEqual(st.journal_statuses.a, fromFn.get('a'));
+    assert.strictEqual(st.journal_statuses.a.status, 'started');
+    assert.strictEqual(st.nodes[0].status, 'active');
+    assert.strictEqual(st.nodes[0].journal.status, 'started');
+  });
+
+  it('F-M2-07 AC6: decomposed sub-items enter the queue unapproved', () => {
+    const ctx = project([{ id: 'parent', type: 'feature', dependsOn: [] }]);
+    const d = dispatcher.decompose({
+      goalDir: ctx.goalDir,
+      actor: 'hypervisor',
+      parent: 'parent',
+      items: [
+        { id: 'child-a', type: 'docs', title: 'part a' },
+        { id: 'child-b', type: 'docs', title: 'part b' },
+      ],
+    });
+    assert.strictEqual(d.ok, true, JSON.stringify(d));
+    assert.strictEqual(d.items.length, 2);
+    assert.ok(d.items.every((i) => i.approved === false && i.item_hash));
+    const goal = JSON.parse(fs.readFileSync(path.join(ctx.goalDir, 'goal.json'), 'utf8'));
+    const queued = goal.discovery.queue.filter((i) => i.id === 'child-a' || i.id === 'child-b');
+    assert.strictEqual(queued.length, 2);
+    assert.ok(queued.every((i) => !dispatcher.isApproved(i)));
+    const planned = dispatcher.plan({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', dryRun: true });
+    assert.ok(planned.skipped.some((s) => s.id === 'child-a' && /not approved/.test(s.reason)));
+  });
+
+  it('F-M2-07: not_before backoff is enforced on the next start reconcile', () => {
+    const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+    const goalPath = path.join(ctx.goalDir, 'goal.json');
+    const goal = JSON.parse(fs.readFileSync(goalPath, 'utf8'));
+    const node = goal.dispatch.plan.nodes[0];
+    const notBefore = new Date(Date.now() + 60_000).toISOString();
+    // Simulate a write-ahead retry left behind with backoff still active.
+    goal.children = [{
+      work_id: node.work_id,
+      item_id: 'a',
+      status: 'starting',
+      attempt: 2,
+      attempt_work_id: node.work_id,
+      not_before: notBefore,
+    }];
+    fs.writeFileSync(goalPath, `${JSON.stringify(goal, null, 2)}\n`);
+    const blocked = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'a' });
+    assert.strictEqual(blocked.ok, false, JSON.stringify(blocked));
+    assert.strictEqual(blocked.code, 'RETRY_BACKOFF');
+    assert.strictEqual(blocked.not_before, notBefore);
+  });
+
+  it('F-M2-07: item-scoped cancel leaves sibling children startable', () => {
+    const ctx = project([
+      { id: 'a', type: 'docs', dependsOn: [] },
+      { id: 'b', type: 'docs', dependsOn: [] },
+    ], { max_parallel: 2 });
+    const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+    assert.strictEqual(a.ok, true);
+    const cancelled = dispatcher.cancel({ goalDir: ctx.goalDir, actor: 'hypervisor', item: 'a' });
+    assert.strictEqual(cancelled.ok, true);
+    assert.strictEqual(cancelled.item, 'a');
+    const goal = JSON.parse(fs.readFileSync(path.join(ctx.goalDir, 'goal.json'), 'utf8'));
+    assert.strictEqual(goal.dispatch.cancelled_epoch || 0, 0, 'item cancel must not bump global epoch');
+    const b = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'b' });
+    assert.strictEqual(b.ok, true, JSON.stringify(b));
+    const again = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'a' });
+    assert.strictEqual(again.code, 'CHILD_CANCELLED');
+  });
+
 });

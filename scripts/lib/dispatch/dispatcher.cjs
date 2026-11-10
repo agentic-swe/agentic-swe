@@ -377,19 +377,41 @@ function nodeStatusesWithGoal(goalDir, plan, goal) {
   return out;
 }
 
+/**
+ * Status view derived only from goal.json children (themselves journal-committed).
+ * Used for AC5 equality against the live work-dir view after start/cancel.
+ */
 function goalJournalStatuses(goal, plan) {
   const statuses = new Map();
   for (const n of plan.nodes) {
-    const child = (goal.children || []).find((c) => c.item_id === n.id);
+    const child = latestChild(goal, n.id);
     if (child && child.status && child.status !== 'starting') {
       statuses.set(n.id, {
         status: child.status,
-        current_state: child.current_state,
+        current_state: child.current_state || null,
         work_id: child.attempt_work_id || child.work_id,
+        not_before: child.not_before || null,
       });
     }
   }
   return statuses;
+}
+
+/** Exponential backoff for retry attempt N (1-indexed attempt of the new child). */
+function retryBackoffMs(attempt) {
+  const n = Math.max(1, Number(attempt) || 1);
+  // attempt 2 → 1s, 3 → 2s, … capped at 60s (tests can override via env, including 0).
+  const raw = process.env.AGENTIC_SWE_RETRY_BACKOFF_MS;
+  const base = raw != null && raw !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0
+    ? Number(raw)
+    : 1000;
+  return Math.min(base * (2 ** Math.max(0, n - 2)), 60_000);
+}
+
+function backoffActive(notBeforeIso, nowMs = Date.now()) {
+  if (!notBeforeIso) return false;
+  const t = Date.parse(notBeforeIso);
+  return Number.isFinite(t) && nowMs < t;
 }
 
 function appendAudit(goalDir, line) {
@@ -481,11 +503,20 @@ function status(opts) {
   const p = loaded.goal.dispatch && loaded.goal.dispatch.plan;
   if (!p) return { ok: false, code: 'NO_PLAN', message: 'no dispatch plan; run `dispatch plan` first' };
   const statuses = nodeStatusesWithGoal(goalDir, p, loaded.goal);
+  const fromJournal = goalJournalStatuses(loaded.goal, p);
   const nodes = p.order.map((id) => {
     const n = p.nodes.find((x) => x.id === id);
-    return { id, work_id: n.work_id, track: n.track, role: n.role, depends_on: n.depends_on, ...statuses.get(id) };
+    return {
+      id,
+      work_id: n.work_id,
+      track: n.track,
+      role: n.role,
+      depends_on: n.depends_on,
+      ...statuses.get(id),
+      journal: fromJournal.get(id) || null,
+    };
   });
-  return { ok: true, goal_state: loaded.goal.current_state, nodes };
+  return { ok: true, goal_state: loaded.goal.current_state, nodes, journal_statuses: Object.fromEntries(fromJournal) };
 }
 
 function initChild({ pluginRoot, workRoot, node, objective, engine }) {
@@ -567,6 +598,15 @@ function start(opts) {
   if (starting) {
     const node = p.nodes.find((n) => n.id === starting.item_id);
     if (!node) return { ok: false, code: 'PLAN_INVALID', message: `starting item ${starting.item_id} is not in the plan` };
+    if (backoffActive(starting.not_before)) {
+      return {
+        ok: false,
+        code: 'RETRY_BACKOFF',
+        message: `retry attempt not_before ${starting.not_before} has not elapsed`,
+        item: node.id,
+        not_before: starting.not_before,
+      };
+    }
     const workId = starting.attempt_work_id || starting.work_id;
     const init = initChild({
       pluginRoot,
@@ -786,18 +826,34 @@ function cancel(opts) {
   if (!loaded.ok) return loaded;
   const p = loaded.goal.dispatch && loaded.goal.dispatch.plan;
   if (!p) return { ok: false, code: 'NO_PLAN', message: 'no dispatch plan; run `dispatch plan` first' };
+  if (opts.item && !p.nodes.some((n) => n.id === opts.item)) {
+    return { ok: false, code: 'DISPATCH_UNKNOWN_ITEM', message: `item ${opts.item} is not in the dispatch plan` };
+  }
+  // Item-scoped cancel marks only that child and does not bump the global epoch
+  // (so siblings can still start). Whole-dispatch cancel bumps cancelled_epoch.
   const result = mutateGoal(goalDir, opts.actor, {
     decision: 'cancelled',
     item: opts.item || null,
     reason: opts.reason || 'cooperative cancellation',
+    scope: opts.item ? 'item' : 'dispatch',
   }, (goal) => {
-    goal.dispatch.cancelled_epoch = (goal.dispatch.cancelled_epoch || 0) + 1;
-    goal.dispatch.cancelled_at = new Date().toISOString();
+    if (!opts.item) {
+      goal.dispatch.cancelled_epoch = (goal.dispatch.cancelled_epoch || 0) + 1;
+      goal.dispatch.cancelled_at = new Date().toISOString();
+    }
     for (const child of goal.children || []) {
+      if (opts.item && child.item_id !== opts.item) continue;
       if (child.status === 'starting' || child.status === 'started') child.status = 'cancelled';
     }
   });
-  return result.ok ? { ok: true, epoch: result.snapshot.dispatch.cancelled_epoch, goal: result.snapshot } : result;
+  return result.ok
+    ? {
+      ok: true,
+      epoch: result.snapshot.dispatch.cancelled_epoch || 0,
+      item: opts.item || null,
+      goal: result.snapshot,
+    }
+    : result;
 }
 
 function approveRestart(opts) {
@@ -860,6 +916,7 @@ function retry(opts) {
   const open = p.order.filter((id) => ['active', 'interrupted', 'corrupt', 'starting'].includes(statuses.get(id).status));
   if (open.length >= maxParallel(goal)) return { ok: false, code: 'DISPATCH_BUSY', message: `max_parallel ${maxParallel(goal)} reached` };
   const workId = attemptWorkId(node.work_id, attempt);
+  const notBefore = new Date(Date.now() + retryBackoffMs(attempt)).toISOString();
   const writeAhead = mutateGoal(goalDir, opts.actor, {
     decision: 'starting',
     item: node.id,
@@ -867,6 +924,7 @@ function retry(opts) {
     attempt,
     item_hash: node.item_hash,
     retry_of: current.attempt_work_id || current.work_id,
+    not_before: notBefore,
   }, (currentGoal) => {
     upsertChild(currentGoal, { ...node, work_id: workId }, {
       status: 'starting',
@@ -874,12 +932,14 @@ function retry(opts) {
       attempt_work_id: workId,
       item_hash: node.item_hash,
       retry_of: current.attempt_work_id || current.work_id,
-      not_before: new Date().toISOString(),
+      not_before: notBefore,
       cost_usd: Number(node.cost_usd || node.estimated_cost_usd || 0),
     });
     currentGoal.budget.cost_used = (currentGoal.budget.cost_used || 0) + Number(node.cost_usd || node.estimated_cost_usd || 0);
   });
   if (!writeAhead.ok) return writeAhead;
+  // ADR-014 §6: not_before is enforced on the *next* start/reconcile if this
+  // process crashes between write-ahead and init. Same-invocation retry proceeds.
   const init = initChild({
     pluginRoot: opts.pluginRoot || getDefaultPluginRoot(),
     workRoot: workRootFor(goalDir),
@@ -899,6 +959,37 @@ function retry(opts) {
     if (child) child.status = 'started';
   });
   return started.ok ? { ok: true, item: node.id, work_id: workId, attempt, workDir: init.workDir, goal: started.snapshot } : started;
+}
+
+/**
+ * Decompose a parent into sub-items that enter discovery.queue unapproved
+ * (ADR-014 §9). Each sub-item gets its own item hash; plan/start refuse them
+ * until a human approveItems call.
+ */
+function decompose(opts) {
+  const goalDir = path.resolve(opts.goalDir);
+  if (!opts.actor) return { ok: false, code: 'MISSING_ACTOR', message: 'dispatch decompose requires --actor' };
+  const items = Array.isArray(opts.items) ? opts.items : [];
+  if (!items.length) return { ok: false, code: 'MISSING_ITEMS', message: 'dispatch decompose requires items[]' };
+  const created = [];
+  for (const raw of items) {
+    const r = enqueue({
+      goalDir,
+      actor: opts.actor,
+      id: raw.id,
+      title: raw.title || raw.id,
+      type: raw.type || 'docs',
+      dependsOn: raw.dependsOn || raw.depends_on || (opts.parent ? [opts.parent] : []),
+      paths: raw.paths || [],
+      task: raw.task,
+    });
+    if (!r.ok) return r;
+    if (isApproved(r.item)) {
+      return { ok: false, code: 'DECOMPOSE_APPROVED', message: `decomposed item ${r.item.id} must enter unapproved` };
+    }
+    created.push({ id: r.item.id, item_hash: itemHash(r.item), approved: false });
+  }
+  return { ok: true, parent: opts.parent || null, items: created };
 }
 
 /**
@@ -976,6 +1067,8 @@ module.exports = {
   planDispatch,
   childWorkId,
   childStatus,
+  goalJournalStatuses,
+  retryBackoffMs,
   goalEngineVersion,
   enginePinMismatch,
   plan: guarded(plan),
@@ -986,5 +1079,6 @@ module.exports = {
   retry: guarded(retry),
   approveRestart: guarded(approveRestart),
   enqueue: guarded(enqueue),
+  decompose: guarded(decompose),
   approveItems: guarded(approveItems),
 };
