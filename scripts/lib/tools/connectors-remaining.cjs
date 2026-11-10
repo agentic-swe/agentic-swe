@@ -6,6 +6,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { redactSecrets } = require('../shared/redact.cjs');
 const { callerGrantInjection, authorizedFromContext } = require('./grant-guard.cjs');
+const { minimalChildEnv } = require('../shared/child-env.cjs');
 const redactText = (value) => redactSecrets(String(value)).redacted;
 
 const SHELL_META = /[;&|><$`(){}\[\]!*?~\n\r]/;
@@ -21,7 +22,7 @@ function runProcess(file, args, opts = {}) {
   return new Promise((resolve) => {
     const child = spawn(file, args, {
       cwd: opts.cwd,
-      env: { ...(opts.env || process.env), CI: '1' },
+      env: minimalChildEnv(opts.env || {}),
       shell: false,
       signal: opts.signal,
     });
@@ -44,7 +45,7 @@ function gitError(run, operation) {
  */
 function createGitConnector({ root = process.cwd(), run = runProcess, protectedRefs = PROTECTED_REFS, journal = null } = {}) {
   const exec = async (args, cwd = root) => {
-    const r = await run('git', args, { cwd });
+    const r = await run('git', args, { cwd, env: minimalChildEnv() });
     if (journal && typeof journal.record === 'function') journal.record({ connector: 'git', operation: args[0], args: args.slice(1).map(redactText), cwd });
     return r.code === 0 ? result(String(r.stdout || '').trim()) : result(null, gitError(r, args[0]));
   };
@@ -100,7 +101,7 @@ function createShellConnector({ commands = {}, run = runProcess, cwd = process.c
     }
     const file = typeof command === 'string' ? command : command.file;
     const fixed = typeof command === 'string' ? [] : (command.args || []);
-    const r = await run(file, [...fixed, ...argv], { cwd: opts.cwd || cwd, signal: opts.signal, env: opts.env });
+    const r = await run(file, [...fixed, ...argv], { cwd: opts.cwd || cwd, signal: opts.signal, env: minimalChildEnv(opts.env || {}) });
     if (journal && typeof journal.record === 'function') journal.record({ connector: 'shell', command_id: commandId, argv: argv.map(redactText) });
     return r.code === 0
       ? result({ stdout: r.stdout || '', stderr: r.stderr || '', exit_code: 0 })

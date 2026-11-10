@@ -12,12 +12,37 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { getDefaultPluginRoot } = require('../lib/work-engine/engine.cjs');
 
-function runNode(script, extraArgs = []) {
+/** Per-step wall-clock bound so Measurement cannot hang indefinitely (ms). */
+const DEFAULT_STEP_TIMEOUT_MS = Number(process.env.BENCH_STEP_TIMEOUT_MS) > 0
+  ? Number(process.env.BENCH_STEP_TIMEOUT_MS)
+  : 600_000;
+
+function progress(msg) {
+  fs.writeSync(2, `${msg}\n`);
+}
+
+function runNode(script, extraArgs = [], timeoutMs = DEFAULT_STEP_TIMEOUT_MS) {
   const r = spawnSync(process.execPath, [script, ...extraArgs], {
     encoding: 'utf8',
     cwd: getDefaultPluginRoot(),
+    timeout: timeoutMs,
+    killSignal: 'SIGKILL',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
-  return { ok: r.status === 0, status: r.status, stdout: r.stdout, stderr: r.stderr };
+  const timedOut = Boolean(r.error && r.error.code === 'ETIMEDOUT');
+  let stderr = r.stderr || '';
+  if (timedOut) {
+    stderr = `${stderr}\nbench-suite step timed out after ${timeoutMs}ms\n`;
+  } else if (r.error) {
+    stderr = `${stderr}\n${r.error.message || r.error}\n`;
+  }
+  return {
+    ok: !timedOut && r.status === 0,
+    status: timedOut ? 124 : r.status,
+    timedOut,
+    stdout: r.stdout,
+    stderr,
+  };
 }
 
 function main() {
@@ -57,16 +82,24 @@ function main() {
   for (const step of steps) {
     const outPath = step.out ? path.join(resultsDir, step.out) : null;
     const args = [...(step.args || []), ...(outPath ? ['--out', outPath] : [])];
+    progress(`bench-suite: starting ${step.name}`);
+    const t0 = Date.now();
     const r = runNode(path.join(pluginRoot, step.script), args);
+    progress(
+      `bench-suite: finished ${step.name} ok=${r.ok} status=${r.status} ms=${Date.now() - t0}`
+    );
+    if (r.stdout) process.stdout.write(r.stdout);
+    if (r.stderr) process.stderr.write(r.stderr);
     manifest.steps.push({
       name: step.name,
       ok: r.ok,
       out: outPath ? path.relative(pluginRoot, outPath) : null,
       status: r.status,
+      timed_out: Boolean(r.timedOut),
+      duration_ms: Date.now() - t0,
     });
     if (!r.ok) {
       manifest.ok = false;
-      if (r.stderr) process.stderr.write(r.stderr);
     }
   }
 
