@@ -24,7 +24,12 @@ function isHoldout(name) {
   return HOLDOUT_PREFIXES.some((p) => name.startsWith(p));
 }
 
-async function measureCorpus(pluginRoot, storeRoot, filter) {
+/** Unbuffered progress so CI/Measurement logs advance before the suite ends. */
+function progress(msg) {
+  fs.writeSync(2, `${msg}\n`);
+}
+
+async function measureCorpus(pluginRoot, storeRoot, filter, label) {
   const corpusRoot = path.join(pluginRoot, 'bench', 'corpus');
   const tasks = [];
   for (const name of fs.readdirSync(corpusRoot)) {
@@ -33,13 +38,20 @@ async function measureCorpus(pluginRoot, storeRoot, filter) {
     if (!fs.statSync(taskDir).isDirectory()) continue;
     if (!fs.existsSync(path.join(taskDir, 'scoring.json'))) continue;
 
+    progress(`portfolio-bench: ${label} ${name} acceptance`);
+    const tAccept = Date.now();
     const acceptance = runTaskAcceptance(taskDir);
+    progress(
+      `portfolio-bench: ${label} ${name} acceptance done ok=${acceptance.ok} exit=${acceptance.exitCode} ms=${Date.now() - tAccept}`
+    );
     const scoring = JSON.parse(fs.readFileSync(path.join(taskDir, 'scoring.json'), 'utf8'));
     const verify = scoring.task_pass?.command || '';
     const cwd = scoring.task_pass?.cwd
       ? path.resolve(taskDir, scoring.task_pass.cwd)
       : taskDir;
 
+    progress(`portfolio-bench: ${label} ${name} ladder`);
+    const tLadder = Date.now();
     const descent = await tryDescentLadder({
       projectRoot: storeRoot,
       pluginRoot,
@@ -47,6 +59,9 @@ async function measureCorpus(pluginRoot, storeRoot, filter) {
       files: [name],
       cwd,
     });
+    progress(
+      `portfolio-bench: ${label} ${name} ladder done ok=${descent.ok} tier=${descent.tier || '?'} ms=${Date.now() - tLadder}`
+    );
 
     const delivered = acceptance.ok;
     const hit = descent.ok === true;
@@ -103,8 +118,9 @@ async function main() {
   const phase1Found = fs.existsSync(phase1Path);
   const phase1 = phase1Found ? JSON.parse(fs.readFileSync(phase1Path, 'utf8')) : POLICY_TOKEN_FALLBACK;
 
-  const holdout = await measureCorpus(pluginRoot, storeRoot, isHoldout);
-  const full = await measureCorpus(pluginRoot, storeRoot, null);
+  progress(`portfolio-bench: starting store=${storeRoot}`);
+  const holdout = await measureCorpus(pluginRoot, storeRoot, isHoldout, 'holdout');
+  const full = await measureCorpus(pluginRoot, storeRoot, null, 'full');
 
   const coldPolicy = phase1.estimated_tokens_before || POLICY_TOKEN_FALLBACK.estimated_tokens_before;
   const warmPolicy = phase1.estimated_tokens_after || POLICY_TOKEN_FALLBACK.estimated_tokens_after;

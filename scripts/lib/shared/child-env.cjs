@@ -6,6 +6,14 @@ const os = require('node:os');
 const SHELL_META = /[$`|;&><\n\r]/;
 
 /**
+ * Non-secret control vars passed through when set.
+ * NODE_TEST_CONTEXT is node:test's recursion guard: a nested `node --test`
+ * (e.g. a replayed `npm test`) skips running files when it is set. Dropping it
+ * makes a replay inside a test re-run the whole suite recursively (fork storm).
+ */
+const PASSTHROUGH_VARS = ['NODE_TEST_CONTEXT'];
+
+/**
  * ADR-009: children start from a minimal env. Secrets (GITHUB_TOKEN, etc.) are
  * not inherited from process.env.
  * @param {Record<string, string>} [extra]
@@ -18,6 +26,9 @@ function minimalChildEnv(extra = {}) {
     LANG: process.env.LANG || 'C',
     CI: '1',
   };
+  for (const key of PASSTHROUGH_VARS) {
+    if (process.env[key] != null) env[key] = process.env[key];
+  }
   for (const [key, value] of Object.entries(extra || {})) {
     if (value == null) continue;
     env[String(key)] = String(value);
@@ -114,4 +125,4 @@ function resolveCommandArgv(command) {
   return { ok: true, file: tok.argv[0], args: tok.argv.slice(1), display: raw };
 }
 
-module.exports = { minimalChildEnv, resolveCommandArgv, tokenizeCommand, SHELL_META };
+module.exports = { minimalChildEnv, resolveCommandArgv, tokenizeCommand, SHELL_META, PASSTHROUGH_VARS };

@@ -12,6 +12,35 @@ const { createGitConnector } = require('../scripts/lib/tools/index.cjs');
 const root = path.join(__dirname, '..');
 
 describe('F-M2-04 ADR-009 empty child env', () => {
+  it('keeps node:test recursion guard so a replayed `node --test` cannot fork-storm', () => {
+    const prev = process.env.NODE_TEST_CONTEXT;
+    const prevTok = process.env.GITHUB_TOKEN;
+    process.env.NODE_TEST_CONTEXT = 'child-v8';
+    process.env.GITHUB_TOKEN = 'ghp_should_not_leak';
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'child-env-ntc-'));
+    try {
+      const env = minimalChildEnv();
+      assert.equal(env.NODE_TEST_CONTEXT, 'child-v8');
+      assert.equal(env.GITHUB_TOKEN, undefined, 'passthrough must not reintroduce secrets');
+      // A test file that would fail if it actually ran: with the guard the nested
+      // runner skips it (exit 0); without the guard it runs the file (exit 1).
+      fs.writeFileSync(
+        path.join(dir, 'nested.test.js'),
+        "require('node:test')('nested', () => { throw new Error('nested suite ran'); });\n"
+      );
+      const { executeAction } = require('../scripts/lib/descent/replay.cjs');
+      const r = executeAction({ type: 'RUN', command: 'node --test nested.test.js', cwd: dir }, dir);
+      assert.equal(r.exitCode, 0, r.output);
+      assert.match(r.output || '', /recursively within a test file|skipping running files/i);
+    } finally {
+      if (prev === undefined) delete process.env.NODE_TEST_CONTEXT;
+      else process.env.NODE_TEST_CONTEXT = prev;
+      if (prevTok === undefined) delete process.env.GITHUB_TOKEN;
+      else process.env.GITHUB_TOKEN = prevTok;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('minimalChildEnv does not inherit GITHUB_TOKEN / secrets from process.env', () => {
     const prev = process.env.GITHUB_TOKEN;
     process.env.GITHUB_TOKEN = 'ghp_should_not_leak';
