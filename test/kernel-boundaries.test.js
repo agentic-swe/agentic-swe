@@ -169,7 +169,7 @@ describe('post-transition hooks', () => {
 
   it('runs configured hooks after the state write', () => {
     const f = fixture();
-    const r = applyTransition({ workDir: f.workDir, pluginRoot, to: 'feasibility', actor: 'test', postTransitionHooks: [f.hook] });
+    const r = applyTransition({ workDir: f.workDir, pluginRoot, to: 'feasibility', actor: 'test', postTransitionHooks: [f.hook], allowAbsolutePostTransitionHooks: true });
     assert.strictEqual(r.ok, true, JSON.stringify(r));
     assert.strictEqual(fs.readFileSync(f.log, 'utf8'), 'initialized>feasibility\n');
     fs.rmSync(f.tmp, { recursive: true, force: true });
@@ -183,6 +183,7 @@ describe('post-transition hooks', () => {
       to: 'feasibility',
       actor: 'test',
       postTransitionHooks: [f.hook],
+      allowAbsolutePostTransitionHooks: true,
       skipMuscleMemory: true,
     });
     assert.strictEqual(r.ok, true, JSON.stringify(r));
@@ -198,6 +199,7 @@ describe('post-transition hooks', () => {
       to: 'feasibility',
       actor: 'test',
       postTransitionHooks: [f.broken, f.hook],
+      allowAbsolutePostTransitionHooks: true,
     });
     assert.strictEqual(r.ok, true, JSON.stringify(r));
     assert.strictEqual(r.state.current_state, 'feasibility');

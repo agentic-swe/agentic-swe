@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "layers": {
+    "clients": 1,
+    "runtime": 2,
+    "service": 2,
+    "core": 3,
+    "storage": 4
+  },
+  "modules": {
+    "agent-surface": "clients",
+    "approval": "core",
+    "bench": "service",
+    "catalog": "service",
+    "context": "runtime",
+    "context-budget": "service",
+    "descent": "service",
+    "dispatch": "runtime",
+    "doctor": "clients",
+    "feasibility": "service",
+    "fleet": "service",
+    "founder": "clients",
+    "github": "core",
+    "hooks": "service",
+    "host-parity": "clients",
+    "hosted-runtime": "runtime",
+    "install-state": "storage",
+    "jev": "service",
+    "memory": "service",
+    "model-gateway": "runtime",
+    "phase-lint": "service",
+    "policy": "core",
+    "post-transition": "service",
+    "receipt": "service",
+    "replay": "service",
+    "repo-map": "storage",
+    "router": "service",
+    "runtime": "runtime",
+    "scope": "storage",
+    "shared": "storage",
+    "skills": "service",
+    "sync": "service",
+    "tools": "runtime",
+    "work-engine": "core"
+  },
+  "dynamic_allowlist": [
+    {
+      "file": "scripts/lib/work-engine/post-transition.cjs",
+      "reason": "Loads engine-owned post-transition hook modules by path from a static relative allow-list (ADR-016)."
+    },
+    {
+      "file": "scripts/lib/policy/runtime.cjs",
+      "reason": "Loads pack state-machine.json via path.join under the plugin root for phase allow-lists."
+    }
+  ],
+  "forbidden": [
+    { "from": "core", "to": "service" },
+    { "from": "core", "to": "runtime" },
+    { "from": "core", "to": "clients" },
+    { "from": "storage", "to": "core" },
+    { "from": "storage", "to": "runtime" },
+    { "from": "storage", "to": "clients" },
+    { "from": "storage", "to": "service" },
+    { "from": "service", "to": "runtime" },
+    { "from": "service", "to": "clients" },
+    { "from": "runtime", "to": "clients" }
+  ]
+}

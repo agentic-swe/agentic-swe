@@ -272,7 +272,10 @@ function applyTransition(opts) {
     postTransition = runPostTransitionHooks({
       pluginRoot,
       hooks: opts.postTransitionHooks,
-      ctx: { workDir: opts.workDir, pluginRoot, from, to, procedureStoreRoot: opts.procedureStoreRoot },
+      policy: opts.policy,
+      policyEvaluator: opts.policyEvaluator,
+      allowAbsolute: opts.allowAbsolutePostTransitionHooks === true,
+      ctx: { workDir: opts.workDir, pluginRoot, from, to, procedureStoreRoot: opts.procedureStoreRoot, track: opts.track || (state && state.pipeline && state.pipeline.track) },
     });
   }
 
