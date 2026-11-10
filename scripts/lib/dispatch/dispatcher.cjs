@@ -133,6 +133,38 @@ function goalEngineVersion(pluginRoot) {
   return { version: packageJson.version || 'unknown', state_machine_digests: digests };
 }
 
+
+function enginePinMismatch(workDir, pluginRoot) {
+  const state = readJsonOrNull(path.join(workDir, 'state.json'));
+  const pinned = state && state.pipeline;
+  if (!pinned || pinned.engine_version == null || !pinned.state_machine_digests) {
+    // Write-ahead crash between work-engine init and pin stamp — not a digest flip.
+    return { ok: true, missing: true, running: goalEngineVersion(pluginRoot) };
+  }
+  const current = goalEngineVersion(pluginRoot);
+  if (String(pinned.engine_version) !== String(current.version)) {
+    return {
+      ok: false,
+      code: 'ENGINE_VERSION_MISMATCH',
+      message: `engine_version pinned ${pinned.engine_version} != running ${current.version}`,
+      pinned: { engine_version: pinned.engine_version, state_machine_digests: pinned.state_machine_digests },
+      running: current,
+    };
+  }
+  for (const file of Object.keys(current.state_machine_digests)) {
+    if (pinned.state_machine_digests[file] !== current.state_machine_digests[file]) {
+      return {
+        ok: false,
+        code: 'ENGINE_VERSION_MISMATCH',
+        message: `state machine digest for ${file} differs from the pin recorded at child init`,
+        pinned: { engine_version: pinned.engine_version, state_machine_digests: pinned.state_machine_digests },
+        running: current,
+      };
+    }
+  }
+  return { ok: true, pinned, running: current };
+}
+
 function maxParallel(goal) {
   const value = goal && goal.budget && goal.budget.max_parallel;
   return Number.isInteger(value) && value > 0 ? value : DEFAULT_MAX_PARALLEL;
@@ -544,6 +576,22 @@ function start(opts) {
       engine: goalEngineVersion(pluginRoot),
     });
     if (!init.ok) return refuse(goalDir, goal, actor, init.code, init.message, { item: node.id });
+    if (init.reconciled) {
+      const pin = enginePinMismatch(init.workDir, pluginRoot);
+      if (!pin.ok) return refuse(goalDir, goal, actor, pin.code, pin.message, {
+        item: node.id, pinned: pin.pinned || null, running: pin.running || null,
+      });
+      if (pin.missing) {
+        const state = readJsonOrNull(path.join(init.workDir, 'state.json'));
+        if (state) {
+          const engine = pin.running;
+          state.executor = { ...(state.executor || {}), engine };
+          state.pipeline = { ...(state.pipeline || {}), engine_version: engine.version, state_machine_digests: engine.state_machine_digests };
+          const snapshot = commitState(init.workDir, state, { type: 'init', expectCurrent: state.current_state });
+          fs.writeFileSync(path.join(init.workDir, 'state.json'), `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
+        }
+      }
+    }
     const reconciled = mutateGoal(goalDir, actor, {
       decision: 'started',
       item: node.id,
@@ -691,6 +739,7 @@ function resume(opts) {
       { item: node.id });
   }
 
+  const pluginRoot = opts.pluginRoot || getDefaultPluginRoot();
   let recovered = false;
   let current = s.current_state;
   if (s.status === 'interrupted') {
@@ -698,6 +747,25 @@ function resume(opts) {
     if (!r.ok) return refuse(goalDir, goal, actor, r.code, r.message, { item: node.id });
     recovered = true;
     current = r.state.current_state;
+  }
+  const pin = enginePinMismatch(workDir, pluginRoot);
+  if (!pin.ok) {
+    return refuse(goalDir, goal, actor, pin.code, pin.message, {
+      item: node.id, pinned: pin.pinned || null, running: pin.running || null,
+    });
+  }
+  if (pin.missing) {
+    const state = readJsonOrNull(path.join(workDir, 'state.json'));
+    if (state) {
+      state.executor = { ...(state.executor || {}), engine: pin.running };
+      state.pipeline = {
+        ...(state.pipeline || {}),
+        engine_version: pin.running.version,
+        state_machine_digests: pin.running.state_machine_digests,
+      };
+      const snapshot = commitState(workDir, state, { type: 'transition', expectCurrent: state.current_state });
+      fs.writeFileSync(path.join(workDir, 'state.json'), `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
+    }
   }
   upsertChild(goal, node, { status: 'started', resumed_at: new Date().toISOString() });
   const { snapshot } = recordDecision(goalDir, goal, {
@@ -908,6 +976,8 @@ module.exports = {
   planDispatch,
   childWorkId,
   childStatus,
+  goalEngineVersion,
+  enginePinMismatch,
   plan: guarded(plan),
   status: guarded(status),
   start: guarded(start),

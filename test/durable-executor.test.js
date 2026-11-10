@@ -158,4 +158,34 @@ describe('durable executor', () => {
     fs.writeFileSync(path.join(ctx.goalDir, 'goal.json'), `${JSON.stringify(goal, null, 2)}\n`);
     assert.strictEqual(dispatcher.plan({ goalDir: ctx.goalDir, pluginRoot: root, dryRun: true }).code, 'PLAN_DROPS_STARTED');
   });
+
+  it('F-M2-02: resume refuses when the pinned engine digest differs', () => {
+    const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+    const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+    assert.strictEqual(a.ok, true);
+    const statePath = path.join(a.workDir, 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    assert.ok(state.pipeline && state.pipeline.state_machine_digests);
+    state.pipeline = {
+      ...state.pipeline,
+      state_machine_digests: {
+        ...state.pipeline.state_machine_digests,
+        'state-machine.json': '0'.repeat(64),
+      },
+    };
+    const snapshot = commitState(a.workDir, state, { type: 'transition', expectCurrent: state.current_state });
+    fs.writeFileSync(statePath, `${JSON.stringify(snapshot, null, 2)}\n`);
+    const refused = dispatcher.resume({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'a' });
+    assert.strictEqual(refused.ok, false);
+    assert.strictEqual(refused.code, 'ENGINE_VERSION_MISMATCH');
+  });
+
+  it('F-M2-02: resume succeeds when the pin still matches', () => {
+    const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+    const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+    assert.strictEqual(a.ok, true);
+    const resumed = dispatcher.resume({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor', item: 'a' });
+    assert.strictEqual(resumed.ok, true, JSON.stringify(resumed));
+  });
+
 });
