@@ -367,7 +367,10 @@ function createApprovalService({ connector, config = {} }) {
 module.exports = {
   createApprovalService,
   latestReviewPerUser,
+  latestRunByName,
+  evaluateCheck,
   requiredContexts,
   soleFounderOwnership,
   soloConfig,
+  PASSING,
 };
