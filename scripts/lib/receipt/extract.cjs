@@ -126,39 +126,87 @@ function extractReceipt(workDir) {
     ? fs.readFileSync(auditPath, 'utf8').split('\n').filter((l) => l.trim().length > 0)
     : [];
   const auditEntryCount = auditLines.length;
-  const toolCalls = auditLines.filter((l) => / action=tool_call /.test(l));
-  const toolCallCount = toolCalls.length;
-  const toolCallDenied = toolCalls.filter((l) => / decision=deny /.test(l)).length;
+  const auditToolCalls = auditLines.filter((l) => / action=tool_call /.test(l));
+  const auditToolCallCount = auditToolCalls.length;
+  const auditToolCallDenied = auditToolCalls.filter((l) => / decision=deny /.test(l)).length;
 
   const integrity = integrityReport(workDir, state);
   const anchor = localAnchorReport(workDir, state);
+  const journalOk = chainData && !chainData.invalid;
+  const legacy = !chainData;
+
+  const usage = journalOk ? chainData.usage : [];
+  const usageCost = usage.reduce((sum, row) => {
+    const usd = row && typeof row.usd === 'number' ? row.usd : 0;
+    return sum + usd;
+  }, 0);
+  const stateCost = state.budget && typeof state.budget.cost_used === 'number' ? state.budget.cost_used : 0;
+  // ADR-011: cost is a fold over usage.recorded when a journal exists.
+  const costUsd = journalOk ? usageCost : (legacy ? stateCost : 0);
+
+  const trust = String(anchor.anchor || '').includes('(independent)') ? 'enforced' : 'cooperative';
+
+  const divergences = [];
+  if (journalOk && Math.abs(usageCost - stateCost) > 1e-9) {
+    divergences.push({
+      field: 'costUsd',
+      journal: usageCost,
+      projection: stateCost,
+      note: 'state.budget.cost_used differs from usage.recorded fold',
+    });
+  }
+  if (journalOk && state.counters && Object.keys(state.counters).length) {
+    divergences.push({
+      field: 'counters',
+      journal: null,
+      projection: state.counters,
+      note: 'counters remain a state.json projection; not receipt content',
+    });
+  }
+  if (auditToolCallCount > 0) {
+    divergences.push({
+      field: 'audit.tool_calls',
+      journal: journalOk ? (chainData.toolCalls || []).length : null,
+      projection: { count: auditToolCallCount, denied: auditToolCallDenied },
+      note: 'audit.log tool_call regex counts are not receipt content',
+    });
+  }
+
   const data = {
     integrity: integrity.integrity,
+    trust,
+    trustDisclaimer: trust === 'cooperative'
+      ? 'cooperative evidence: the producing agent could rewrite this log.'
+      : null,
+    legacy: legacy ? 'LEGACY: not log-derived' : null,
     anchor: anchor.anchor,
     historyGap: integrity.historyGap,
     workId: state.work_id || path.basename(workDir),
     task: state.task || '',
     track: state.pipeline && state.pipeline.track ? state.pipeline.track : 'unknown',
     status: state.current_state || 'unknown',
-    costUsd: state.budget && typeof state.budget.cost_used === 'number' ? state.budget.cost_used : 0,
+    costUsd,
     budgetRemaining: state.budget && typeof state.budget.budget_remaining === 'number' ? state.budget.budget_remaining : null,
     durationSeconds,
-    decisions: chainData && !chainData.invalid ? chainData.decisions : (chainData ? [] : legacyDecisions),
-    humanGates: chainData && !chainData.invalid ? chainData.humanGates : (chainData ? [] : legacyGates),
-    counters: state.counters || {},
+    decisions: journalOk ? chainData.decisions : (legacy ? legacyDecisions : []),
+    humanGates: journalOk ? chainData.humanGates : (legacy ? legacyGates : []),
+    // Counters are not journal-derived receipt content (ADR-011).
+    counters: legacy ? (state.counters || {}) : {},
     prUrl,
+    // Kept for CI contract / divergence consumers; not rendered as content when journal-backed.
     auditEntryCount,
-    toolCallCount,
-    toolCallDenied,
-    toolCalls: chainData && !chainData.invalid ? chainData.toolCalls : [],
-    toolResults: chainData && !chainData.invalid ? chainData.toolResults : [],
-    policyDecisions: chainData && !chainData.invalid ? chainData.policyDecisions : [],
-    tests: chainData && !chainData.invalid ? chainData.tests : [],
-    reviews: chainData && !chainData.invalid ? chainData.reviews : [],
-    approvals: chainData && !chainData.invalid ? chainData.approvals : [],
-    usage: chainData && !chainData.invalid ? chainData.usage : [],
-    artifacts: chainData && !chainData.invalid ? chainData.artifacts : [],
-    journalHead: chainData && !chainData.invalid ? readJournal(workDir).head : null,
+    toolCallCount: auditToolCallCount,
+    toolCallDenied: auditToolCallDenied,
+    toolCalls: journalOk ? chainData.toolCalls : [],
+    toolResults: journalOk ? chainData.toolResults : [],
+    policyDecisions: journalOk ? chainData.policyDecisions : [],
+    tests: journalOk ? chainData.tests : [],
+    reviews: journalOk ? chainData.reviews : [],
+    approvals: journalOk ? chainData.approvals : [],
+    usage,
+    artifacts: journalOk ? chainData.artifacts : [],
+    journalHead: journalOk ? readJournal(workDir).head : null,
+    divergences,
     workDir,
   };
   return redactDeep(data);

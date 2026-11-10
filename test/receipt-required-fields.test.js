@@ -17,6 +17,7 @@ const REQUIRED = [
   'humanGates',
   'prUrl',
   'auditEntryCount',
+  'trust',
 ];
 
 describe('receipt required fields (CI lock)', () => {

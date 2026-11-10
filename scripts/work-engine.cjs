@@ -722,7 +722,7 @@ Commands:
       else console.error(payload.message);
       process.exit(1);
     }
-    const out = { ok: true, integrity: v.missing ? 'unanchored' : 'verified', events: v.events.length };
+    const out = { ok: true, integrity: v.missing ? 'no-journal' : 'verified', events: v.events.length };
     if (args.json) printJson(out);
     else console.log(out.integrity, out.events);
     return;

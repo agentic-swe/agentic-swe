@@ -123,7 +123,7 @@ describe('transition journal', () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
-  it('migrate writes an unverified genesis event and the receipt says unanchored', () => {
+  it('migrate writes an unverified genesis event and the receipt says unverified-import', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'awe-journal-migrate-'));
     const workDir = workDirFor(tmp, 'j-migrate');
     const migrated = run([engine, 'migrate', '--journal', '--work-dir', workDir, '--json']);
@@ -134,7 +134,7 @@ describe('transition journal', () => {
 
     const printed = run([receipt, 'receipt', '--work-dir', workDir]);
     assert.strictEqual(printed.status, 0, printed.stderr);
-    assert.match(printed.stdout, /\| Integrity \| unanchored \|/);
+    assert.match(printed.stdout, /\| Integrity \| unverified-import \|/);
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 

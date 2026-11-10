@@ -84,3 +84,57 @@ test('receipt verifier fails closed on journal tamper without network', () => {
   assert.match(result.integrity, /^FAILED at seq 2$/);
   assert.equal(extractReceipt(dir).integrity, 'FAILED at seq 2');
 });
+
+test('F-M2-05: costUsd folds usage.recorded only (not state.budget.cost_used)', () => {
+  const dir = worklog();
+  const statePath = path.join(dir, 'state.json');
+  const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+  state.budget = { cost_used: 99.99, budget_remaining: 0 };
+  fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  appendEvent(dir, {
+    type: 'usage.recorded',
+    payload: {
+      provider: 'local', model: 'fixture', usd: 1.25, cost_source: 'local',
+      usage_source: 'absent', status: 'ok', finish_reason: 'stop', latency_ms: 1,
+    },
+    idempotency_key: 'usage:1',
+  });
+  appendEvent(dir, {
+    type: 'usage.recorded',
+    payload: {
+      provider: 'local', model: 'fixture', usd: 0.75, cost_source: 'local',
+      usage_source: 'absent', status: 'ok', finish_reason: 'stop', latency_ms: 1,
+    },
+    idempotency_key: 'usage:2',
+  });
+  const receipt = extractReceipt(dir);
+  assert.equal(receipt.costUsd, 2.0);
+  assert.equal(receipt.trust, 'cooperative');
+  assert.match(receipt.trustDisclaimer || '', /cooperative evidence/);
+  assert.ok(receipt.divergences.some((d) => d.field === 'costUsd'));
+  assert.deepEqual(receipt.counters, {});
+});
+
+test('F-M2-05: integrity vocabulary is no-journal / unverified-import (not unanchored)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-nojournal-'));
+  fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify({
+    work_id: 'no-j', task: 't', current_state: 'completed', history: [],
+    pipeline: { track: 'lean' }, budget: { cost_used: 1.5 },
+  }, null, 2));
+  const receipt = extractReceipt(dir);
+  assert.equal(receipt.integrity, 'no-journal');
+  assert.notEqual(receipt.integrity, 'unanchored');
+  const verified = verifyReceipt(dir);
+  assert.equal(verified.integrity, 'no-journal');
+});
+
+test('F-M2-05: receipt verify reports ARTIFACT_MISMATCH when digests diverge', () => {
+  const dir = worklog();
+  const receipt = extractReceipt(dir);
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(receipt, null, 2));
+  assert.equal(verifyReceipt(dir).ok, true);
+  fs.writeFileSync(path.join(dir, 'implementation.md'), 'tampered-after-receipt\n');
+  const result = verifyReceipt(dir);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'ARTIFACT_MISMATCH');
+});

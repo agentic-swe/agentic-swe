@@ -65,9 +65,11 @@ test('extractReceipt — counts policy-checked tool calls and denials', () => {
       ].join('\n')
     );
     const r = extractReceipt(tmp);
+    // Audit regex counts stay available for divergence consumers but are not receipt content.
     assert.equal(r.toolCallCount, 2);
     assert.equal(r.toolCallDenied, 1);
-    assert.match(formatMarkdown(r), /Policy-checked tool calls: 2 \(1 denied by policy\)/);
+    assert.ok(r.divergences.some((d) => d.field === 'audit.tool_calls'));
+    assert.doesNotMatch(formatMarkdown(r), /Policy-checked tool calls/);
     assert.equal(extractReceipt(FIXTURE).toolCallCount, 0);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });

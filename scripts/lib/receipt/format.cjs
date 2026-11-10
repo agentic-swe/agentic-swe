@@ -33,13 +33,18 @@ function formatMarkdown(data) {
   lines.push(`| Work ID | ${safe(data.workId)} |`);
   lines.push(`| Track | ${safe(data.track)} |`);
   lines.push(`| Status | ${safe(data.status)} |`);
+  if (data.legacy) lines.push(`> ${safe(data.legacy)}`, '');
   if (data.integrity) lines.push(`| Integrity | ${safe(data.integrity)} |`);
+  if (data.trust) lines.push(`| Trust | ${safe(data.trust)} |`);
   if (data.anchor) lines.push(`| Anchor | ${safe(data.anchor)} |`);
   if (data.historyGap) lines.push(`| History gap | ${safe(data.historyGap)} |`);
   if (data.durationSeconds != null) lines.push(`| Duration | ${formatDurationHuman(data.durationSeconds)} |`);
   lines.push(`| Cost | ${formatCost(data.costUsd)} |`);
   if (data.prUrl) lines.push(`| PR | ${safe(data.prUrl)} |`);
   lines.push('');
+  if (data.trust === 'cooperative' && data.trustDisclaimer) {
+    lines.push(`_${safe(data.trustDisclaimer)}_`, '');
+  }
   if (data.decisions.length > 0) {
     lines.push(`## Decisions made (${data.decisions.length})`, '');
     data.decisions.forEach((d, i) => {
@@ -66,10 +71,6 @@ function formatMarkdown(data) {
   lines.push('## Verifiable references', '');
   const wd = displayWorkDir(data.workDir);
   lines.push(`- All artifacts: \`${wd}/\``);
-  lines.push(`- Audit log: \`${wd}/audit.log\` (${data.auditEntryCount} entries)`);
-  if (data.toolCallCount) {
-    lines.push(`- Policy-checked tool calls: ${data.toolCallCount} (${data.toolCallDenied || 0} denied by policy)`);
-  }
   if (data.policyDecisions && data.policyDecisions.length) {
     lines.push(`- Policy decisions: ${data.policyDecisions.length}`);
   }
@@ -78,6 +79,12 @@ function formatMarkdown(data) {
   }
   if (data.artifacts && data.artifacts.length) {
     lines.push(`- Artifacts with SHA-256 digests: ${data.artifacts.length}`);
+  }
+  if (data.divergences && data.divergences.length) {
+    lines.push('', '## Divergences (not receipt content)', '');
+    for (const d of data.divergences) {
+      lines.push(`- \`${safe(d.field)}\`: ${safe(d.note)}`);
+    }
   }
   lines.push('');
   return lines.join('\n');
