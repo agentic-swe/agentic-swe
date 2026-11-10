@@ -140,16 +140,20 @@ async function runApprove(args, pluginRoot) {
   if (!ghLink) {
     process.stderr.write('PR link is not a github.com pull request; only the local approval record applies.\n\n');
   } else if (args.decision === 'approved') {
-    const { loadGitHubConfig, resolveToken, createGitHubConnector } = require('./lib/github/connector.cjs');
+    const { loadGitHubConfig, resolveAccessToken, createGitHubConnector } = require('./lib/github/connector.cjs');
     const { fileCallJournal } = require('./lib/github/call-journal.cjs');
     const { createApprovalService } = require('./lib/github/approval-service.cjs');
     const config = loadGitHubConfig({ pluginRoot, projectRoot: cwd });
-    const token = resolveToken(config);
-    if (!token) {
-      fail(`${ghLink.url} needs GitHub verification; set ${config.token_env[0]} to a fine-grained read-only token`, 1, { code: 'GITHUB_TOKEN_MISSING' });
+    const resolved = await resolveAccessToken({ config, pluginRoot, projectRoot: cwd });
+    if (!resolved.ok) {
+      fail(
+        `${ghLink.url} needs GitHub verification; set ${config.token_env[0]} or configure app.app_id / installation_id / private_key_path (${resolved.message})`,
+        1,
+        { code: resolved.code || 'GITHUB_TOKEN_MISSING' }
+      );
     }
     const journal = fileCallJournal(workDir);
-    const connector = createGitHubConnector({ token, journal, config });
+    const connector = createGitHubConnector({ token: resolved.token, journal, config });
     const service = createApprovalService({ connector, config });
     // human_ok is true only after detectAgentContext above passed (human TTY, not agent).
     const v = await verifyAndJournal({
