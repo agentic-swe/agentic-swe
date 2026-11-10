@@ -57,7 +57,16 @@ function journalData(workDir, state) {
     });
 
   const artifacts = [];
-  const ignored = new Set(['state.json', 'journal.jsonl', 'idempotency-index.json', 'audit.log']);
+  // receipt.json / receipt.md are receipt outputs; digesting them would make a
+  // re-render record a stale self-digest and fail its own ARTIFACT_MISMATCH check.
+  const ignored = new Set([
+    'state.json',
+    'journal.jsonl',
+    'idempotency-index.json',
+    'audit.log',
+    'receipt.json',
+    'receipt.md',
+  ]);
   for (const name of fs.readdirSync(workDir)) {
     const file = path.join(workDir, name);
     if (ignored.has(name) || !fs.statSync(file).isFile()) continue;

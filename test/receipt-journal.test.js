@@ -138,3 +138,43 @@ test('F-M2-05: receipt verify reports ARTIFACT_MISMATCH when digests diverge', (
   assert.equal(result.ok, false);
   assert.equal(result.code, 'ARTIFACT_MISMATCH');
 });
+
+test('F-M2-05: re-rendering receipt.json does not fail its own artifact check', () => {
+  const dir = worklog();
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(extractReceipt(dir), null, 2));
+  const second = extractReceipt(dir);
+  assert.ok(!second.artifacts.some((a) => a.path === 'receipt.json'));
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(second, null, 2));
+  assert.equal(verifyReceipt(dir).ok, true);
+});
+
+test('F-M2-05: stripped digest or escaping path in receipt.json fails, never skips', () => {
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-outside-'));
+  fs.writeFileSync(path.join(outside, 'secret.txt'), 'outside\n');
+  const cases = [
+    (r) => { r.artifacts[0].sha256 = undefined; },
+    (r) => { r.artifacts.push({ path: path.relative(dir0, path.join(outside, 'secret.txt')), sha256: 'a'.repeat(64) }); },
+    (r) => { r.artifacts.push({ path: path.join(outside, 'secret.txt'), sha256: 'a'.repeat(64) }); },
+    (r) => { r.artifacts = 'nope'; },
+  ];
+  let dir0;
+  for (const mutate of cases) {
+    dir0 = worklog();
+    const receipt = extractReceipt(dir0);
+    assert.ok(receipt.artifacts.length > 0);
+    mutate(receipt);
+    fs.writeFileSync(path.join(dir0, 'receipt.json'), JSON.stringify(receipt, null, 2));
+    const result = verifyReceipt(dir0);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'RECEIPT_INVALID');
+  }
+  // Symlink inside the work dir pointing outside it.
+  const dir = worklog();
+  fs.symlinkSync(path.join(outside, 'secret.txt'), path.join(dir, 'link.md'));
+  const receipt = extractReceipt(dir);
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(receipt, null, 2));
+  const result = verifyReceipt(dir);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'RECEIPT_INVALID');
+  fs.rmSync(outside, { recursive: true, force: true });
+});

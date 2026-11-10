@@ -60,9 +60,20 @@ function verifyReceipt(workDir) {
     } catch (err) {
       return { ok: false, code: 'RECEIPT_UNREADABLE', message: err.message };
     }
+    if (!prior || typeof prior !== 'object' || (prior.artifacts != null && !Array.isArray(prior.artifacts))) {
+      return { ok: false, integrity, code: 'RECEIPT_INVALID', message: 'receipt.json artifacts must be an array' };
+    }
+    const root = fs.realpathSync(path.resolve(workDir));
     for (const art of prior.artifacts || []) {
-      if (!art || typeof art.path !== 'string' || typeof art.sha256 !== 'string') continue;
-      const file = path.join(workDir, art.path);
+      // A malformed entry is a failure, not a skip: stripping sha256 must not bypass the check.
+      if (!art || typeof art.path !== 'string' || !/^[0-9a-f]{64}$/.test(String(art.sha256 || ''))) {
+        return { ok: false, integrity, code: 'RECEIPT_INVALID', message: 'receipt.json artifact entry is malformed' };
+      }
+      const file = path.resolve(root, art.path);
+      // Verify only the copied work directory: refuse paths that escape it.
+      if (path.isAbsolute(art.path) || !file.startsWith(root + path.sep)) {
+        return { ok: false, integrity, code: 'RECEIPT_INVALID', path: art.path, message: 'artifact path escapes work dir' };
+      }
       if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
         return {
           ok: false,
@@ -71,6 +82,10 @@ function verifyReceipt(workDir) {
           path: art.path,
           message: `artifact missing: ${art.path}`,
         };
+      }
+      // A symlink inside the work dir must not let verify read files outside it.
+      if (!fs.realpathSync(file).startsWith(root + path.sep)) {
+        return { ok: false, integrity, code: 'RECEIPT_INVALID', path: art.path, message: 'artifact path escapes work dir' };
       }
       const actual = digestFile(file);
       if (actual !== art.sha256) {
