@@ -66,7 +66,7 @@ function defaultPolicy(pluginRoot) {
   return JSON.parse(fs.readFileSync(path.join(pluginRoot, 'config', 'default-policy.json'), 'utf8'));
 }
 
-function defaultGateway({ workDir, provider = 'fixture', adapters: configured, gatewayConfig, transport }) {
+function defaultGateway({ workDir, provider = 'fixture', adapters: configured, gatewayConfig, transport, policy }) {
   const models = gatewayConfig?.models || {
     fast: [`${provider}-fast`],
     balanced: [`${provider}-balanced`],
@@ -95,6 +95,8 @@ function defaultGateway({ workDir, provider = 'fixture', adapters: configured, g
     adapters: { [provider]: localAdapter },
     transport,
     workDir,
+    policy,
+    policyEvaluator: evaluate,
   });
 }
 
@@ -228,6 +230,7 @@ function createRuntime(options = {}) {
     adapters: options.adapters,
     gatewayConfig: options.gatewayConfig,
     transport: options.transport,
+    policy,
   });
   const registry = options.registry || new ToolRegistry(options.tools || []);
   const runner = options.toolRunner || new ToolRunner({

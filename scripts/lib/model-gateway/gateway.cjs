@@ -17,6 +17,7 @@ const { isLoopbackBaseUrl } = require('./adapters/local.cjs');
  *   sleep?: (ms: number) => Promise<void>,
  *   policy?: object,
  *   policyEvaluator?: (input: object) => object,
+ *   authorized?: Set<string>|string[],
  * }} opts
  */
 function createModelGateway(opts) {
@@ -199,6 +200,44 @@ function createModelGateway(opts) {
             usage_source: 'absent',
             usd: 0,
             cost_source: 'local',
+            latency_ms: Math.max(0, now() - started),
+            status: 'error',
+            finish_reason: 'error',
+            error_code: 'PROVIDER_DENIED',
+          },
+          req.idempotency_key
+        );
+        throw sanitizeError(err);
+      }
+    }
+
+    // PD-9 / PD-15 / AE-022 AC6: every non-local provider is policy-checked before
+    // any adapter or transport I/O. No evaluator means deny.
+    if (!LOCAL_PROVIDERS.has(provider)) {
+      const decision = policyEvaluator
+        ? policyEvaluator({
+            policy: opts.policy,
+            provider,
+            model: selected.model,
+            cost_source: 'price_table',
+            authorized: opts.authorized,
+          })
+        : null;
+      if (!decision || decision.decision !== 'allow') {
+        const err = new GatewayError(
+          'POLICY_DENIED',
+          decision?.reason || `non-local provider ${provider} requires a policy evaluator (default deny)`,
+          { retryable: false, details: decision || { code: 'PROVIDER_DENIED' } }
+        );
+        await recordUsage(
+          {
+            provider,
+            model: selected.model,
+            input: null,
+            output: null,
+            usage_source: 'absent',
+            usd: 0,
+            cost_source: 'unknown',
             latency_ms: Math.max(0, now() - started),
             status: 'error',
             finish_reason: 'error',
