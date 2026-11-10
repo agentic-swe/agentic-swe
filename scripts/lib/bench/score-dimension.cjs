@@ -7,9 +7,14 @@ const { minimalChildEnv, resolveCommandArgv } = require('../shared/child-env.cjs
 
 const VALID_TRACKS = ['lean', 'standard', 'rigorous'];
 
+/** Default wall-clock bound for corpus/acceptance child processes (ms). */
+const DEFAULT_ACCEPTANCE_TIMEOUT_MS = 60_000;
+
 /**
  * Run an acceptance command from scoring dimension config.
- * @returns {{ exitCode: number, stdout: string, stderr: string }}
+ * Always bounded: spawnSync times out instead of hanging forever under load.
+ * stdin is ignored so a held-open parent stdin cannot deadlock the child.
+ * @returns {{ exitCode: number, stdout: string, stderr: string, timedOut?: boolean }}
  */
 function runAcceptanceCommand(taskDir, dim) {
   const cwd = dim.cwd ? path.resolve(taskDir, dim.cwd) : path.resolve(taskDir);
@@ -21,16 +26,30 @@ function runAcceptanceCommand(taskDir, dim) {
       stderr: (resolved && resolved.message) || 'acceptance command rejected',
     };
   }
+  const timeoutMs =
+    Number(dim.timeout_ms) > 0 ? Number(dim.timeout_ms) : DEFAULT_ACCEPTANCE_TIMEOUT_MS;
   const result = spawnSync(resolved.file, resolved.args, {
     cwd,
     shell: false,
     encoding: 'utf8',
     env: minimalChildEnv(),
+    timeout: timeoutMs,
+    killSignal: 'SIGKILL',
+    // Do not inherit stdin — a parent holding stdin open can block children that read it.
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+  const timedOut = Boolean(result.error && result.error.code === 'ETIMEDOUT');
+  const stderrParts = [result.stderr || ''];
+  if (timedOut) {
+    stderrParts.push(`acceptance timed out after ${timeoutMs}ms`);
+  } else if (result.error) {
+    stderrParts.push(String(result.error.message || result.error));
+  }
   return {
-    exitCode: result.status ?? 1,
+    exitCode: timedOut ? 124 : (result.status ?? 1),
     stdout: result.stdout || '',
-    stderr: result.stderr || '',
+    stderr: stderrParts.filter(Boolean).join('\n'),
+    timedOut,
   };
 }
 

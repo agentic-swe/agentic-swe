@@ -27,6 +27,11 @@ function isSeed(name) {
   return name.startsWith(SEED_PREFIX);
 }
 
+/** Unbuffered progress so CI/Measurement logs advance before the suite ends. */
+function progress(msg) {
+  fs.writeSync(2, `${msg}\n`);
+}
+
 function main() {
   const pluginRoot = getDefaultPluginRoot();
   const date = new Date().toISOString().slice(0, 10);
@@ -41,11 +46,13 @@ function main() {
   fs.mkdirSync(path.dirname(storePath), { recursive: true });
   fs.writeFileSync(storePath, JSON.stringify({ procedures: [] }, null, 2));
 
+  progress('descent-holdout: seeding oracle procedures');
   const seed = seedCorpusProcedures({
     pluginRoot,
     projectRoot: tmpRoot,
     include: isSeed,
   });
+  progress(`descent-holdout: seeded ${seed.seeded} oracle procedures`);
 
   const corpusRoot = path.join(pluginRoot, 'bench', 'corpus');
   const holdoutTasks = [];
@@ -55,10 +62,20 @@ function main() {
     if (!fs.statSync(taskDir).isDirectory()) continue;
     if (!fs.existsSync(path.join(taskDir, 'scoring.json'))) continue;
 
+    progress(`descent-holdout: acceptance ${name}`);
+    const tAccept = Date.now();
     const acceptance = runTaskAcceptance(taskDir);
+    progress(
+      `descent-holdout: acceptance ${name} done ok=${acceptance.ok} exit=${acceptance.exitCode} ms=${Date.now() - tAccept}`
+    );
     const scoring = JSON.parse(fs.readFileSync(path.join(taskDir, 'scoring.json'), 'utf8'));
     const verify = scoring.task_pass?.command || '';
+    progress(`descent-holdout: tryDescent ${name}`);
+    const tDescent = Date.now();
     const descent = tryDescent({ projectRoot: tmpRoot, verifyCommand: verify, files: [name] });
+    progress(
+      `descent-holdout: tryDescent ${name} done ok=${descent.ok} ms=${Date.now() - tDescent}`
+    );
     const l0Hit = descent.ok === true;
     holdoutTasks.push({
       id: name,
