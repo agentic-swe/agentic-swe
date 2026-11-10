@@ -20,5 +20,6 @@ module.exports = {
   ...require('./registry.cjs'),
   ...require('./types.cjs'),
   ...require('./connectors.cjs'),
+  ...require('./grant-guard.cjs'),
   ...remaining,
 };

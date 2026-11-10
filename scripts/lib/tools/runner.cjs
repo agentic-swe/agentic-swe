@@ -7,6 +7,7 @@ const { appendEvent, readJournal } = require('../shared/journal.cjs');
 const { recordPolicyDecision } = require('../policy/record-decision.cjs');
 const { redactDeep } = require('../shared/redact.cjs');
 const { idempotencyKey, normalizedResult, redactText } = require('./types.cjs');
+const { callerGrantInjection } = require('./grant-guard.cjs');
 
 function outputRef(root, value, cap) {
   const text = redactText(value).slice(0, cap || 1024 * 1024);
@@ -67,6 +68,21 @@ class ToolRunner {
     const { manifest } = entry;
     const cached = manifest.idempotency === 'non-idempotent' ? priorResult(this.workDir, key) : null;
     if (cached) return cached;
+    // F-M2-01: grants/permissions must come from the policy engine or approved
+    // authorization state — never from caller-supplied tool input fields.
+    // Checked before schema validation so injection cannot be masked as INPUT_INVALID.
+    const injectedGrant = callerGrantInjection(input);
+    if (injectedGrant) {
+      return normalizedResult({
+        tool_id: toolId, tool_version: manifest.version, idempotency_key: key,
+        status: 'denied', effects: 'none',
+        error: {
+          code: 'DENIED_UNAUTHORIZED',
+          message: `caller-supplied ${injectedGrant} is not accepted; grants come only from the policy engine`,
+        },
+      });
+    }
+
     const inputCheck = entry.validateInput(input);
     if (!inputCheck.ok) {
       return normalizedResult({

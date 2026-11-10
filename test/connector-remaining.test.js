@@ -7,7 +7,15 @@ const os = require('node:os');
 const path = require('node:path');
 const {
   createGitConnector, createShellConnector, createCiConnector, createDocsConnector,
+  createRemainingTools, ToolRegistry, ToolRunner, callerGrantInjection,
 } = require('../scripts/lib/tools/index.cjs');
+const { privilegedActions } = require('../scripts/lib/policy/roles.cjs');
+
+const allowPdp = {
+  evaluate: () => ({
+    decision: 'allow', rule_id: 'test.allow', policy_digest: 'a'.repeat(64), risk_class: 'low', reason: 'test',
+  }),
+};
 
 describe('AE-021b connectors', () => {
   it('1: shell accepts only allow-listed command ids and safe argv', async () => {
@@ -31,6 +39,50 @@ describe('AE-021b connectors', () => {
     assert.equal((await git.push({ branch: 'main' }, { authorized: new Set(['github.branch.push']) })).error.code, 'PROTECTED_REF');
     assert.equal((await git.push({ branch: 'feature/x' }, { authorized: new Set(['github.branch.push']) })).ok, true);
     assert.deepEqual(calls, [['git', ['push', 'origin', 'HEAD:refs/heads/feature/x']]]);
+  });
+
+  it('2b: F-M2-01 caller-supplied authorized on git.local never spawns git push', async () => {
+    const calls = [];
+    const tools = createRemainingTools({
+      run: async (file, args) => { calls.push([file, ...args]); return { code: 0, stdout: '', stderr: '' }; },
+    });
+    const runner = new ToolRunner({ registry: new ToolRegistry(tools), pdp: allowPdp });
+    // Exact adversarial payload from M2 exit audit — previously pushed with allow PDP.
+    const bypass = await runner.run('git.local', {
+      operation: 'push',
+      args: [{ branch: 'feature/x' }, { authorized: ['github.branch.push'] }],
+    });
+    assert.equal(bypass.status, 'denied');
+    assert.equal(bypass.error.code, 'DENIED_UNAUTHORIZED');
+    assert.equal(calls.length, 0, 'git process must not spawn on injected grant');
+
+    const injectedLocal = await runner.run('git.local', {
+      operation: 'status',
+      authorized: ['github.branch.push'],
+    });
+    assert.equal(injectedLocal.status, 'denied');
+    assert.equal(calls.length, 0);
+
+    const pushTool = tools.find((t) => t.manifest.id === 'git.push');
+    assert.ok(pushTool);
+    assert.deepEqual(pushTool.manifest.permissions, ['github.branch.push']);
+    assert.equal(pushTool.manifest.side_effects, 'remote');
+
+    const noGrant = await runner.run('git.push', { branch: 'feature/x' });
+    assert.equal(noGrant.status, 'error');
+    assert.equal(noGrant.error.code, 'DENIED_UNAUTHORIZED');
+    assert.equal(calls.length, 0);
+
+    const granted = await runner.run('git.push', { branch: 'feature/x' }, {
+      authorized: new Set(['github.branch.push']),
+    });
+    assert.equal(granted.status, 'ok');
+    assert.deepEqual(calls, [['git', 'push', 'origin', 'HEAD:refs/heads/feature/x']]);
+
+    assert.equal(callerGrantInjection({ authorized: ['x'] }), 'authorized');
+    assert.equal(callerGrantInjection({ args: [{ grants: [] }] }), 'grants');
+    assert.deepEqual(privilegedActions('git.push', {}), ['github.branch.push']);
+    assert.deepEqual(privilegedActions('git.local', { operation: 'push' }), ['github.branch.push']);
   });
 
   it('3: creates and removes one child worktree with argv-only git', async () => {
