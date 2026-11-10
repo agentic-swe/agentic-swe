@@ -109,7 +109,7 @@ describe('founder status (AE-017)', () => {
     assert.strictEqual(byId['w-escalated'].cost.source, 'none');
     assert.deepStrictEqual(s.cost, { estimated_usd: 1.25, provider_reported_usd: 0.5 });
     assert.strictEqual(byId['w-approval'].integrity, 'verified');
-    assert.strictEqual(byId['w-unanchored'].integrity, 'unanchored');
+    assert.strictEqual(byId['w-unanchored'].integrity, 'no-journal');
     assert.match(byId['w-tampered'].integrity, /^FAILED at seq/);
     assert.deepStrictEqual(s.integrity_problems.map((p) => p.id).sort(), ['w-tampered', 'w-unanchored']);
 

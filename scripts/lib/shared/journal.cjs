@@ -193,8 +193,11 @@ function integrityReport(workDir, state, opts) {
   const chain = verifyWorkJournal(workDir, opts);
   const gap = historyGap(state);
   if (!chain.ok) return { integrity: `FAILED at seq ${chain.seq}`, historyGap: gap };
-  if (chain.missing || chain.events.some((event) => event.integrity === 'unverified-import')) {
-    return { integrity: 'unanchored', historyGap: gap };
+  if (chain.missing) {
+    return { integrity: 'no-journal', historyGap: gap };
+  }
+  if (chain.events.some((event) => event.integrity === 'unverified-import')) {
+    return { integrity: 'unverified-import', historyGap: gap };
   }
   const projected = projectedState(chain);
   if (projected && projected.current_state !== state.current_state) {

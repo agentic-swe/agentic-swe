@@ -84,3 +84,97 @@ test('receipt verifier fails closed on journal tamper without network', () => {
   assert.match(result.integrity, /^FAILED at seq 2$/);
   assert.equal(extractReceipt(dir).integrity, 'FAILED at seq 2');
 });
+
+test('F-M2-05: costUsd folds usage.recorded only (not state.budget.cost_used)', () => {
+  const dir = worklog();
+  const statePath = path.join(dir, 'state.json');
+  const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+  state.budget = { cost_used: 99.99, budget_remaining: 0 };
+  fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  appendEvent(dir, {
+    type: 'usage.recorded',
+    payload: {
+      provider: 'local', model: 'fixture', usd: 1.25, cost_source: 'local',
+      usage_source: 'absent', status: 'ok', finish_reason: 'stop', latency_ms: 1,
+    },
+    idempotency_key: 'usage:1',
+  });
+  appendEvent(dir, {
+    type: 'usage.recorded',
+    payload: {
+      provider: 'local', model: 'fixture', usd: 0.75, cost_source: 'local',
+      usage_source: 'absent', status: 'ok', finish_reason: 'stop', latency_ms: 1,
+    },
+    idempotency_key: 'usage:2',
+  });
+  const receipt = extractReceipt(dir);
+  assert.equal(receipt.costUsd, 2.0);
+  assert.equal(receipt.trust, 'cooperative');
+  assert.match(receipt.trustDisclaimer || '', /cooperative evidence/);
+  assert.ok(receipt.divergences.some((d) => d.field === 'costUsd'));
+  assert.deepEqual(receipt.counters, {});
+});
+
+test('F-M2-05: integrity vocabulary is no-journal / unverified-import (not unanchored)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-nojournal-'));
+  fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify({
+    work_id: 'no-j', task: 't', current_state: 'completed', history: [],
+    pipeline: { track: 'lean' }, budget: { cost_used: 1.5 },
+  }, null, 2));
+  const receipt = extractReceipt(dir);
+  assert.equal(receipt.integrity, 'no-journal');
+  assert.notEqual(receipt.integrity, 'unanchored');
+  const verified = verifyReceipt(dir);
+  assert.equal(verified.integrity, 'no-journal');
+});
+
+test('F-M2-05: receipt verify reports ARTIFACT_MISMATCH when digests diverge', () => {
+  const dir = worklog();
+  const receipt = extractReceipt(dir);
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(receipt, null, 2));
+  assert.equal(verifyReceipt(dir).ok, true);
+  fs.writeFileSync(path.join(dir, 'implementation.md'), 'tampered-after-receipt\n');
+  const result = verifyReceipt(dir);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'ARTIFACT_MISMATCH');
+});
+
+test('F-M2-05: re-rendering receipt.json does not fail its own artifact check', () => {
+  const dir = worklog();
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(extractReceipt(dir), null, 2));
+  const second = extractReceipt(dir);
+  assert.ok(!second.artifacts.some((a) => a.path === 'receipt.json'));
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(second, null, 2));
+  assert.equal(verifyReceipt(dir).ok, true);
+});
+
+test('F-M2-05: stripped digest or escaping path in receipt.json fails, never skips', () => {
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-outside-'));
+  fs.writeFileSync(path.join(outside, 'secret.txt'), 'outside\n');
+  const cases = [
+    (r) => { r.artifacts[0].sha256 = undefined; },
+    (r) => { r.artifacts.push({ path: path.relative(dir0, path.join(outside, 'secret.txt')), sha256: 'a'.repeat(64) }); },
+    (r) => { r.artifacts.push({ path: path.join(outside, 'secret.txt'), sha256: 'a'.repeat(64) }); },
+    (r) => { r.artifacts = 'nope'; },
+  ];
+  let dir0;
+  for (const mutate of cases) {
+    dir0 = worklog();
+    const receipt = extractReceipt(dir0);
+    assert.ok(receipt.artifacts.length > 0);
+    mutate(receipt);
+    fs.writeFileSync(path.join(dir0, 'receipt.json'), JSON.stringify(receipt, null, 2));
+    const result = verifyReceipt(dir0);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'RECEIPT_INVALID');
+  }
+  // Symlink inside the work dir pointing outside it.
+  const dir = worklog();
+  fs.symlinkSync(path.join(outside, 'secret.txt'), path.join(dir, 'link.md'));
+  const receipt = extractReceipt(dir);
+  fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(receipt, null, 2));
+  const result = verifyReceipt(dir);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'RECEIPT_INVALID');
+  fs.rmSync(outside, { recursive: true, force: true });
+});
