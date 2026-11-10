@@ -163,6 +163,12 @@ function shellCommand(toolName, toolInput) {
 function privilegedActions(toolName, toolInput) {
   const out = new Set();
   if (PRIVILEGED_ACTIONS.includes(String(toolName || ''))) out.add(String(toolName));
+  const name = String(toolName || '').toLowerCase();
+  // Typed git push tool — grants never come from tool input (F-M2-01).
+  if (name === 'git.push') out.add('github.branch.push');
+  if (name === 'git.local' && toolInput && String(toolInput.operation || '') === 'push') {
+    out.add('github.branch.push');
+  }
   const command = shellCommand(toolName, toolInput);
   if (command != null) {
     for (const segment of splitShellSegments(command)) {
@@ -179,7 +185,6 @@ function privilegedActions(toolName, toolInput) {
       if (NPM_PUBLISH_RE.test(segment)) out.add('npm.publish');
     }
   } else {
-    const name = String(toolName || '').toLowerCase();
     if (MCP_PUSH_RE.test(name)) out.add('github.branch.push');
     if (MCP_PR_WRITE_RE.test(name)) out.add('github.pr.write');
   }

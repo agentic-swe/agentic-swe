@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { redactSecrets } = require('../shared/redact.cjs');
+const { callerGrantInjection, authorizedFromContext } = require('./grant-guard.cjs');
 const redactText = (value) => redactSecrets(String(value)).redacted;
 
 const SHELL_META = /[;&|><$`(){}\[\]!*?~\n\r]/;
@@ -184,13 +185,116 @@ function createDocsConnector({ root = process.cwd(), allowedHosts = [], fetcher 
   };
 }
 
+function denyCallerGrant(key) {
+  return result(null, {
+    code: 'DENIED_UNAUTHORIZED',
+    message: `caller-supplied ${key} is not accepted; grants come only from the policy engine`,
+  });
+}
+
+const GIT_LOCAL_OPS = new Set(['status', 'diff', 'branch', 'commit', 'worktreeAdd', 'worktreeRemove']);
+
+function createGitLocalTool(git) {
+  return {
+    manifest: {
+      id: 'git.local',
+      version: '1.0.0',
+      description: 'Local git read/write helpers (push is git.push)',
+      permissions: [],
+      side_effects: 'local',
+      idempotency: 'idempotent',
+      timeout_ms: 30000,
+      input_schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['operation'],
+        properties: {
+          operation: { type: 'string', enum: [...GIT_LOCAL_OPS] },
+          message: { type: 'string' },
+          cwd: { type: 'string' },
+          stat: { type: 'boolean' },
+          ref: { type: 'string' },
+          child_id: { type: 'string' },
+          childId: { type: 'string' },
+          parent: { type: 'string' },
+          worktree: { type: 'string' },
+          // Legacy positional bag (never includes grants; grant keys are rejected in execute).
+          args: { type: 'array', items: { type: 'object' } },
+        },
+      },
+    },
+    execute: async (input) => {
+      const injected = callerGrantInjection(input);
+      if (injected) return denyCallerGrant(injected);
+      const op = String(input.operation || '');
+      if (op === 'push') {
+        return result(null, {
+          code: 'DENIED_UNAUTHORIZED',
+          message: 'git.local cannot push; use git.push with a policy grant',
+        });
+      }
+      if (!GIT_LOCAL_OPS.has(op)) {
+        return result(null, { code: 'GIT_INPUT_INVALID', message: `unknown or disallowed operation ${op}` });
+      }
+      // Legacy shape: { operation, args: [payload] }. Never spread args into method opts.
+      const payload = input.args && input.args[0] && typeof input.args[0] === 'object'
+        ? input.args[0]
+        : input;
+      const injectedPayload = callerGrantInjection(payload);
+      if (injectedPayload) return denyCallerGrant(injectedPayload);
+      switch (op) {
+        case 'status': return git.status();
+        case 'diff': return git.diff({ stat: payload.stat, ref: payload.ref });
+        case 'branch': return git.branch();
+        case 'commit': return git.commit(payload.message, { cwd: payload.cwd });
+        case 'worktreeAdd': return git.worktreeAdd(payload.child_id || payload.childId, { parent: payload.parent, ref: payload.ref });
+        case 'worktreeRemove': return git.worktreeRemove(payload.worktree);
+        default: return result(null, { code: 'GIT_INPUT_INVALID', message: `unknown operation ${op}` });
+      }
+    },
+  };
+}
+
+function createGitPushTool(git) {
+  return {
+    manifest: {
+      id: 'git.push',
+      version: '1.0.0',
+      description: 'Push HEAD to a non-protected remote ref (requires github.branch.push grant)',
+      permissions: ['github.branch.push'],
+      side_effects: 'remote',
+      idempotency: 'non-idempotent',
+      timeout_ms: 60000,
+      input_schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          remote: { type: 'string' },
+          branch: { type: 'string' },
+          ref: { type: 'string' },
+          cwd: { type: 'string' },
+        },
+      },
+    },
+    execute: async (input = {}, context = {}) => {
+      const injected = callerGrantInjection(input);
+      if (injected) return denyCallerGrant(injected);
+      return git.push(
+        { remote: input.remote, branch: input.branch, ref: input.ref },
+        { authorized: authorizedFromContext(context), cwd: input.cwd }
+      );
+    },
+  };
+}
+
 function createRemainingTools(options = {}) {
   const git = createGitConnector(options.git || options);
   const shell = createShellTool(options.shell || {});
   const ci = options.ci || {};
   const docs = createDocsConnector(options.docs || {});
   return [
-    { manifest: { id: 'git.local', version: '1.0.0', permissions: [], input_schema: { type: 'object' }, side_effects: 'local', idempotency: 'idempotent', timeout_ms: 30000 }, execute: async (input) => git[input.operation](...(input.args || [])) },
+    createGitLocalTool(git),
+    createGitPushTool(git),
     shell,
     { manifest: { id: 'ci.status', version: '1.0.0', permissions: ['checks:read'], input_schema: { type: 'object', required: ['sha'], properties: { sha: { type: 'string' } } }, side_effects: 'none', idempotency: 'idempotent', timeout_ms: 30000 }, execute: (input) => (ci.status ? ci.status(input.sha) : createCiConnector(ci).status(input.sha)) },
     { manifest: { id: 'docs.read', version: '1.0.0', permissions: [], input_schema: { type: 'object', required: ['file'], properties: { file: { type: 'string' } } }, side_effects: 'none', idempotency: 'idempotent', timeout_ms: 30000 }, execute: (input) => docs.readFile(input.file) },
@@ -200,6 +304,7 @@ function createRemainingTools(options = {}) {
 module.exports = {
   SHELL_META, PROTECTED_REFS, shellArgvSafe, createGitConnector, createShellConnector,
   createShellTool, createCiConnector, createDocsConnector, createRemainingTools,
+  createGitLocalTool, createGitPushTool,
   createGitTools: createRemainingTools,
   createShellTools: createShellTool,
   createCITools: createCiConnector,
