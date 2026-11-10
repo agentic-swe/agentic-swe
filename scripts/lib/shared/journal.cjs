@@ -571,6 +571,7 @@ module.exports = {
   verifyJournalText,
   readJournal,
   verifyWorkJournal,
+  lastSnapshotSeq,
   projectedState,
   assertProjection,
   historyGap,

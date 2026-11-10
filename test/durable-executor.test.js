@@ -10,7 +10,7 @@ const { spawnSync } = require('node:child_process');
 const root = path.join(__dirname, '..');
 const dispatcher = require('../scripts/lib/dispatch/dispatcher.cjs');
 const { applyGoalTransition } = require('../scripts/lib/work-engine/goal.cjs');
-const { commitState, readJournal } = require('../scripts/lib/shared/journal.cjs');
+const { commitState, readJournal, appendEvent } = require('../scripts/lib/shared/journal.cjs');
 
 function project(items, budget = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'executor-test-'));
@@ -49,6 +49,42 @@ function childDir(dir, item, attempt = 1) {
 }
 
 describe('durable executor', () => {
+  it('F-M2-01b: trailing side events after the last snapshot keep the child active', () => {
+    const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+    const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+    assert.strictEqual(a.ok, true);
+    assert.strictEqual(dispatcher.childStatus(a.workDir).status, 'active');
+    appendEvent(a.workDir, {
+      type: 'policy.decided',
+      payload: { decision: 'allow', rule_id: 'tool.read', policy_digest: 'a'.repeat(64), tool_name: 'test', input_summary: 'x' },
+      idempotency_key: 'policy:side-1',
+    });
+    appendEvent(a.workDir, {
+      type: 'tool.requested',
+      payload: { tool_id: 'test', policy_decision_ref: { seq: 2 } },
+      idempotency_key: 'requested:side-1',
+    });
+    const s = dispatcher.childStatus(a.workDir);
+    assert.strictEqual(s.status, 'active', JSON.stringify(s));
+    advance(a.workDir, 'completed');
+    appendEvent(a.workDir, {
+      type: 'policy.decided',
+      payload: { decision: 'allow', rule_id: 'tool.read', policy_digest: 'a'.repeat(64), tool_name: 'test', input_summary: 'y' },
+      idempotency_key: 'policy:side-2',
+    });
+    assert.strictEqual(dispatcher.childStatus(a.workDir).status, 'completed');
+  });
+
+  it('F-M2-01b: a stale state.json behind a newer snapshot is still interrupted', () => {
+    const ctx = project([{ id: 'a', type: 'docs', dependsOn: [] }]);
+    const a = dispatcher.start({ goalDir: ctx.goalDir, pluginRoot: root, actor: 'hypervisor' });
+    const statePath = path.join(a.workDir, 'state.json');
+    const before = fs.readFileSync(statePath, 'utf8');
+    advance(a.workDir, 'feasibility');
+    fs.writeFileSync(statePath, before);
+    assert.strictEqual(dispatcher.childStatus(a.workDir).status, 'interrupted');
+  });
+
   it('starts A and B in parallel but blocks C until both complete', () => {
     const ctx = project([
       { id: 'a', type: 'docs', dependsOn: [] },
