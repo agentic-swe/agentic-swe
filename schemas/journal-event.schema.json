@@ -81,6 +81,16 @@
       },
       "additionalProperties": true
     },
+    "toolReconciledPayload": {
+      "type": "object",
+      "required": ["tool_id", "idempotency_key", "outcome"],
+      "properties": {
+        "tool_id": { "type": "string", "minLength": 1 },
+        "idempotency_key": { "type": "string", "minLength": 1 },
+        "outcome": { "type": "string", "enum": ["escalated"] }
+      },
+      "additionalProperties": true
+    },
     "testSidePayload": {
       "type": "object",
       "additionalProperties": false,
