@@ -3,7 +3,15 @@
   "api_base": "https://api.github.com",
   "token_env": ["AGENTIC_SWE_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"],
   "authorization": {
-    "github_write": false
+    "github_write": false,
+    "capabilities": {
+      "checks_anchor": false
+    }
+  },
+  "app": {
+    "app_id": null,
+    "installation_id": null,
+    "private_key_path": null
   },
   "anchor": {
     "check_name": "agentic-swe journal anchor",

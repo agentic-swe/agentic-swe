@@ -1,13 +1,20 @@
 'use strict';
 
 /**
- * GitHub connector (AE-015). Reads use a fine-grained read-only token; writes exist but return
- * DENIED_UNAUTHORIZED unless `authorization.github_write` is true. Every call — and every denied
- * write — is handed to the journal sink, which is required.
+ * GitHub connector (AE-015 / AE-023b). Reads use a Bearer token (PAT or installation
+ * token). Writes are gated per capability (e.g. `checks_anchor` for createCheckRun) and
+ * default off; the legacy `authorization.github_write` blanket still gates non-anchor
+ * writes and also defaults off. App JWT → installation token minting is available via
+ * `app.app_id` / `app.installation_id` / `app.private_key_path` (PEM outside the repo).
+ * Every call — and every denied write — is handed to the journal sink, which is required.
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  mintInstallationToken,
+  readPrivateKeyPem,
+} = require('./app-auth.cjs');
 
 const PACK_ROOT = path.resolve(__dirname, '..', '..', '..');
 const REPO = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
@@ -23,8 +30,8 @@ function readJsonOrNull(file) {
 }
 
 /**
- * Pack `config/github.json`, then `<projectRoot>/.agentic-swe/github.json`. Writes are enabled
- * only by an explicit `authorization.github_write: true`; nothing in the environment enables them.
+ * Pack `config/github.json`, then `<projectRoot>/.agentic-swe/github.json`. Write capabilities
+ * and `github_write` default false; nothing in the environment enables them.
  */
 function mergeSoloFounder(packApproval, repoApproval) {
   const pack = (packApproval && packApproval.solo_founder) || {};
@@ -46,14 +53,31 @@ function loadGitHubConfig({ pluginRoot = PACK_ROOT, projectRoot } = {}) {
   const pack = readJsonOrNull(path.join(pluginRoot, 'config', 'github.json')) || {};
   const repo = projectRoot ? readJsonOrNull(path.join(projectRoot, '.agentic-swe', 'github.json')) || {} : {};
   const authorization = { ...(pack.authorization || {}), ...(repo.authorization || {}) };
+  const packCaps = (pack.authorization && pack.authorization.capabilities) || {};
+  const repoCaps = (repo.authorization && repo.authorization.capabilities) || {};
+  const capabilities = { ...packCaps, ...repoCaps };
   const anchor = { ...(pack.anchor || {}), ...(repo.anchor || {}) };
+  const packApp = pack.app || {};
+  const repoApp = repo.app || {};
   const solo = mergeSoloFounder(pack.approval, repo.approval);
   return {
     api_base: pack.api_base || 'https://api.github.com',
     token_env: pack.token_env || ['AGENTIC_SWE_GITHUB_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'],
     permissions: pack.permissions || { read: [], write: [] },
     codeowners_paths: repo.codeowners_paths || pack.codeowners_paths || ['.github/CODEOWNERS', 'CODEOWNERS', 'docs/CODEOWNERS'],
-    authorization: { github_write: authorization.github_write === true },
+    authorization: {
+      github_write: authorization.github_write === true,
+      capabilities: {
+        checks_anchor: capabilities.checks_anchor === true,
+      },
+    },
+    app: {
+      app_id: repoApp.app_id != null ? repoApp.app_id : (packApp.app_id != null ? packApp.app_id : null),
+      installation_id: repoApp.installation_id != null ? repoApp.installation_id : (packApp.installation_id != null ? packApp.installation_id : null),
+      private_key_path: typeof repoApp.private_key_path === 'string' && repoApp.private_key_path
+        ? repoApp.private_key_path
+        : (typeof packApp.private_key_path === 'string' ? packApp.private_key_path : null),
+    },
     anchor: {
       check_name: anchor.check_name || 'agentic-swe journal anchor',
       app_slug: anchor.app_slug || 'agentic-swe',
@@ -65,6 +89,7 @@ function loadGitHubConfig({ pluginRoot = PACK_ROOT, projectRoot } = {}) {
         github_login: solo.github_login,
       },
     },
+    _roots: { pluginRoot, projectRoot },
   };
 }
 
@@ -73,6 +98,53 @@ function resolveToken(config, env = process.env) {
     if (env[name]) return env[name];
   }
   return null;
+}
+
+/**
+ * Prefer an env Bearer; otherwise mint an installation token from App credentials
+ * when configured. Minting uses the injected transport (no network in unit tests).
+ */
+async function resolveAccessToken({
+  config,
+  env = process.env,
+  transport = fetchTransport,
+  nowMs = Date.now(),
+  pluginRoot = PACK_ROOT,
+  projectRoot,
+} = {}) {
+  const existing = resolveToken(config, env);
+  if (existing) return { ok: true, token: existing, source: 'env' };
+  const app = config && config.app;
+  if (!app || app.app_id == null || app.installation_id == null || !app.private_key_path) {
+    return { ok: false, code: 'GITHUB_TOKEN_MISSING', message: 'no GitHub token in env and App credentials are incomplete' };
+  }
+  let pem;
+  try {
+    pem = readPrivateKeyPem(app.private_key_path, {
+      pluginRoot: (config._roots && config._roots.pluginRoot) || pluginRoot,
+      projectRoot: (config._roots && config._roots.projectRoot) || projectRoot,
+    });
+  } catch (error) {
+    return { ok: false, code: error.code || 'GITHUB_APP_CONFIG', message: error.message };
+  }
+  const minted = await mintInstallationToken({
+    appId: app.app_id,
+    installationId: app.installation_id,
+    privateKeyPem: pem,
+    transport,
+    apiBase: config.api_base || 'https://api.github.com',
+    nowMs,
+  });
+  if (!minted.ok) return minted;
+  return { ok: true, token: minted.token, source: 'app_installation', expires_at: minted.expires_at };
+}
+
+function writeCapabilityEnabled(config, capability) {
+  if (capability === 'checks_anchor') {
+    return Boolean(config.authorization && config.authorization.capabilities
+      && config.authorization.capabilities.checks_anchor === true);
+  }
+  return Boolean(config.authorization && config.authorization.github_write === true);
 }
 
 async function fetchTransport({ method, url, headers, body }) {
@@ -147,13 +219,17 @@ function createGitHubConnector(opts) {
     return { ok: true, data: out };
   }
 
-  async function write(method, endpoint, body) {
-    if (!config.authorization.github_write) {
+  async function write(method, endpoint, body, capability = null) {
+    const allowed = writeCapabilityEnabled(config, capability);
+    if (!allowed) {
       journal.record({ at: now(), method, endpoint, status: 'denied' });
+      const gate = capability
+        ? `authorization.capabilities.${capability}`
+        : 'authorization.github_write';
       return {
         ok: false,
         code: 'DENIED_UNAUTHORIZED',
-        message: `${method} ${endpoint} is a GitHub write; authorization.github_write is false (a human enables it in .agentic-swe/github.json)`,
+        message: `${method} ${endpoint} is a GitHub write; ${gate} is false (a human enables it in .agentic-swe/github.json)`,
       };
     }
     return call(method, endpoint, body);
@@ -167,7 +243,9 @@ function createGitHubConnector(opts) {
 
   return {
     permissions: config.permissions,
-    writeEnabled: config.authorization.github_write,
+    // Anchor path uses the checks_anchor capability (defaults off).
+    writeEnabled: writeCapabilityEnabled(config, 'checks_anchor'),
+    capabilityEnabled: (name) => writeCapabilityEnabled(config, name),
 
     getIssue: (repo, number) => get(`${repoPath(repo)}/issues/${seg(number)}`),
     getPull: (repo, number) => get(`${repoPath(repo)}/pulls/${seg(number)}`),
@@ -192,10 +270,10 @@ function createGitHubConnector(opts) {
       return r;
     },
 
-    createBranch: (repo, { ref, sha }) => write('POST', `${repoPath(repo)}/git/refs`, { ref: `refs/heads/${ref}`, sha }),
-    createPull: (repo, { title, head, base, body, draft }) => write('POST', `${repoPath(repo)}/pulls`, { title, head, base, body, draft }),
-    createComment: (repo, number, body) => write('POST', `${repoPath(repo)}/issues/${seg(number)}/comments`, { body }),
-    createCheckRun: (repo, run) => write('POST', `${repoPath(repo)}/check-runs`, run),
+    createBranch: (repo, { ref, sha }) => write('POST', `${repoPath(repo)}/git/refs`, { ref: `refs/heads/${ref}`, sha }, null),
+    createPull: (repo, { title, head, base, body, draft }) => write('POST', `${repoPath(repo)}/pulls`, { title, head, base, body, draft }, null),
+    createComment: (repo, number, body) => write('POST', `${repoPath(repo)}/issues/${seg(number)}/comments`, { body }, null),
+    createCheckRun: (repo, run) => write('POST', `${repoPath(repo)}/check-runs`, run, 'checks_anchor'),
   };
 }
 
@@ -203,6 +281,8 @@ module.exports = {
   PACK_ROOT,
   loadGitHubConfig,
   resolveToken,
+  resolveAccessToken,
+  writeCapabilityEnabled,
   fetchTransport,
   createGitHubConnector,
 };

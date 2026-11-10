@@ -15,7 +15,25 @@
     "authorization": {
       "type": "object",
       "properties": {
-        "github_write": { "type": "boolean" }
+        "github_write": { "type": "boolean" },
+        "capabilities": {
+          "type": "object",
+          "description": "Per-write-capability gates; all default false. checks_anchor gates createCheckRun.",
+          "properties": {
+            "checks_anchor": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "app": {
+      "type": "object",
+      "description": "GitHub App credentials for JWT → installation token minting. private_key_path must be absolute and outside the repo.",
+      "properties": {
+        "app_id": { "type": ["string", "integer", "null"] },
+        "installation_id": { "type": ["string", "integer", "null"] },
+        "private_key_path": { "type": ["string", "null"], "minLength": 1 }
       },
       "additionalProperties": false
     },
