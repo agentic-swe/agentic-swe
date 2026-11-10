@@ -160,6 +160,8 @@ class ToolRunner {
         status: decision.decision === 'require_approval' ? 'denied' : 'denied',
         pending_approval: decision.decision === 'require_approval',
         effects: 'none',
+        critical_failure: decision.critical_failure === true,
+        policy_rule_id: decision.rule_id || null,
         error: { code: decision.code || 'POLICY_DENIED', message: decision.reason },
       });
       append(this.workDir, 'tool.requested', { ...base, permissions: manifest.permissions, side_effects: manifest.side_effects }, `requested:${key}`);

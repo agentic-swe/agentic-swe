@@ -356,4 +356,73 @@ describe('AE-020c hosted runtime', () => {
     assert.equal(calls.length, 0, 'git push must not spawn without grant');
     fs.rmSync(tmp, { recursive: true, force: true });
   });
+
+  it('F-M2-03b: critical_failure stops the loop and escalates', async () => {
+    const { tmp, workDir } = work('lean');
+    const registry = new ToolRegistry([{
+      manifest: {
+        id: 'fixture.side-effect',
+        version: '1.0.0',
+        permissions: [],
+        input_schema: { type: 'object', additionalProperties: false },
+        side_effects: 'local',
+        idempotency: 'non-idempotent',
+        timeout_ms: 1000,
+      },
+      execute: async () => ({ status: 'ok', data: {} }),
+    }]);
+    let criticalSeen = false;
+    const runtime = createRuntime({
+      workDir,
+      pluginRoot: root,
+      track: 'lean',
+      registry,
+      pdp: {
+        evaluate: ({ toolName }) => {
+          if (toolName === 'fixture.side-effect') {
+            criticalSeen = true;
+            return {
+              decision: 'deny',
+              rule_id: 'policy.critical',
+              policy_digest: 'c'.repeat(64),
+              risk_class: 'critical',
+              reason: 'injected critical failure',
+              code: 'POLICY_CRITICAL',
+              critical_failure: true,
+            };
+          }
+          return {
+            decision: 'allow',
+            rule_id: 'test.allow',
+            policy_digest: 'a'.repeat(64),
+            risk_class: 'low',
+            reason: 'test',
+          };
+        },
+      },
+      gateway: gatewayFor({
+        feasibility: { content: '{"ok":true}', tool_calls: [] },
+        'lean-track-check': { content: '{"ok":true}', tool_calls: [] },
+        'lean-track-implementation': {
+          content: null,
+          tool_calls: [{ id: '1', name: 'fixture.side-effect', arguments: {} }],
+        },
+      }),
+      steps: {
+        feasibility: { scenario: 'feasibility' },
+        'lean-track-check': { scenario: 'lean-track-check' },
+        'lean-track-implementation': { scenario: 'lean-track-implementation', tools: [{ name: 'fixture.side-effect' }] },
+      },
+    });
+    const result = await runtime.run();
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'CRITICAL_POLICY_FAILURE');
+    assert.equal(result.current_state, 'escalate-code');
+    assert.equal(criticalSeen, true);
+    const journal = readJournal(workDir);
+    assert.ok(journal.ok);
+    assert.ok(journal.events.some((e) => e.type === 'runtime.critical_failure'));
+    assert.ok(fs.existsSync(path.join(workDir, 'review-feedback.md')));
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
 });

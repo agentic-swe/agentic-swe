@@ -196,7 +196,7 @@ function main() {
       `${new Date().toISOString()} actor=agent action=tool_call_hook_error tool=${toolName || 'unknown'} decision=${decision} mode=${mode.closed ? 'fail-closed' : 'fail-open'} state=${currentState || 'none'} error="${msg.replace(/"/g, "'")}" | evidence: pre-tool policy hook`
     );
     if (mode.closed) finish('deny', `agentic-swe policy hook error (fail-closed: ${mode.why}): ${msg}`);
-    finish('allow', `agentic-swe policy hook error (fail-open: ${mode.why}; set policy.fail_closed in .agentic-swe/runtime.json to deny): ${msg}`);
+    finish('allow', `agentic-swe policy hook error (fail-open: ${mode.why}; cooperative opt-in only): ${msg}`);
   }
 
   appendAudit(workDir, formatAuditLine({ toolName, decision: 'allow', state: currentState, rule: undefined, input: summary }));

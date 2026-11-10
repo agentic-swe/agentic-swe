@@ -30,6 +30,7 @@ const SIDE_PAYLOAD_KEYS = {
   'tool.completed': 'toolCompletedPayload',
   'tool.reconciled': 'toolReconciledPayload',
   'runtime.step': null,
+  'runtime.critical_failure': null,
   'test.side': 'testSidePayload',
   'github.anchored': null,
 };
