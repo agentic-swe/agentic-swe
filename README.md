@@ -168,6 +168,8 @@ The policy hook enforces [Policy-as-Code](references/policy-as-code.md) on every
 
 Run setup from the root of the git repository you want to configure. It refuses any other directory, shows the target and the planned changes, and waits for confirmation. `--yes` skips the question. `--dry-run` only prints the plan. Run setup without `--host` to auto-detect installed hosts, or use `--host all`. Run `agentic-swe doctor` to verify an installation. Maintainers see [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
 
+**npm registry (E7):** the repo `.npmrc` pins `registry=https://registry.npmjs.org/`. If `~/.npmrc` points at an internal mirror (e.g. unpm), set `npm_config_registry=https://registry.npmjs.org/` for install/verify/test — see [docs/PUBLISHING.md](docs/PUBLISHING.md#local-install--registry-e7).
+
 Codex requires approval of repository/plugin hooks. Windsurf hooks are disabled in Restricted Mode. Copilot hooks cover CLI and coding-agent environments; generic IDE chat transcript capture is not guaranteed. The VS Code extension performs automatic memory maintenance but cannot read another extension's private transcript. Cline, Roo, Continue, Junie/JetBrains, Zed, and similar hosts can use `AGENTS.md` plus the MCP fallback in [`integrations/fallback/README.md`](integrations/fallback/README.md).
 
 → [Full installation guide](https://agentic-swe.github.io/agentic-swe/docs/installation) · [Golden path (~15 min)](https://agentic-swe.github.io/agentic-swe/docs/golden-path)
