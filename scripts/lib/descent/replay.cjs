@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { recordTierEvent } = require('./tier-telemetry.cjs');
 const { canReplay } = require('../memory/trust.cjs');
+const { minimalChildEnv, resolveCommandArgv } = require('../shared/child-env.cjs');
 
 /**
  * @typedef {{ type: string, command?: string, path?: string, cwd?: string }} TypedAction
@@ -23,10 +24,16 @@ function executeAction(action, projectRoot) {
           ? action.cwd
           : path.resolve(projectRoot, action.cwd)
         : projectRoot;
-      const r = spawnSync(action.command, {
+      const resolved = resolveCommandArgv(action.command);
+      if (!resolved.ok) {
+        return { ok: false, error: resolved.message || resolved.code || 'unsafe command' };
+      }
+      if (resolved.empty) return { ok: false, error: 'empty command' };
+      const r = spawnSync(resolved.file, resolved.args, {
         cwd,
-        shell: true,
+        shell: false,
         encoding: 'utf8',
+        env: minimalChildEnv(),
         timeout: action.timeout_ms || 120000,
       });
       const ok = r.status === 0;

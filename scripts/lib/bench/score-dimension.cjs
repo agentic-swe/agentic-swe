@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { minimalChildEnv, resolveCommandArgv } = require('../shared/child-env.cjs');
 
 const VALID_TRACKS = ['lean', 'standard', 'rigorous'];
 
@@ -12,11 +13,19 @@ const VALID_TRACKS = ['lean', 'standard', 'rigorous'];
  */
 function runAcceptanceCommand(taskDir, dim) {
   const cwd = dim.cwd ? path.resolve(taskDir, dim.cwd) : path.resolve(taskDir);
-  const result = spawnSync(dim.command, {
+  const resolved = resolveCommandArgv(dim.command);
+  if (!resolved.ok || resolved.empty) {
+    return {
+      exitCode: 1,
+      stdout: '',
+      stderr: (resolved && resolved.message) || 'acceptance command rejected',
+    };
+  }
+  const result = spawnSync(resolved.file, resolved.args, {
     cwd,
-    shell: true,
+    shell: false,
     encoding: 'utf8',
-    env: { ...process.env, CI: '1' },
+    env: minimalChildEnv(),
   });
   return {
     exitCode: result.status ?? 1,
