@@ -67,6 +67,28 @@ Every `uses:` in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z
 
 ## npm — `@agentic-swe/agentic-swe` (optional mirror)
 
+### Local install / registry (E7)
+
+This pack pins the public registry in the **repo-root `.npmrc`**:
+
+```text
+registry=https://registry.npmjs.org/
+```
+
+If your user `~/.npmrc` points at an internal mirror (for example Uber **unpm**), `npm install` / `npm ci` / `npm test` can resolve the wrong registry or fail on scoped packages. Prefer one of:
+
+1. Work from a clone that includes the repo `.npmrc` (npm applies it for this project), or
+2. Override for the shell session:
+
+```bash
+export npm_config_registry=https://registry.npmjs.org/
+npm ci
+npm run verify
+npm test
+```
+
+Do **not** remove the repo `.npmrc` to “fix” a corporate mirror — keep public-registry installs reproducible for CI and contributors.
+
 **New maintainers — read this first:** [First time on npm: create the scope](#first-time-on-npm-create-the-scope). The **`@agentic-swe`** org must exist on [npmjs.com](https://www.npmjs.com/) before the first **`npm publish`**; otherwise you get **`404 Scope not found`**.
 
 The **unscoped** name **`agentic-swe`** on the public npm registry is **not** this project (different publisher). This pack publishes as:
