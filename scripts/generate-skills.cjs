@@ -17,6 +17,7 @@ const {
 const { listAgentMarkdownFiles } = require('./lib/catalog/walk-subagents.cjs');
 const { loadGoldenEvalMap } = require('./lib/skills/golden-eval.cjs');
 const { parseMetadataMap } = require('./lib/skills/golden-eval.cjs');
+const { loadManifestFile } = require('./lib/skills/skill-manifest.cjs');
 
 const root = path.resolve(process.argv.includes('--plugin-root')
   ? process.argv[process.argv.indexOf('--plugin-root') + 1]
@@ -222,6 +223,24 @@ function main() {
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(skillPath, content);
     written++;
+  }
+
+  // AE-024a: if a structured SkillManifest sidecar exists, it must stay schema-valid.
+  // Structured emit for first-party skills lands with AE-029a; generate stays frontmatter-first.
+  const manifestErrors = [];
+  for (const src of sources) {
+    const skillDir = path.join(root, 'skills', src.skillName);
+    const loaded = loadManifestFile(skillDir);
+    if (!loaded) continue;
+    if (!loaded.ok) {
+      for (const e of loaded.errors) {
+        manifestErrors.push(`skills/${src.skillName}/manifest.json: ${e}`);
+      }
+    }
+  }
+  if (manifestErrors.length) {
+    console.error('generate-skills: FAILED (skill manifest)\n' + manifestErrors.map((e) => `  - ${e}`).join('\n'));
+    process.exit(1);
   }
 
   if (checkOnly) {
