@@ -193,6 +193,53 @@ describe('AE-025a local skill registry', () => {
     assert.equal(drift.ok, false);
     assert.equal(drift.code, 'VERSION_IMMUTABLE');
   });
+
+  it('soft-corrupt index (skills missing/null/array/string) is INDEX_INVALID; missing file stays empty', () => {
+    const registry = path.join(tmpRoot, 'reg-soft-index');
+    const src = path.join(tmpRoot, 'src-soft-index');
+    const indexPath = path.join(registry, INDEX_NAME);
+    fs.mkdirSync(registry, { recursive: true });
+    writePackage(src, baseManifest('softix', '1.0.0'));
+
+    // Missing index file: empty registry is correct.
+    const missing = readIndex(indexPath);
+    assert.deepEqual(missing, { version: 1, skills: {} });
+    assert.equal(installSkill({ registryRoot: registry, sourceDir: src }).ok, true);
+    const validBefore = fs.readFileSync(indexPath, 'utf8');
+    const listed = readIndex(indexPath);
+    assert.equal(listed.skills.softix.versions.length, 1);
+    assert.equal(resolveAndVerify(registry, 'softix', '*').ok, true);
+
+    const softCorrupt = [
+      { version: 1 },
+      { version: 1, skills: null },
+      { version: 1, skills: [] },
+      { version: 1, skills: 'nope' },
+      { version: 1, skills: [{ name: 'x' }] },
+      null,
+      [],
+    ];
+    for (const payload of softCorrupt) {
+      fs.writeFileSync(indexPath, `${JSON.stringify(payload)}\n`, 'utf8');
+      assert.throws(
+        () => readIndex(indexPath),
+        (e) => e && e.code === 'INDEX_INVALID',
+        `readIndex should reject ${JSON.stringify(payload)}`
+      );
+      const install = installSkill({ registryRoot: registry, sourceDir: src });
+      assert.equal(install.ok, false, `install should reject ${JSON.stringify(payload)}`);
+      assert.equal(install.code, 'INDEX_INVALID');
+      const resolved = resolveAndVerify(registry, 'softix', '*');
+      assert.equal(resolved.ok, false, `resolveAndVerify should reject ${JSON.stringify(payload)}`);
+      assert.equal(resolved.code, 'INDEX_INVALID');
+    }
+
+    // Restore a valid index and confirm unchanged happy path.
+    fs.writeFileSync(indexPath, validBefore, 'utf8');
+    assert.equal(readIndex(indexPath).skills.softix.versions[0].manifest.version, '1.0.0');
+    assert.equal(resolveAndVerify(registry, 'softix', '*').ok, true);
+    assert.equal(installSkill({ registryRoot: registry, sourceDir: src }).ok, true);
+  });
 });
 
 describe('AE-025b version immutability, deprecation, revocation', () => {

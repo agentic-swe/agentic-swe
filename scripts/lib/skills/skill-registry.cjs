@@ -60,17 +60,27 @@ function emptyRevocation() {
   return { version: 1, entries: [] };
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function readIndex(indexPath) {
   if (!fs.existsSync(indexPath)) return emptyIndex();
+  let parsed;
   try {
-    const parsed = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
-    if (!parsed || typeof parsed !== 'object' || !parsed.skills) return emptyIndex();
-    return parsed;
+    parsed = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
   } catch {
     const err = new Error('skills index parse failed');
     err.code = 'INDEX_INVALID';
     throw err;
   }
+  // Fail closed: parseable but missing/non-object `skills` must not look like an empty registry.
+  if (!isPlainObject(parsed) || !isPlainObject(parsed.skills)) {
+    const err = new Error('skills index schema invalid');
+    err.code = 'INDEX_INVALID';
+    throw err;
+  }
+  return parsed;
 }
 
 function writeIndexAtomic(indexPath, index) {
