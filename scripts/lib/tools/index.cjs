@@ -21,5 +21,6 @@ module.exports = {
   ...require('./types.cjs'),
   ...require('./connectors.cjs'),
   ...require('./grant-guard.cjs'),
+  ...require('./sandbox-profile.cjs'),
   ...remaining,
 };
