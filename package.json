@@ -128,6 +128,7 @@
     "bench:fleet-submit-ingest-e2e": "node scripts/bench/run-fleet-submit-ingest-e2e.cjs",
     "bench:fleet-archives-dogfood": "node scripts/bench/run-fleet-archives-dogfood.cjs",
     "bench:fleet-scale-gate-fixture": "node scripts/bench/run-fleet-scale-gate-fixture.cjs",
+    "bench:skill-route": "node scripts/skill-route-bench.cjs",
     "fleet-learning-status": "node scripts/fleet-learning-status.cjs",
     "fleet-evidence-bundle": "node scripts/fleet-evidence-bundle.cjs",
     "fleet-onboard": "node scripts/fleet-onboard.cjs",

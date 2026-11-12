@@ -7,6 +7,11 @@ const { parseMetadataMap } = require('./golden-eval.cjs');
 const { rankLexical } = require('../catalog/lexical-rank.cjs');
 const { listSkills } = require('./project-skills.cjs');
 const { checkSkillEvalGate } = require('./eval-gate.cjs');
+const {
+  resolveRoutingFallback,
+  DEFAULT_LOW_CONFIDENCE_SCORE,
+  FALLBACK_CODES,
+} = require('./routing-fallback.cjs');
 
 /** Stable score-breakdown keys for explainable routing (AE-026a). */
 const SCORE_BREAKDOWN_KEYS = Object.freeze([
@@ -215,6 +220,7 @@ function skillCapabilityTokens(skill) {
  * Rank skills for a query with explainable score breakdown + reject reasons (AE-026a).
  * Memory graph + evaluated procedures can boost ranks when projectRoot is set.
  * Never performs non-loopback network I/O; paid embeddings stay off (PD-9).
+ * AE-026b: attaches `fallback` per docs/specs/skill-routing.md matrix.
  * @param {{
  *   pluginRoot: string,
  *   query: string,
@@ -223,6 +229,8 @@ function skillCapabilityTokens(skill) {
  *   memoryBoosts?: Record<string, number>,
  *   autonomous?: boolean,
  *   transport?: { fetch?: Function } | null,
+ *   skills?: Array<object>,
+ *   lowConfidenceScore?: number,
  * }} opts
  */
 function routeSkills(opts) {
@@ -235,8 +243,14 @@ function routeSkills(opts) {
   const projectRoot = opts.projectRoot ? path.resolve(opts.projectRoot) : null;
   const k = Math.min(20, Math.max(1, opts.k || 5));
   const autonomous = opts.autonomous === true;
-  const skills = listSkillsMerged(pluginRoot, projectRoot);
+  const skills = Array.isArray(opts.skills)
+    ? opts.skills
+    : listSkillsMerged(pluginRoot, projectRoot);
   const queryCaps = inferQueryCapabilities(opts.query);
+  const lowConfidenceScore =
+    typeof opts.lowConfidenceScore === 'number' && Number.isFinite(opts.lowConfidenceScore)
+      ? opts.lowConfidenceScore
+      : DEFAULT_LOW_CONFIDENCE_SCORE;
 
   const blobs = skills.map((s) => ({
     name: s.name,
@@ -337,6 +351,9 @@ function routeSkills(opts) {
     if (b.score !== a.score) return b.score - a.score;
     return a.name.localeCompare(b.name);
   });
+  // TIE_BREAK when two or more candidates share the top score (alphabetical order).
+  const tieBroken =
+    scored.length >= 2 && scored[0].score === scored[1].score;
 
   let results = scored.slice(0, k);
   if (autonomous) {
@@ -353,10 +370,20 @@ function routeSkills(opts) {
   }
 
   const unevaluatedInTopK = results.filter((row) => !row.autonomous_allowed).length;
+  const fallback = resolveRoutingFallback({
+    catalogSize: skills.length,
+    results,
+    rejected,
+    autonomous,
+    lowConfidenceScore,
+    tieBroken: tieBroken && results.length > 0,
+  });
+
   return {
     query: opts.query,
     results,
     rejected,
+    fallback,
     score_breakdown_keys: [...SCORE_BREAKDOWN_KEYS],
     unevaluated_in_top_k: unevaluatedInTopK,
   };
@@ -391,4 +418,7 @@ module.exports = {
   computeMemorySkillBoostsAsync,
   SCORE_BREAKDOWN_KEYS,
   inferQueryCapabilities,
+  FALLBACK_CODES,
+  DEFAULT_LOW_CONFIDENCE_SCORE,
+  resolveRoutingFallback,
 };

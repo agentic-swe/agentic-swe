@@ -47,7 +47,7 @@ Implementation:
 - Governance in SKILL.md `metadata`: `tier`, `eval_status`, `eval_ref`, `version`, `provenance`
 - **Fail-closed gate:** `scripts/lib/skills/eval-gate.cjs` blocks autonomous use of `unevaluated`, `lint_passed`, `deprecated`, and **unknown** skills
 - **Golden eval:** `scripts/skill-eval.cjs` + `config/skill-golden-eval.json`; all 183 skills pass their eval in `npm run verify`, but 137 of them are checked only by `oracle-catalog-lint` and are labelled `lint_passed` (manual-only), not `evaluated`
-- **Runtime discovery:** `scripts/skill-route.cjs` ranks evaluated skills and flags unevaluated ones; session-start uses `routeSkillsWithMemory` so project memory graph, **evaluated procedure `npm run` rituals**, and chunk mentions can boost skills the team actually uses
+- **Runtime discovery:** `scripts/skill-route.cjs` ranks evaluated skills and flags unevaluated ones; session-start uses `routeSkillsWithMemory` so project memory graph, **evaluated procedure `npm run` rituals**, and chunk mentions can boost skills the team actually uses. Explainability, offline accuracy bench, and fallback matrix: [`skill-routing.md`](skill-routing.md).
 
 ## Memory graph
 
