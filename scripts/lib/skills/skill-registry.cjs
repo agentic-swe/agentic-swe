@@ -18,6 +18,7 @@ const {
   resolveLockPin,
   LOCKFILE_NAME,
 } = require('./skill-integrity.cjs');
+const { scanInstallPackage } = require('./install-scan.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 
@@ -154,6 +155,19 @@ function installSkill(opts) {
     }
   }
 
+  // AE-027b: artifact/deps scan before activation (additive fail-closed).
+  if (opts.skipScan !== true) {
+    const scan = typeof opts.scan === 'function' ? opts.scan(sourceDir) : scanInstallPackage(sourceDir);
+    if (!scan || scan.ok !== true) {
+      return {
+        ok: false,
+        code: (scan && scan.code) || 'SCAN_FAILED',
+        findings: (scan && scan.findings) || [],
+        message: (scan && scan.message) || 'install scan failed',
+      };
+    }
+  }
+
   let manifest;
   try {
     manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -256,4 +270,5 @@ module.exports = {
   validateDependencies,
   installSkill,
   resolveAndVerify,
+  scanInstallPackage,
 };
