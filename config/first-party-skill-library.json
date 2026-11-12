@@ -1,0 +1,331 @@
+{
+  "version": 1,
+  "id": "ae-029a-first-party-library",
+  "description": "Ten representative first-party skills with schema-valid contracts, deterministic tests, and AE-024b-compatible eval attestation (M3.6 / AE-029a).",
+  "domains": [
+    "Development",
+    "Testing",
+    "Code review",
+    "Security",
+    "Architecture",
+    "Documentation",
+    "CI/CD",
+    "Repository analysis"
+  ],
+  "skills": [
+    {
+      "name": "backend-developer",
+      "domain": "Development",
+      "inputs": [
+        {
+          "name": "task",
+          "type": "string",
+          "required": true,
+          "description": "Backend implementation request"
+        },
+        {
+          "name": "repo_context",
+          "type": "object",
+          "required": false,
+          "description": "Optional repo signals"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "implementation_plan",
+          "type": "string"
+        },
+        {
+          "name": "code_changes",
+          "type": "diff"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "test-automator",
+      "domain": "Testing",
+      "inputs": [
+        {
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "description": "Code or suite to automate"
+        },
+        {
+          "name": "framework",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "test_plan",
+          "type": "string"
+        },
+        {
+          "name": "test_artifacts",
+          "type": "files"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "code-reviewer",
+      "domain": "Code review",
+      "inputs": [
+        {
+          "name": "diff",
+          "type": "string",
+          "required": true,
+          "description": "Change set to review"
+        },
+        {
+          "name": "focus",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "findings",
+          "type": "array"
+        },
+        {
+          "name": "summary",
+          "type": "string"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "security-engineer",
+      "domain": "Security",
+      "inputs": [
+        {
+          "name": "scope",
+          "type": "string",
+          "required": true,
+          "description": "System or change to harden"
+        },
+        {
+          "name": "threat_model",
+          "type": "object",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "controls",
+          "type": "array"
+        },
+        {
+          "name": "risk_report",
+          "type": "string"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "microservices-architect",
+      "domain": "Architecture",
+      "inputs": [
+        {
+          "name": "system_context",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "constraints",
+          "type": "object",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "architecture_decision",
+          "type": "string"
+        },
+        {
+          "name": "service_boundaries",
+          "type": "array"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "documentation-engineer",
+      "domain": "Documentation",
+      "inputs": [
+        {
+          "name": "doc_target",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "audience",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "docs",
+          "type": "files"
+        },
+        {
+          "name": "outline",
+          "type": "string"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "net.fetch:injected"
+      ]
+    },
+    {
+      "name": "build-engineer",
+      "domain": "CI/CD",
+      "inputs": [
+        {
+          "name": "build_system",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "perf_goals",
+          "type": "object",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "build_config",
+          "type": "files"
+        },
+        {
+          "name": "perf_notes",
+          "type": "string"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "devops-engineer",
+      "domain": "CI/CD",
+      "inputs": [
+        {
+          "name": "pipeline_goal",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "environment",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "pipeline_config",
+          "type": "files"
+        },
+        {
+          "name": "runbook",
+          "type": "string"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    },
+    {
+      "name": "repo-scan",
+      "domain": "Repository analysis",
+      "inputs": [
+        {
+          "name": "repo_root",
+          "type": "string",
+          "required": true,
+          "description": "Repository path to scan"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "snapshot",
+          "type": "object"
+        },
+        {
+          "name": "signals",
+          "type": "array"
+        }
+      ],
+      "permissions": [
+        "fs.read"
+      ]
+    },
+    {
+      "name": "api-designer",
+      "domain": "Architecture",
+      "inputs": [
+        {
+          "name": "api_goals",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "existing_spec",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "openapi_or_schema",
+          "type": "string"
+        },
+        {
+          "name": "design_notes",
+          "type": "string"
+        }
+      ],
+      "permissions": [
+        "fs.read",
+        "fs.write",
+        "proc.exec:allowlisted"
+      ]
+    }
+  ],
+  "attestation": {
+    "suite_id": "ae-029a-first-party-contracts",
+    "result_digest": "677d8a6cbf773a789b260ddd8dcd9f1dbae51f4a4094096622b516b0bc9dbefc",
+    "timestamp": "2026-11-12T00:00:00.000Z"
+  }
+}
