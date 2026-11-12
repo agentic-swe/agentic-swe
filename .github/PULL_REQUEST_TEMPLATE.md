@@ -10,9 +10,12 @@
 
 - [ ] Core pipeline (phases, agents, commands, templates)
 - [ ] Subagent definitions
+- [ ] Skill contribution (use [skill PR template](PULL_REQUEST_TEMPLATE/skill.md); see [docs/skill-contribution.md](../docs/skill-contribution.md))
 - [ ] Documentation only
 - [ ] Tests only
 - [ ] Other: <!-- describe -->
+
+<!-- Skill PRs: external publication waits on PD-6 — validation only until then. -->
 
 ## Testing done
 

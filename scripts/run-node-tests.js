@@ -19,7 +19,9 @@ function collectTestFiles(dir) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
     if (ent.isDirectory()) {
-      if (ent.name === 'node_modules') continue;
+      // Skip dependency trees and fixture trees (AE-028a contribution fixtures may
+      // ship contract.test.js that are intentionally broken / only run via the validator).
+      if (ent.name === 'node_modules' || ent.name === 'fixtures') continue;
       out.push(...collectTestFiles(p));
     } else if (ent.isFile() && ent.name.endsWith('.test.js')) {
       out.push(p);

@@ -1,0 +1,42 @@
+{
+  "name": "contrib-good-example",
+  "version": "1.0.0",
+  "description": "Example skill contribution used by AE-028a validation fixtures.",
+  "kind": "prompt",
+  "inputs": [
+    {
+      "name": "topic",
+      "type": "string",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "notes",
+      "type": "string"
+    }
+  ],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.0.0"
+  },
+  "validation": {
+    "rules": [
+      "schema",
+      "digest"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "license": "MIT",
+    "authors": [
+      "agentic-swe"
+    ]
+  },
+  "maintainer": "agentic-swe",
+  "digest": "1811be57e956e39f8b8ac6c7b7a35b9da8d2738b3e75a00d6955fa7115a4f237"
+}

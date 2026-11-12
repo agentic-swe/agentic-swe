@@ -1,0 +1,28 @@
+{
+  "name": "contrib-broken-manifest",
+  "version": "1.0.0",
+  "description": "Broken manifest fixture for AE-028a.",
+  "kind": "prompt",
+  "inputs": [],
+  "outputs": [],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.0.0"
+  },
+  "validation": {
+    "rules": [
+      "schema"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "authors": [
+      "test"
+    ]
+  },
+  "digest": "f127dc32229a49510eef719a0ca0cef0381d169504302cd38be42f675073bc51"
+}
