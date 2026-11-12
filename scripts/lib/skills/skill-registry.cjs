@@ -470,9 +470,85 @@ function installSkill(opts) {
   }
 }
 
+function readFileOrNull(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  return fs.readFileSync(filePath);
+}
+
+function restoreFileBytesAtomic(filePath, priorBytes) {
+  if (priorBytes === null) {
+    if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
+    return;
+  }
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, priorBytes);
+  fs.renameSync(tmp, filePath);
+}
+
+/**
+ * Surface the audit failure; if compensation also fails, name both errors.
+ * Never swallow the original append error.
+ */
+function registryLogFailure(err, compensate) {
+  const code = err.code || 'REGISTRY_LOG_FAILED';
+  try {
+    compensate();
+    return { ok: false, code, errors: [err.message] };
+  } catch (compErr) {
+    return {
+      ok: false,
+      code: 'REGISTRY_LOG_FAILED',
+      errors: [
+        `audit log failed: ${err.message}`,
+        `compensation failed: ${compErr.message}`,
+      ],
+    };
+  }
+}
+
+function peekPackageIdentity(sourceDir) {
+  const manifestPath = path.join(path.resolve(sourceDir), 'manifest.json');
+  if (!fs.existsSync(manifestPath)) return null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const name = String((parsed && parsed.name) || '').trim();
+    const version = String((parsed && parsed.version) || '').trim();
+    if (!name || !version) return null;
+    return { name, version };
+  } catch {
+    return null;
+  }
+}
+
+function snapshotPublishState(registryRoot, name, version) {
+  const root = path.resolve(registryRoot);
+  const indexPath = path.join(root, INDEX_NAME);
+  const lockPath = path.join(root, LOCKFILE_NAME);
+  const destDir = path.join(root, 'skills', name, version);
+  return {
+    indexPath,
+    lockPath,
+    destDir,
+    priorIndex: readFileOrNull(indexPath),
+    priorLock: readFileOrNull(lockPath),
+    destExisted: fs.existsSync(destDir),
+  };
+}
+
+function compensatePublishInstall(snap) {
+  if (!snap.destExisted && fs.existsSync(snap.destDir)) {
+    fs.rmSync(snap.destDir, { recursive: true, force: true });
+  }
+  restoreFileBytesAtomic(snap.indexPath, snap.priorIndex);
+  restoreFileBytesAtomic(snap.lockPath, snap.priorLock);
+}
+
 /**
  * Publish = install + immutability gate + audit log with actor.
  * Re-publishing the same version with a different digest fails VERSION_IMMUTABLE.
+ * Audit-append failure rolls back the just-installed version + index/lock (no partial state).
  */
 function publishSkill(opts) {
   let actor;
@@ -482,12 +558,18 @@ function publishSkill(opts) {
     return { ok: false, code: err.code || 'ACTOR_REQUIRED', errors: [err.message] };
   }
 
+  const registryRoot = path.resolve(opts.registryRoot);
+  const identity = peekPackageIdentity(opts.sourceDir);
+  const snap = identity
+    ? snapshotPublishState(registryRoot, identity.name, identity.version)
+    : null;
+
   const result = installSkill(opts);
   if (!result.ok) return result;
 
   const tag = gitTagRef(result.manifest.name, result.manifest.version);
   try {
-    appendRegistryLog(opts.registryRoot, {
+    appendRegistryLog(registryRoot, {
       action: 'publish',
       actor,
       name: result.manifest.name,
@@ -496,7 +578,12 @@ function publishSkill(opts) {
       tag,
     });
   } catch (err) {
-    return { ok: false, code: err.code || 'REGISTRY_LOG_FAILED', errors: [err.message] };
+    return registryLogFailure(err, () => {
+      if (!snap) {
+        throw new Error('publish compensation unavailable: missing pre-install snapshot');
+      }
+      compensatePublishInstall(snap);
+    });
   }
 
   return { ...result, tag, actor };
@@ -504,6 +591,7 @@ function publishSkill(opts) {
 
 /**
  * Mark a published version deprecated. Still resolvable with a warning record.
+ * Audit-append failure restores the prior index (no partial deprecation).
  */
 function deprecateSkill(opts) {
   const registryRoot = path.resolve(opts.registryRoot);
@@ -531,6 +619,8 @@ function deprecateSkill(opts) {
     return { ok: false, code: 'REVOKED', name, version };
   }
 
+  const priorIndex = structuredClone(index);
+
   entry.status = STATUS_DEPRECATED;
   entry.deprecated_at = new Date().toISOString();
   entry.deprecated_by = actor;
@@ -550,7 +640,9 @@ function deprecateSkill(opts) {
       tag: entry.tag || gitTagRef(name, version),
     });
   } catch (err) {
-    return { ok: false, code: err.code || 'REGISTRY_LOG_FAILED', errors: [err.message] };
+    return registryLogFailure(err, () => {
+      writeIndexAtomic(indexPath, priorIndex);
+    });
   }
 
   return { ok: true, name, version, status: STATUS_DEPRECATED, actor };
@@ -559,6 +651,7 @@ function deprecateSkill(opts) {
 /**
  * Revoke a version: blocks NEW installs; does not delete already-installed files.
  * Dependency resolve will not newly select a revoked version.
+ * Audit-append failure restores prior index + revocation list (no partial revoke).
  */
 function revokeSkill(opts) {
   const registryRoot = path.resolve(opts.registryRoot);
@@ -586,6 +679,10 @@ function revokeSkill(opts) {
 
   const entry = findVersionEntry(index, name, version);
   if (!entry) return { ok: false, code: 'NOT_FOUND' };
+
+  const priorIndex = structuredClone(index);
+  const priorRevocation = structuredClone(revocation);
+  const revocationExisted = fs.existsSync(revocationPath);
 
   entry.status = STATUS_REVOKED;
   entry.revoked_at = new Date().toISOString();
@@ -619,7 +716,14 @@ function revokeSkill(opts) {
       tag: entry.tag || gitTagRef(name, version),
     });
   } catch (err) {
-    return { ok: false, code: err.code || 'REGISTRY_LOG_FAILED', errors: [err.message] };
+    return registryLogFailure(err, () => {
+      writeIndexAtomic(indexPath, priorIndex);
+      if (!revocationExisted) {
+        if (fs.existsSync(revocationPath)) fs.rmSync(revocationPath, { force: true });
+      } else {
+        writeRevocationAtomic(revocationPath, priorRevocation);
+      }
+    });
   }
 
   const installedPath = path.join(registryRoot, 'skills', name, version);

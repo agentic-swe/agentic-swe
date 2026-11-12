@@ -429,4 +429,90 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     assert.throws(() => gitTagRef('', '1.0.0'), (e) => e.code === 'TAG_REF_INVALID');
     assert.throws(() => gitTagRef('x', '  '), (e) => e.code === 'TAG_REF_INVALID');
   });
+
+  it('publish rolls back install when audit-log append fails; re-publish then succeeds', () => {
+    const registry = path.join(lifeRoot, 'reg-audit-rollback');
+    const src = path.join(lifeRoot, 'src-audit-rollback');
+    writePackage(src, baseManifest('rollpub', '1.0.0'));
+    fs.mkdirSync(registry, { recursive: true });
+
+    // Make skills-registry.jsonl a directory so appendFileSync fails (EISDIR).
+    const logPath = path.join(registry, REGISTRY_LOG_NAME);
+    fs.mkdirSync(logPath, { recursive: true });
+
+    const indexPath = path.join(registry, INDEX_NAME);
+    const lockPath = path.join(registry, LOCKFILE_NAME);
+    assert.equal(fs.existsSync(indexPath), false);
+
+    const failed = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:rb' });
+    assert.equal(failed.ok, false);
+    assert.ok(failed.errors && failed.errors.length >= 1);
+    assert.equal(fs.existsSync(path.join(registry, 'skills', 'rollpub', '1.0.0')), false);
+    assert.equal(fs.existsSync(indexPath), false);
+    assert.equal(fs.existsSync(lockPath), false);
+
+    // Clear the blocker and publish for real — must not hit VERSION_IMMUTABLE leftovers.
+    fs.rmSync(logPath, { recursive: true, force: true });
+    const ok = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:rb' });
+    assert.equal(ok.ok, true);
+    assert.equal(ok.manifest.version, '1.0.0');
+    assert.ok(fs.existsSync(path.join(registry, 'skills', 'rollpub', '1.0.0', 'SKILL.md')));
+
+    // With an existing index, a second skill's audit failure must leave index identical.
+    const indexBefore = fs.readFileSync(indexPath);
+    const lockBefore = fs.readFileSync(lockPath);
+    const src2 = path.join(lifeRoot, 'src-audit-rollback-2');
+    writePackage(src2, baseManifest('rollpub2', '1.0.0'));
+    fs.rmSync(logPath, { recursive: true, force: true });
+    fs.mkdirSync(logPath, { recursive: true });
+    const failed2 = publishSkill({ registryRoot: registry, sourceDir: src2, actor: 'actor:rb' });
+    assert.equal(failed2.ok, false);
+    assert.equal(fs.existsSync(path.join(registry, 'skills', 'rollpub2', '1.0.0')), false);
+    assert.equal(fs.readFileSync(indexPath).equals(indexBefore), true);
+    assert.equal(fs.readFileSync(lockPath).equals(lockBefore), true);
+    assert.ok(fs.existsSync(path.join(registry, 'skills', 'rollpub', '1.0.0', 'SKILL.md')));
+  });
+
+  it('deprecate/revoke roll back index (and revocation) when audit-log append fails', () => {
+    const registry = path.join(lifeRoot, 'reg-life-rollback');
+    const src = path.join(lifeRoot, 'src-life-rollback');
+    writePackage(src, baseManifest('liferb', '1.0.0'));
+    assert.equal(publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:life' }).ok, true);
+
+    const indexPath = path.join(registry, INDEX_NAME);
+    const revocationPath = path.join(registry, REVOCATION_NAME);
+    const logPath = path.join(registry, REGISTRY_LOG_NAME);
+    const indexBeforeObj = readIndex(indexPath);
+
+    fs.rmSync(logPath, { recursive: true, force: true });
+    fs.mkdirSync(logPath, { recursive: true });
+
+    const dep = deprecateSkill({
+      registryRoot: registry,
+      name: 'liferb',
+      version: '1.0.0',
+      actor: 'actor:life',
+      reason: 'temp',
+    });
+    assert.equal(dep.ok, false);
+    assert.deepEqual(readIndex(indexPath), indexBeforeObj);
+    assert.equal(versionStatusFromEntry(readIndex(indexPath).skills.liferb.versions[0]), 'active');
+
+    const rev = revokeSkill({
+      registryRoot: registry,
+      name: 'liferb',
+      version: '1.0.0',
+      actor: 'actor:life',
+      reason: 'temp',
+    });
+    assert.equal(rev.ok, false);
+    assert.deepEqual(readIndex(indexPath), indexBeforeObj);
+    assert.equal(fs.existsSync(revocationPath), false);
+    assert.equal(versionStatusFromEntry(readIndex(indexPath).skills.liferb.versions[0]), 'active');
+  });
 });
+
+function versionStatusFromEntry(entry) {
+  const s = String((entry && entry.status) || 'active').trim().toLowerCase();
+  return s === 'deprecated' || s === 'revoked' ? s : 'active';
+}
