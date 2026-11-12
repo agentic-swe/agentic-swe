@@ -149,6 +149,10 @@ curl -fsSL https://raw.githubusercontent.com/agentic-swe/agentic-swe/main/script
 
 See the site doc [Cursor plugin](https://agentic-swe.github.io/agentic-swe/docs/cursor-plugin) for **`CLAUDE.md`** merge options.
 
+## Skill packages (not this document)
+
+Pack marketplace / npm / install.sh channels above publish the **whole agentic-swe pack**. Per-skill contribution templates and CI validation are documented in [`docs/skill-contribution.md`](skill-contribution.md) and [`CONTRIBUTING.md`](../CONTRIBUTING.md). External publication of third-party skills waits on **PD-6** (AE-028b deferred).
+
 ## Version sync
 
 All of these must match **`package.json`** **`version`**:

@@ -1,7 +1,11 @@
 'use strict';
 
-const { spawn } = require('node:child_process');
 const { resolveAcceptanceArgv } = require('../work-engine/acceptance.cjs');
+const {
+  resolveSandboxProfile,
+  prepareSandboxSpawn,
+  spawnSandboxed,
+} = require('./sandbox-profile.cjs');
 
 const repoSchema = {
   type: 'object', additionalProperties: false, required: ['repo'],
@@ -45,32 +49,59 @@ const TEST_MANIFEST = baseManifest('test.run', ['proc.exec:arbitrary-code'], {
     cwd: { type: 'string' },
   },
 }, 'local');
-TEST_MANIFEST.sandbox = { output_cap: 1024 * 1024 };
+// Opt into the process sandbox profile (PD-31). Additive: profile fields merge
+// onto plugin-untrusted defaults; baseline PDP / default-policy.json unchanged.
+TEST_MANIFEST.sandbox = { profile: 'plugin-untrusted', output_cap: 1024 * 1024 };
 
-function runArgv(argv, opts) {
-  return new Promise((resolve) => {
-    const child = spawn(argv[0], argv.slice(1), {
-      cwd: opts.cwd,
-      shell: false,
-      signal: opts.signal,
-      env: { CI: '1', PATH: process.env.PATH || '' },
-    });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.on('error', (error) => resolve({ status: 'error', stdout, stderr, error: { code: error.code || 'SPAWN_ERROR', message: error.message } }));
-    child.on('close', (code, signal) => resolve({
-      status: code === 0 ? 'ok' : 'error', stdout, stderr,
-      error: code === 0 ? undefined : { code: 'TEST_FAILED', message: `exit ${code}${signal ? ` (${signal})` : ''}` },
-    }));
+async function runArgv(argv, opts) {
+  const resolved = resolveSandboxProfile(opts.sandbox || { profile: 'plugin-untrusted' }, {
+    cwd_root: opts.cwd_root || opts.cwd,
+    timeout_ms: opts.timeout_ms,
   });
+  if (!resolved.ok) {
+    return { status: 'error', error: { code: resolved.code, message: resolved.message } };
+  }
+  const profile = resolved.profile;
+  const prepared = prepareSandboxSpawn(profile, {
+    file: argv[0],
+    args: argv.slice(1),
+    cwd: opts.cwd,
+    shell: opts.shell,
+    decision: opts.decision,
+    env: opts.env,
+  });
+  if (!prepared.ok) {
+    return {
+      status: 'denied',
+      error: { code: prepared.code, message: prepared.message },
+      spawned: false,
+    };
+  }
+  const result = await spawnSandboxed(profile, prepared.file, prepared.args, {
+    cwd: prepared.cwd,
+    env: opts.env,
+    decision: opts.decision,
+    signal: opts.signal,
+    spawn: opts.spawn,
+  });
+  if (!result.spawned && result.status === 'denied') {
+    return { status: 'denied', error: { code: result.code, message: result.message }, spawned: false };
+  }
+  return {
+    status: result.ok ? 'ok' : 'error',
+    stdout: result.stdout,
+    stderr: result.stderr,
+    spawned: result.spawned,
+    error: result.ok
+      ? undefined
+      : { code: result.code || 'TEST_FAILED', message: result.message || `exit ${result.exit_code}` },
+  };
 }
 
 function createTestRunnerTool({ projectRoot = process.cwd() } = {}) {
   return {
     manifest: TEST_MANIFEST,
-    execute: async (input, context) => {
+    execute: async (input, context = {}) => {
       const command = Array.isArray(input.command) ? input.command : String(input.command).trim().split(/\s+/);
       if (
         /(?:^|[/\\])node(?:\.exe)?$/.test(command[0]) &&
@@ -84,7 +115,17 @@ function createTestRunnerTool({ projectRoot = process.cwd() } = {}) {
       const resolved = resolveAcceptanceArgv(input.command);
       if (!resolved.ok) return { status: 'error', error: { code: resolved.code, message: resolved.message } };
       const cwd = input.cwd ? require('node:path').resolve(projectRoot, input.cwd) : projectRoot;
-      return runArgv([resolved.file, ...resolved.args], { cwd, signal: context.signal });
+      const sandbox = (context.manifest && context.manifest.sandbox) || TEST_MANIFEST.sandbox;
+      // Runner attaches the PDP decision; spawn fails closed without an allow.
+      const decision = context.decision || (context.opts && context.opts.decision) || null;
+      return runArgv([resolved.file, ...resolved.args], {
+        cwd,
+        cwd_root: projectRoot,
+        signal: context.signal,
+        sandbox,
+        decision,
+        timeout_ms: context.manifest && context.manifest.timeout_ms,
+      });
     },
   };
 }

@@ -3,3 +3,6 @@ contact_links:
   - name: Usage questions
     url: https://github.com/agentic-swe/agentic-swe#readme
     about: Check the README for usage instructions before opening an issue
+  - name: Skill contribution guide
+    url: https://github.com/agentic-swe/agentic-swe/blob/main/docs/skill-contribution.md
+    about: Templates + CI validation for skill packages (external publish deferred until PD-6)

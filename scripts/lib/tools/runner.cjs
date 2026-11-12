@@ -8,6 +8,7 @@ const { recordPolicyDecision } = require('../policy/record-decision.cjs');
 const { redactDeep } = require('../shared/redact.cjs');
 const { idempotencyKey, normalizedResult, redactText } = require('./types.cjs');
 const { callerGrantInjection } = require('./grant-guard.cjs');
+const { resolveSandboxProfile } = require('./sandbox-profile.cjs');
 
 function outputRef(root, value, cap) {
   const text = redactText(value).slice(0, cap || 1024 * 1024);
@@ -175,9 +176,34 @@ class ToolRunner {
     const started = Date.now();
     const controller = new AbortController();
     let timer;
+    // AE-027a: resolve process sandbox profile (opt-in via manifest.sandbox).
+    // Additive — unknown/absent sandbox leaves profile null; existing tools unchanged.
+    let sandboxProfile = null;
+    if (manifest.sandbox && typeof manifest.sandbox === 'object') {
+      const resolved = resolveSandboxProfile(manifest.sandbox, {
+        cwd_root: opts.cwd_root || this.workDir || undefined,
+        timeout_ms: manifest.timeout_ms,
+      });
+      if (!resolved.ok) {
+        const denied = normalizedResult({
+          ...base,
+          status: 'error',
+          effects: 'none',
+          error: { code: resolved.code, message: resolved.message },
+        });
+        append(this.workDir, 'tool.completed', { ...base, result: denied }, `completed:${key}`);
+        return denied;
+      }
+      sandboxProfile = resolved.profile;
+    }
     try {
       const execution = Promise.resolve(entry.execute(input, {
-        signal: controller.signal, manifest, workDir: this.workDir, opts,
+        signal: controller.signal,
+        manifest,
+        workDir: this.workDir,
+        opts,
+        decision,
+        sandbox: sandboxProfile,
       }));
       const timeout = new Promise((_, reject) => {
         timer = setTimeout(() => {

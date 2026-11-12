@@ -1,0 +1,63 @@
+{
+  "name": "build-engineer",
+  "version": "1.0.0",
+  "description": "Use this agent when you need to optimize build performance, reduce compilation times, or scale build systems across growing teams.",
+  "kind": "subagent",
+  "inputs": [
+    {
+      "name": "build_system",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "perf_goals",
+      "type": "object",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "name": "build_config",
+      "type": "files"
+    },
+    {
+      "name": "perf_notes",
+      "type": "string"
+    }
+  ],
+  "dependencies": [],
+  "permissions": [
+    "fs.read",
+    "fs.write",
+    "proc.exec:allowlisted"
+  ],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.4.0"
+  },
+  "validation": {
+    "rules": [
+      "schema",
+      "permissions-explicit",
+      "digest-pin",
+      "ae-029a-contract",
+      "no-paid-llm"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "license": "MIT",
+    "authors": [
+      "agentic-swe"
+    ]
+  },
+  "maintainer": "agentic-swe",
+  "digest": "eccd68f5b77c180bee28d71971285a54bee7f37747032153a59d237630aa07d4",
+  "eval_attestation": {
+    "suite_id": "ae-029a-first-party-contracts",
+    "result_digest": "677d8a6cbf773a789b260ddd8dcd9f1dbae51f4a4094096622b516b0bc9dbefc",
+    "timestamp": "2026-11-12T00:00:00.000Z"
+  }
+}

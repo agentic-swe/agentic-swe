@@ -31,6 +31,9 @@ const SIDE_PAYLOAD_KEYS = {
   'tool.reconciled': 'toolReconciledPayload',
   'runtime.step': null,
   'runtime.critical_failure': null,
+  // AE-027b: process-sandbox isolation harness outcomes (additive; not PDP baseline).
+  'sandbox.isolation.passed': null,
+  'sandbox.isolation.failed': null,
   'test.side': 'testSidePayload',
   'github.anchored': null,
 };

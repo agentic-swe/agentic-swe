@@ -1,0 +1,29 @@
+{
+  "name": "contrib-blank-digest",
+  "version": "1.0.0",
+  "description": "Blank digest fixture for AE-028a.",
+  "kind": "prompt",
+  "inputs": [],
+  "outputs": [],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.0.0"
+  },
+  "validation": {
+    "rules": [
+      "schema"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "authors": [
+      "test"
+    ]
+  },
+  "maintainer": "test",
+  "digest": "   "
+}
