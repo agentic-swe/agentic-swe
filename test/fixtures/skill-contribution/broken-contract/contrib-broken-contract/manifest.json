@@ -1,0 +1,29 @@
+{
+  "name": "contrib-broken-contract",
+  "version": "1.0.0",
+  "description": "Broken contract test fixture for AE-028a.",
+  "kind": "prompt",
+  "inputs": [],
+  "outputs": [],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.0.0"
+  },
+  "validation": {
+    "rules": [
+      "schema"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "authors": [
+      "test"
+    ]
+  },
+  "maintainer": "test",
+  "digest": "855590fdbf6570742db884c532765b0360a958a00a9c6a2a1aaa3c275d005441"
+}

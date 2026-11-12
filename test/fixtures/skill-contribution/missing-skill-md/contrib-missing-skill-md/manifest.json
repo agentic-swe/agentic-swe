@@ -1,0 +1,16 @@
+{
+  "name": "contrib-missing-skill-md",
+  "version": "1.0.0",
+  "description": "Missing SKILL.md fixture",
+  "kind": "prompt",
+  "inputs": [],
+  "outputs": [],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": { "node": ">=22.0.0" },
+  "compatibility": { "pack": "^3.0.0" },
+  "validation": { "rules": ["schema"] },
+  "provenance": { "origin": "first-party", "authors": ["test"] },
+  "maintainer": "test",
+  "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}
