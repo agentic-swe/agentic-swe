@@ -232,7 +232,7 @@ A single **Hypervisor session** (this one) owns transitions, gates, and synthesi
 | Topic | Where |
 |-------|--------|
 | Extend pipeline | **`/author-pipeline`** · [`references/authoring-pipeline-capabilities.md`](references/authoring-pipeline-capabilities.md) |
-| Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) · skill packages: [`docs/skill-contribution.md`](docs/skill-contribution.md) (validation only; external publish waits on PD-6) |
+| Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) · skill packages: [`docs/skill-contribution.md`](docs/skill-contribution.md) (DCO 1.1; governed publish after human merge) · [`DCO.md`](DCO.md) |
 | Competitive note | [`docs/competitive-vs-ruflo.md`](docs/competitive-vs-ruflo.md) — win on PR receipt + replay, not swarm/marketplace parity |
 | Compliance map | [`docs/compliance-mapping.md`](docs/compliance-mapping.md) — ASI / NIST AI RMF / EU AI Act coverage (pack-boundary, not a certification) |
 | Architecture decisions | [`docs/adr/`](docs/adr/README.md) — accepted ADRs (status, date, decider) |

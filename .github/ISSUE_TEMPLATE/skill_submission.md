@@ -1,6 +1,6 @@
 ---
 name: Skill submission
-about: Propose a new or updated skill package (validation only; no external publish yet)
+about: Propose a new or updated skill package (fork PR + DCO; governed publish after merge)
 labels: enhancement
 ---
 
@@ -19,14 +19,15 @@ labels: enhancement
 - [ ] `manifest.digest` is sha256 of the SKILL.md body and is up to date
 - [ ] Optional `contract.test.js` passes under `node --test`
 - [ ] Ran `node scripts/skill-contribution-validate.cjs <path>` locally (exit 0)
+- [ ] Commits will be signed with `git commit -s` (DCO 1.1)
 
 ## Permissions / kind
 
 <!-- prompt/phase/docs may use permissions: []. Execution kinds need explicit non-empty permissions. -->
 
-## PD-6 notice
+## DCO (PD-36)
 
-External publication of third-party skills is **deferred** until founder decision PD-6 (DCO vs CLA; employer IP). Opening this issue / a follow-up PR runs **validation only** — it does not publish to a public skill registry.
+External contributions use the [Developer Certificate of Origin](../../DCO.md) (no CLA). Opening this issue does not publish; open a fork PR with signed-off commits. After human review and merge, a maintainer publishes with an explicit approval reference.
 
 ## Links
 

@@ -1,0 +1,3 @@
+fix: case fold email
+
+Signed-off-by: Alice Contributor <Alice@Example.COM>

@@ -51,24 +51,37 @@ describe('AE-028a skill contribution templates + validation', () => {
     assert.match(contributing, /docs\/skill-contribution\.md/);
     assert.match(contributing, /skill_submission\.md/);
     assert.match(contributing, /PULL_REQUEST_TEMPLATE\/skill\.md/);
-    assert.match(contributing, /PD-6/);
+    assert.match(contributing, /PD-36/);
+    assert.match(contributing, /Developer Certificate of Origin/i);
+    assert.match(contributing, /git commit -s/);
+    assert.match(contributing, /skill-external-publish/);
 
     const guide = fs.readFileSync(path.join(root, 'docs/skill-contribution.md'), 'utf8');
-    assert.match(guide, /PD-6/);
-    assert.match(guide, /external publication/i);
+    assert.match(guide, /PD-36/);
+    assert.match(guide, /DCO/);
+    assert.match(guide, /governed publication/i);
     assert.match(guide, /CONTRIBUTING\.md/);
     assert.match(guide, /skill_submission\.md/);
     assert.match(guide, /PULL_REQUEST_TEMPLATE\/skill\.md/);
+    assert.match(guide, /dco-check/);
+    // PD-6 wait notices must be gone.
+    assert.doesNotMatch(guide, /waits on PD-6|not open for external|deferred until founder decision \*\*PD-6\*\*/i);
 
     const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
     assert.match(readme, /CONTRIBUTING\.md/);
     assert.match(readme, /docs\/skill-contribution\.md/);
+    assert.match(readme, /DCO\.md/);
 
-    // No CLA / DCO / external publish path introduced by this item.
+    assert.ok(fs.existsSync(path.join(root, 'DCO.md')));
+    const dco = fs.readFileSync(path.join(root, 'DCO.md'), 'utf8');
+    assert.match(dco, /Developer Certificate of Origin/);
+    assert.match(dco, /Version 1\.1/);
+    assert.match(dco, /developercertificate\.org/);
+
+    // No CLA; no third-party dco bot config.
     for (const rel of ['CONTRIBUTING.md', 'docs/skill-contribution.md']) {
       const text = fs.readFileSync(path.join(root, rel), 'utf8');
       assert.doesNotMatch(text, /\bCLA agreement\b/i);
-      assert.doesNotMatch(text, /Developer Certificate of Origin/i);
       assert.doesNotMatch(text, /dco\.yml/i);
     }
   });

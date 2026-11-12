@@ -151,7 +151,7 @@ See the site doc [Cursor plugin](https://agentic-swe.github.io/agentic-swe/docs/
 
 ## Skill packages (not this document)
 
-Pack marketplace / npm / install.sh channels above publish the **whole agentic-swe pack**. Per-skill contribution templates and CI validation are documented in [`docs/skill-contribution.md`](skill-contribution.md) and [`CONTRIBUTING.md`](../CONTRIBUTING.md). External publication of third-party skills waits on **PD-6** (AE-028b deferred).
+Pack marketplace / npm / install.sh channels above publish the **whole agentic-swe pack**. Per-skill contribution templates, DCO, CI validation, and governed external publication are documented in [`docs/skill-contribution.md`](skill-contribution.md) and [`CONTRIBUTING.md`](../CONTRIBUTING.md) (PD-36 / AE-028b).
 
 ## Version sync
 

@@ -17,7 +17,7 @@ M3 needs a portable skill specification and a registry that can discover, valida
 - Tool execution already has an accepted contract (ADR-009): argv-only, `minimalChildEnv`, digest-pinned tool registry, PDP before spawn. ADR-009 states argv is **hygiene, not a sandbox**; OS/container isolation was deferred.
 - `config/layers.json` places `skills` in layer `service` and `tools` in `runtime`; `service → runtime` is **forbidden**. Skill packages must not `require` tool-runner modules.
 - Pack install digests live under `scripts/lib/install-state/*` (pattern to reuse for skill lockfiles, wrong object today).
-- Founder answers for M3 (PD-30..33): registry = **local files + git tags** (no hosted service); sandbox = **process-level** ADR-009 envelope; keep `@agentic-swe` / in-tree paths (`@autoeng` deferred); PD-9 paid LLMs stay off; AE-028b external publication deferred until PD-6; sandbox/policy baseline changes need §15 approval.
+- Founder answers for M3 (PD-30..33, PD-36): registry = **local files + git tags** (no hosted service); sandbox = **process-level** ADR-009 envelope; keep `@agentic-swe` / in-tree paths (`@autoeng` deferred); PD-9 paid LLMs stay off; AE-028b external contribution uses DCO 1.1 + human-gated merge + governed publication (PD-36 resolves PD-6); sandbox/policy baseline changes need §15 approval.
 
 A one-line RFC title cannot bind M3 code. This ADR states the manifest, digest, provenance, attestation, shadowing, and M3 registry shape.
 
@@ -33,7 +33,7 @@ Every skill the pack or a project installs is described by a schema-valid **Skil
 
 **No implicit shadowing (SEC-006).** Project skills under `.agentic-swe/skills` **must not** replace pack skills of the same name for autonomous use unless an explicit trust entry records the shadow. With trust, resolve records `shadow: explicit`. Without trust, reject for autonomous paths; manual inspection may still read the project file.
 
-**Registry (M3, PD-30).** The skill registry for M3 is **local files in the repo plus git tags** for immutable version pointers. There is **no** hosted registry service, GHCR feed, or npm skill publish path in this ADR. `SkillRegistry.resolve(name, range, trust)` / `verify` / `lock` operate on the local index and lockfile. Republishing the same version with a different digest fails `VERSION_IMMUTABLE`. Deprecate warns; revoke blocks **new** installs. Revocation list is local (and tag/ref conventions documented in AE-025b). External publication of third-party skills (AE-028b) is **out of scope** until PD-6 (PD-32). Digest in the lockfile is authoritative over tag names if a tag moves.
+**Registry (M3, PD-30).** The skill registry for M3 is **local files in the repo plus git tags** for immutable version pointers. There is **no** hosted registry service, GHCR feed, or npm skill publish path in this ADR. `SkillRegistry.resolve(name, range, trust)` / `verify` / `lock` operate on the local index and lockfile. Republishing the same version with a different digest fails `VERSION_IMMUTABLE`. Deprecate warns; revoke blocks **new** installs. Revocation list is local (and tag/ref conventions documented in AE-025b). External contribution and governed publication of third-party skills (AE-028b) uses DCO 1.1 and an explicit human approval record (PD-36). Digest in the lockfile is authoritative over tag names if a tag moves.
 
 **Execution boundary (PD-31).** Skill/plugin side effects execute only through the ADR-009 tool runner: argv-only, `minimalChildEnv`, PDP on every run, network deny-by-default, grants never from caller input. This ADR does **not** claim OS-user or container/VM isolation. Honest labeling per ADR-001: process envelope is enforced for pack-dispatched tools; host-native tools in in-host mode remain cooperative. Do not label process hygiene as a sandbox boundary under ADR-001 hosted claims.
 
@@ -41,7 +41,7 @@ Every skill the pack or a project installs is described by a schema-valid **Skil
 
 **Spend (PD-33).** Routing, eval, and smoke stay fixture/local/$0; paid LLM providers remain denied unless the founder reopens PD-9.
 
-**Governed promotion (§16).** Promote only after evidence → isolated tests → compare → independent review → human approval where required → promote → monitor/rollback. Never silently publish private org knowledge to a public skill ecosystem. First-party maintainer promotion inside the pack is allowed under FD-B; external contributor publication waits on PD-6 / AE-028b.
+**Governed promotion (§16).** Promote only after evidence → isolated tests → compare → independent review → human approval where required → promote → monitor/rollback. Never silently publish private org knowledge to a public skill ecosystem. First-party maintainer promotion inside the pack is allowed under FD-B; external contributor publication (AE-028b / PD-36) requires DCO sign-off, human-gated merge, and an explicit approval reference before `publishExternalContribution`.
 
 **Layering (ADR-016).** Manifest, lint, registry index, and lockfile code live under `scripts/lib/skills` (`service`) + `schemas/`. Spawn/sandbox enforcement stays in `scripts/lib/tools` + `shared/child-env` (`runtime` / `storage`). Runtime/clients wire them. **No new `service → runtime` edges; zero dependency cycles.**
 

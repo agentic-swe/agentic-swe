@@ -1,0 +1,31 @@
+{
+  "name": "contrib-private-example",
+  "version": "1.0.0",
+  "description": "Private-origin fixture for AE-028b publish refusal.",
+  "kind": "prompt",
+  "inputs": [],
+  "outputs": [],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.0.0"
+  },
+  "validation": {
+    "rules": [
+      "schema",
+      "digest"
+    ]
+  },
+  "provenance": {
+    "origin": "private",
+    "license": "UNLICENSED",
+    "authors": [
+      "org-internal"
+    ]
+  },
+  "maintainer": "org-internal",
+  "digest": "44fd8654e58fdf75d59ad8179067701d8b9f37dfd4aff2eaec284f16ce1e9126"
+}

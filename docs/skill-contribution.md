@@ -1,22 +1,33 @@
-# Skill contribution workflow (AE-028a)
+# Skill contribution workflow (AE-028a / AE-028b)
 
-Templates + automated validation for skill packages. **This is not an external publication path.**
+External fork-PR submission, DCO 1.1 sign-off, automated validation, human-gated merge, and governed publication (PD-36). AI-assisted review stays optional and off by default (PD-9: no paid LLM).
 
-## Status (PD-6 / PD-32)
+## Status (PD-36)
 
 | Capability | Status |
 |---|---|
 | Issue / PR templates for skill submission | Available |
 | Local + CI validation (manifest, digest, contract tests) | Available (`npm run verify` / `npm test`) |
-| External contributor → public skill publish | **Deferred** until founder decision **PD-6** (DCO vs CLA; employer IP). Tracked as AE-028b / PD-32. |
+| DCO 1.1 (`Signed-off-by` on each commit) | Required — [`DCO.md`](../DCO.md); CI `dco-check` on PR ranges |
+| External contributor → governed skill publish | Available — human approval record required; no silent private→public (§16) |
 
-There is **no** CLA text, DCO bot, or automated publish-to-registry step in this milestone. Do not treat a green validation check as authorization to publish third-party skills.
+## End-to-end path
+
+1. Fork → clone → branch.
+2. Add skill package (`SKILL.md` + `manifest.json` + optional `contract.test.js`).
+3. Commit with `git commit -s` (DCO trailer must match author email).
+4. Open PR with [`.github/PULL_REQUEST_TEMPLATE/skill.md`](../.github/PULL_REQUEST_TEMPLATE/skill.md).
+5. CI (`test (22)`): verify (contribution self-check) + tests + **DCO check** on `base_sha..head_sha` (commits already on `main` are not re-checked).
+6. Human review on GitHub; optional worklog receipt.
+7. Maintainer squash-merge under FD-B.
+8. Maintainer runs governed publish with `--actor` + `--approval-ref` (merged PR number) and matching digest.
 
 ## Templates (linked)
 
 | Template | Path |
 |---|---|
-| Contributing (skills section) | [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
+| Contributing (skills + DCO) | [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
+| DCO 1.1 text | [`DCO.md`](../DCO.md) |
 | Skill submission issue | [`.github/ISSUE_TEMPLATE/skill_submission.md`](../.github/ISSUE_TEMPLATE/skill_submission.md) |
 | Skill pull request | [`.github/PULL_REQUEST_TEMPLATE/skill.md`](../.github/PULL_REQUEST_TEMPLATE/skill.md) |
 | Default PR template | [`.github/PULL_REQUEST_TEMPLATE.md`](../.github/PULL_REQUEST_TEMPLATE.md) |
@@ -33,6 +44,8 @@ A contribution directory must contain:
 4. **`contract.test.js`** (optional) — when present, must pass under `node --test`.
 
 Banned: `postinstall.js` / `install.js` / `preinstall.js`, and `package.json` with `scripts` (same supply-chain rule as registry install).
+
+For external publication, set `provenance.origin` to a public-safe value such as `third-party`. Origins that mark private/org knowledge (`private`, `org`, `org-private`, `internal`, `confidential`) are **refused** at publish time (§16).
 
 ### Compute a digest
 
@@ -61,15 +74,56 @@ node scripts/skill-contribution-validate.cjs --self-check
 
 `npm run verify` runs `--self-check` so the required GitHub check **`test (22)`** shows pass/fail lines for each fixture (`skill-contribution-validate: PASS|FAIL …` plus per-check rows). Unit coverage lives in `test/skill-contribution-validate.test.js` (also under `npm test`).
 
+## DCO CLI
+
+```bash
+# Against the PR base (CI uses pull_request.base.sha..head.sha)
+node scripts/dco-check.cjs <base>..<head>
+
+# Machine-readable
+node scripts/dco-check.cjs --json <base>..<head>
+```
+
+Fails if any non-merge commit lacks a `Signed-off-by:` trailer whose email matches that commit's author email (case-insensitive). Output lines start with `dco-check: PASS|FAIL`.
+
+## Governed publication (maintainer)
+
+```bash
+node scripts/skill-external-publish.cjs \
+  --registry /path/to/local-registry \
+  --source path/to/my-skill \
+  --actor maintainer:<id> \
+  --approval-ref PR#123 \
+  --expected-digest <sha256>
+```
+
+| Gate | Code when refused |
+|---|---|
+| Blank / missing actor | `ACTOR_REQUIRED` |
+| Blank / missing approval reference | `APPROVAL_REQUIRED` |
+| Blank package digest | `DIGEST_MISSING` |
+| `--expected-digest` blank | `DIGEST_EXPECTED_BLANK` |
+| Digest mismatch | `DIGEST_MISMATCH` |
+| Private/org `provenance.origin` | `PRIVATE_PROVENANCE_FORBIDDEN` |
+
+Success records the publish in the local registry audit log with `approval_ref`, immutable version + digest, and tag ref `skill/<name>/v<semver>` (PD-30). This CLI does **not** push remotes or create GitHub Releases.
+
 ## Fixtures
 
 Under `test/fixtures/skill-contribution/`:
 
-- `good/contrib-good-example` — must pass
+- `good/contrib-good-example` — must pass validation
 - `broken-digest`, `broken-manifest`, `blank-digest`, `corrupt-manifest`, `missing-skill-md`, `broken-contract` — must fail
 
-## Reviewer notes
+Under `test/fixtures/skill-external-contribution/`:
 
-- Validation visibility = CI log output from verify/test (no separate required check).
-- Merge still follows FD-B / CODEOWNERS on `main`.
-- First-party maintainer promotion inside the pack is separate from external publication (see ADR-010).
+- `good/contrib-external-example` — third-party origin; used by the offline dry-run path
+- Commit-message fixtures for DCO unit tests (signed / unsigned / email mismatch)
+
+## Reviewer notes — reading CI
+
+1. Open the PR check **`test (22)`** → job log.
+2. **Contribution validator:** search for `skill-contribution-validate:` (`PASS`/`FAIL` + per-check rows). Also emitted during `npm run verify`.
+3. **DCO:** search for `dco-check:` (`PASS`/`FAIL`, checked/skipped counts, failing SHAs). Only runs on `pull_request` events.
+4. Record the decision with a **GitHub review** (Approve / Request changes). An optional worklog receipt may link the PR; it does not replace the review.
+5. Merge still follows FD-B / CODEOWNERS on `main`. Publication after merge is a separate maintainer step with `--approval-ref`.
