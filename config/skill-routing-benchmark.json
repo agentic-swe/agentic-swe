@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "description": "AE-026b offline skill-routing accuracy fixture (PD-9: no paid LLM). Frozen golden queries → expected skills.",
+  "thresholds": {
+    "hit_at_1": 0.7,
+    "hit_at_3": 0.9,
+    "precision_at_k": 0.15,
+    "recall_at_k": 0.7,
+    "k": 5
+  },
+  "low_confidence_score": 0.5,
+  "queries": [
+    {
+      "id": "check-budget",
+      "query": "check budget before work-engine transition",
+      "expected": ["check"]
+    },
+    {
+      "id": "feasibility",
+      "query": "feasibility analysis lean track",
+      "expected": ["feasibility"]
+    },
+    {
+      "id": "policy",
+      "query": "inspect policy as code",
+      "expected": ["policy"]
+    },
+    {
+      "id": "receipt",
+      "query": "create receipt for audit",
+      "expected": ["receipt"]
+    },
+    {
+      "id": "test-runner",
+      "query": "run test-runner on suite",
+      "expected": ["test-runner"]
+    },
+    {
+      "id": "ci-status",
+      "query": "ci-status of github checks",
+      "expected": ["ci-status"]
+    },
+    {
+      "id": "write-plan",
+      "query": "write-plan for implementation",
+      "expected": ["write-plan"]
+    },
+    {
+      "id": "execute-plan",
+      "query": "execute-plan after approval",
+      "expected": ["execute-plan"]
+    },
+    {
+      "id": "goal",
+      "query": "goal loop outer objective",
+      "expected": ["goal"]
+    },
+    {
+      "id": "work",
+      "query": "work item status engine",
+      "expected": ["work"]
+    },
+    {
+      "id": "code-reviewer",
+      "query": "code-reviewer subagent review",
+      "expected": ["code-reviewer"]
+    },
+    {
+      "id": "diff-review",
+      "query": "diff-review of pull request changes",
+      "expected": ["diff-review"]
+    },
+    {
+      "id": "design-review",
+      "query": "design-review panel feedback",
+      "expected": ["design-review"]
+    },
+    {
+      "id": "self-review",
+      "query": "self-review before code-review",
+      "expected": ["self-review"]
+    },
+    {
+      "id": "validation",
+      "query": "validation results artifact",
+      "expected": ["validation"]
+    },
+    {
+      "id": "pr-creation",
+      "query": "pr-creation open pull request",
+      "expected": ["pr-creation"]
+    },
+    {
+      "id": "approval-wait",
+      "query": "approval-wait human gate",
+      "expected": ["approval-wait"]
+    },
+    {
+      "id": "repo-scan",
+      "query": "repo-scan feasibility signals",
+      "expected": ["repo-scan"]
+    },
+    {
+      "id": "doubt",
+      "query": "doubt adversarial verification",
+      "expected": ["doubt"]
+    },
+    {
+      "id": "security-scan",
+      "query": "security-scan vulnerability",
+      "expected": ["security-scan"]
+    }
+  ]
+}
