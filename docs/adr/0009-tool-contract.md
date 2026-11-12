@@ -14,7 +14,9 @@
 - In in-host mode, the host's native shell and edit tools never go through the runner.
 - Permission vocabularies and journals overlap: `Permission` lacked `npm.publish`, which `PRIVILEGED_ACTIONS` has, and `github-calls.jsonl` is a second hash chain.
 
-`shell: true` survives in `descent/replay.cjs` and `bench/score-dimension.cjs`, and `execSync` string-building survives in several more files. Children inherit the full environment, including `GITHUB_TOKEN`.
+At acceptance time (2026-11-06), `shell: true` still survived in `descent/replay.cjs` and `bench/score-dimension.cjs`, and `execSync` string-building survived in several more files. Children inherited the full environment, including `GITHUB_TOKEN`.
+
+> **Note (2026-11-12):** Those `shell: true` / unrestricted-env sites were removed in [#138](https://github.com/agentic-swe/agentic-swe/pull/138) (`6e032b2`). `scripts/shell-true-lint.cjs` (wired into `npm run verify`) fails closed if new `shell: true` appears under `scripts/`. Decision text below is unchanged.
 
 ## Decision
 

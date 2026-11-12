@@ -119,4 +119,13 @@ describe('F-M2-04 ADR-009 empty child env', () => {
     assert.doesNotMatch(bench, /shell\s*:\s*true/);
     fs.rmSync(tmp, { recursive: true, force: true });
   });
+
+  it('ADR-009 Context no longer claims shell:true still survives (post-#138 note)', () => {
+    const adr = fs.readFileSync(path.join(root, 'docs/adr/0009-tool-contract.md'), 'utf8');
+    assert.doesNotMatch(adr, /`shell: true` survives in/);
+    assert.match(adr, /Note \(2026-11-12\):/);
+    assert.match(adr, /shell-true-lint\.cjs/);
+    assert.match(adr, /#138/);
+    assert.match(adr, /## Decision/);
+  });
 });
