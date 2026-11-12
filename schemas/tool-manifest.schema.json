@@ -30,6 +30,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "profile": {
+          "type": "string",
+          "enum": ["plugin-untrusted", "process-default"],
+          "description": "AE-027a / PD-31 named process sandbox profile (argv + minimalChildEnv + PDP; not OS/container isolation)"
+        },
         "cwd_root": { "type": "string" },
         "fs_write": { "type": "array", "items": { "type": "string" } },
         "env": { "type": "array", "items": { "type": "string" } },
