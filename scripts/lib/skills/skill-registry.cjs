@@ -25,6 +25,7 @@ const {
   resolveLockPin,
   LOCKFILE_NAME,
 } = require('./skill-integrity.cjs');
+const { scanInstallPackage } = require('./install-scan.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
@@ -340,6 +341,19 @@ function installSkill(opts) {
       } else {
         return { ok: false, code: 'INSTALL_SCRIPTS_FORBIDDEN' };
       }
+    }
+  }
+
+  // AE-027b: artifact/deps scan before activation (additive fail-closed).
+  if (opts.skipScan !== true) {
+    const scan = typeof opts.scan === 'function' ? opts.scan(sourceDir) : scanInstallPackage(sourceDir);
+    if (!scan || scan.ok !== true) {
+      return {
+        ok: false,
+        code: (scan && scan.code) || 'SCAN_FAILED',
+        findings: (scan && scan.findings) || [],
+        message: (scan && scan.message) || 'install scan failed',
+      };
     }
   }
 
@@ -672,4 +686,5 @@ module.exports = {
   deprecateSkill,
   revokeSkill,
   resolveAndVerify,
+  scanInstallPackage,
 };
