@@ -66,8 +66,10 @@ metadata:
   });
 
   it('allows evaluated skill when eval_ref present', () => {
+    // Project-local evaluated skill; attestation is derived from pack corpus scoring.json
+    // (external digest), not from self-declared eval_status alone (AE-024b).
     const tmp = path.join(__dirname, '_tmp-eval-skill');
-    const skillDir = path.join(tmp, 'skills', 'evaluated-demo');
+    const skillDir = path.join(tmp, '.agentic-swe', 'skills', 'evaluated-demo');
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(
       path.join(skillDir, 'SKILL.md'),
@@ -85,11 +87,13 @@ metadata:
 `
     );
     const gate = checkSkillEvalGate({
-      pluginRoot: tmp,
+      pluginRoot: root,
+      projectRoot: tmp,
       skillName: 'evaluated-demo',
       autonomous: true,
     });
-    assert.strictEqual(gate.allowed, true);
+    assert.strictEqual(gate.allowed, true, gate.reason);
+    assert.strictEqual(gate.attestation, 'external');
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

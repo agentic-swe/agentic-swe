@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { extractFrontmatter } = require('../catalog/parse-frontmatter.cjs');
 const { parseMetadataMap } = require('./golden-eval.cjs');
+const { isShadowTrusted } = require('./skill-integrity.cjs');
 
 const SKILL_NAME_RE = /^[a-z][a-z0-9-]{0,63}$/;
 
@@ -38,18 +39,96 @@ function readSkillsDir(skillsRoot, origin) {
 }
 
 /**
- * List pack skills plus optional project-local `.agentic-swe/skills` (project overrides pack).
+ * List pack skills plus optional project-local `.agentic-swe/skills`.
+ * Same-named project skills still appear for listing/manual inspection, but are
+ * tagged with shadow metadata (SEC-006). Autonomous callers must use resolveSkill.
  * @param {string} pluginRoot
  * @param {string} [projectRoot]
  */
 function listSkills(pluginRoot, projectRoot) {
   const pack = readSkillsDir(path.join(path.resolve(pluginRoot), 'skills'), 'pack');
-  if (!projectRoot) return pack.sort((a, b) => a.name.localeCompare(b.name));
+  if (!projectRoot) {
+    return pack
+      .map((s) => ({ ...s, shadow: null }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   const project = readSkillsDir(path.join(path.resolve(projectRoot), '.agentic-swe', 'skills'), 'project');
-  const byName = new Map(pack.map((s) => [s.name, s]));
-  for (const s of project) byName.set(s.name, s);
+  const packNames = new Set(pack.map((s) => s.name));
+  const byName = new Map(pack.map((s) => [s.name, { ...s, shadow: null }]));
+  for (const s of project) {
+    if (packNames.has(s.name)) {
+      const trusted = isShadowTrusted(projectRoot, s.name);
+      byName.set(s.name, {
+        ...s,
+        shadow: trusted ? 'explicit' : 'implicit',
+        shadows_pack: true,
+      });
+    } else {
+      byName.set(s.name, { ...s, shadow: null });
+    }
+  }
   return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Resolve a skill for autonomous or manual use. Rejects implicit pack shadows.
+ * @param {{ pluginRoot: string, projectRoot?: string, skillName: string, autonomous?: boolean }} opts
+ * @returns {{
+ *   ok: true, skill: object, shadow: null|'explicit'|'implicit'
+ * } | {
+ *   ok: false, code: string, shadow?: string
+ * }}
+ */
+function resolveSkill(opts) {
+  const pluginRoot = path.resolve(opts.pluginRoot);
+  const projectRoot = opts.projectRoot ? path.resolve(opts.projectRoot) : null;
+  const skillName = String(opts.skillName || '').trim();
+  const autonomous = opts.autonomous !== false;
+  if (!skillName) return { ok: false, code: 'NOT_FOUND' };
+
+  const packPath = path.join(pluginRoot, 'skills', skillName, 'SKILL.md');
+  const projectPath = projectRoot
+    ? path.join(projectRoot, '.agentic-swe', 'skills', skillName, 'SKILL.md')
+    : null;
+  const packExists = fs.existsSync(packPath);
+  const projectExists = !!(projectPath && fs.existsSync(projectPath));
+
+  function projectRow(shadow) {
+    const row = readSkillsDir(path.join(projectRoot, '.agentic-swe', 'skills'), 'project').find(
+      (s) => s.name === skillName
+    );
+    return {
+      ok: true,
+      skill: {
+        ...(row || { name: skillName, path: projectPath, origin: 'project' }),
+        shadow,
+        shadows_pack: shadow != null,
+      },
+      shadow,
+    };
+  }
+
+  if (projectExists && packExists) {
+    const trusted = isShadowTrusted(projectRoot, skillName);
+    if (autonomous && !trusted) {
+      return { ok: false, code: 'SHADOW_UNTRUSTED', shadow: 'implicit' };
+    }
+    return projectRow(trusted ? 'explicit' : 'implicit');
+  }
+
+  if (projectExists) return projectRow(null);
+
+  if (packExists) {
+    const row = readSkillsDir(path.join(pluginRoot, 'skills'), 'pack').find((s) => s.name === skillName);
+    return {
+      ok: true,
+      skill: { ...(row || { name: skillName, path: packPath, origin: 'pack' }), shadow: null },
+      shadow: null,
+    };
+  }
+
+  return { ok: false, code: 'NOT_FOUND' };
 }
 
 function projectSkillPath(projectRoot, skillName) {
@@ -199,6 +278,7 @@ module.exports = {
   SKILL_NAME_RE,
   readSkillsDir,
   listSkills,
+  resolveSkill,
   projectSkillPath,
   scaffoldProjectSkillFromRitual,
   scaffoldMissingRitualSkills,
