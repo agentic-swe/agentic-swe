@@ -1,0 +1,64 @@
+{
+  "name": "test-automator",
+  "version": "1.0.0",
+  "description": "Use this agent when you need to build, implement, or enhance automated test frameworks, create test scripts, or integrate testing into CI/CD pipelines.",
+  "kind": "subagent",
+  "inputs": [
+    {
+      "name": "target",
+      "type": "string",
+      "required": true,
+      "description": "Code or suite to automate"
+    },
+    {
+      "name": "framework",
+      "type": "string",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "name": "test_plan",
+      "type": "string"
+    },
+    {
+      "name": "test_artifacts",
+      "type": "files"
+    }
+  ],
+  "dependencies": [],
+  "permissions": [
+    "fs.read",
+    "fs.write",
+    "proc.exec:allowlisted"
+  ],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.4.0"
+  },
+  "validation": {
+    "rules": [
+      "schema",
+      "permissions-explicit",
+      "digest-pin",
+      "ae-029a-contract",
+      "no-paid-llm"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "license": "MIT",
+    "authors": [
+      "agentic-swe"
+    ]
+  },
+  "maintainer": "agentic-swe",
+  "digest": "0d4fa351c00ace4c87a6c0935663cd90d6de4797fc9dc6cb3694492334e58b92",
+  "eval_attestation": {
+    "suite_id": "ae-029a-first-party-contracts",
+    "result_digest": "677d8a6cbf773a789b260ddd8dcd9f1dbae51f4a4094096622b516b0bc9dbefc",
+    "timestamp": "2026-11-12T00:00:00.000Z"
+  }
+}

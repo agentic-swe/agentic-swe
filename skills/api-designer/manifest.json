@@ -1,0 +1,63 @@
+{
+  "name": "api-designer",
+  "version": "1.0.0",
+  "description": "Use this agent when designing new APIs, creating API specifications, or refactoring existing API architecture for scalability and developer experience. Invoke when you need REST/GraphQL endpoint design, OpenAPI documentation, authentication patterns, or API versioning strategies.",
+  "kind": "subagent",
+  "inputs": [
+    {
+      "name": "api_goals",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "existing_spec",
+      "type": "string",
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "name": "openapi_or_schema",
+      "type": "string"
+    },
+    {
+      "name": "design_notes",
+      "type": "string"
+    }
+  ],
+  "dependencies": [],
+  "permissions": [
+    "fs.read",
+    "fs.write",
+    "proc.exec:allowlisted"
+  ],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.4.0"
+  },
+  "validation": {
+    "rules": [
+      "schema",
+      "permissions-explicit",
+      "digest-pin",
+      "ae-029a-contract",
+      "no-paid-llm"
+    ]
+  },
+  "provenance": {
+    "origin": "first-party",
+    "license": "MIT",
+    "authors": [
+      "agentic-swe"
+    ]
+  },
+  "maintainer": "agentic-swe",
+  "digest": "8413e1e653ef72126c158f5b546494256ba2613223579aad11e27032c3bd3de2",
+  "eval_attestation": {
+    "suite_id": "ae-029a-first-party-contracts",
+    "result_digest": "677d8a6cbf773a789b260ddd8dcd9f1dbae51f4a4094096622b516b0bc9dbefc",
+    "timestamp": "2026-11-12T00:00:00.000Z"
+  }
+}
