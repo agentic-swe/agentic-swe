@@ -154,6 +154,7 @@ function appendRegistryLog(registryRoot, event) {
     reason: event.reason != null ? String(event.reason) : undefined,
     tag: event.tag != null ? String(event.tag) : undefined,
     code: event.code != null ? String(event.code) : undefined,
+    approval_ref: event.approval_ref != null ? String(event.approval_ref) : undefined,
   });
   const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -568,6 +569,10 @@ function publishSkill(opts) {
   if (!result.ok) return result;
 
   const tag = gitTagRef(result.manifest.name, result.manifest.version);
+  const approvalRef =
+    opts.approvalRef != null && String(opts.approvalRef).trim()
+      ? String(opts.approvalRef).trim()
+      : undefined;
   try {
     appendRegistryLog(registryRoot, {
       action: 'publish',
@@ -576,6 +581,7 @@ function publishSkill(opts) {
       version: result.manifest.version,
       digest: result.digest,
       tag,
+      approval_ref: approvalRef,
     });
   } catch (err) {
     return registryLogFailure(err, () => {
@@ -586,7 +592,7 @@ function publishSkill(opts) {
     });
   }
 
-  return { ...result, tag, actor };
+  return { ...result, tag, actor, approvalRef };
 }
 
 /**

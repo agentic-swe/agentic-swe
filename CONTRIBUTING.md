@@ -7,21 +7,52 @@ Thanks for your interest. This document covers how to propose changes to the **p
 1. Read [`docs/branch-workflow.md`](docs/branch-workflow.md) for branch naming and PR targets (`main` only).
 2. Use Node **22+** (`engines.node` in `package.json`).
 3. Run **`npm run verify`** and **`npm test`** before every push.
+4. Sign every commit with the [Developer Certificate of Origin](DCO.md) (`git commit -s`).
 
 Issue templates: [bug](.github/ISSUE_TEMPLATE/bug_report.md) · [feature](.github/ISSUE_TEMPLATE/feature_request.md) · [skill submission](.github/ISSUE_TEMPLATE/skill_submission.md).  
 PR templates: [default](.github/PULL_REQUEST_TEMPLATE.md) · [skill](.github/PULL_REQUEST_TEMPLATE/skill.md).
 
 Full skill contribution guide: [`docs/skill-contribution.md`](docs/skill-contribution.md).
 
-## Skill contributions (AE-028a)
+## Developer Certificate of Origin (PD-36)
 
-You may prepare and validate a skill package locally and open a PR that adds or updates skills. Automated validation (manifest schema, content digest, optional contract tests) runs in CI via `npm run verify` / `npm test`.
+This project uses **DCO 1.1** (no CLA). By contributing you certify the statements in [`DCO.md`](DCO.md) (also at https://developercertificate.org/).
 
-**External publication of third-party skills is not open yet.** Publishing contributor skills into a public registry / release channel waits on founder decision **PD-6** (DCO vs CLA; employer IP). Until then:
+Sign off each commit so the trailer matches the commit author email:
 
-- Do **not** expect a CLA, DCO bot, or external publish path in this repository.
-- Maintainer-only first-party promotion inside the pack remains the governed path.
-- Validation results are visible in the required CI check **`test (22)`** (verify + test output).
+```bash
+git commit -s -m "feat(skills): add my-skill"
+# Trailer written by -s:
+# Signed-off-by: Your Name <you@example.com>
+```
+
+CI runs `node scripts/dco-check.cjs` on the PR commit range inside the required **`test (22)`** check. Commits already on `main` are not re-checked. Merge commits are skipped; every other commit (including maintainer/agent commits) must carry a matching `Signed-off-by`.
+
+## Skill contributions (AE-028a / AE-028b)
+
+External contributors submit skills via a **fork → PR** path. Automated validation and DCO run in CI; a human reviews and merges; a maintainer then publishes through the governed path (human approval record required). There is no silent private→public promote (§16).
+
+### End-to-end path
+
+1. **Fork** this repository and clone your fork.
+2. **Add** a skill package (layout below) on a topic branch.
+3. **Sign off** every commit: `git commit -s`.
+4. **Open a PR** to `agentic-swe/agentic-swe` `main` using the [skill PR template](.github/PULL_REQUEST_TEMPLATE/skill.md).
+5. **Automated validation** runs in `test (22)`: `npm run verify` (includes skill-contribution self-check) and `npm test`, plus the DCO range check on PR commits.
+6. **Human review** on GitHub (Approve / Request changes). Optional worklog receipt is fine; the review decision is the record.
+7. **Maintainer merge** (squash-merge under FD-B / ruleset).
+8. **Governed publication** (maintainer only): after merge, publish with an explicit approval reference (merged PR number):
+
+```bash
+node scripts/skill-external-publish.cjs \
+  --registry /path/to/local-registry \
+  --source path/to/my-skill \
+  --actor maintainer:<id> \
+  --approval-ref PR#123 \
+  --expected-digest <sha256-from-manifest>
+```
+
+Publication refuses blank actor/approval, digest mismatch, and `provenance.origin` values that mark private/org knowledge. Versions are immutable; the tag convention is `skill/<name>/v<semver>` (PD-30). No signing service.
 
 ### Package layout
 
@@ -38,9 +69,11 @@ my-skill/
 node scripts/skill-contribution-validate.cjs path/to/my-skill
 # Fixture self-check (also part of npm run verify):
 node scripts/skill-contribution-validate.cjs --self-check
+# DCO on your branch commits (example vs origin/main):
+node scripts/dco-check.cjs origin/main..HEAD
 ```
 
-See [`docs/skill-contribution.md`](docs/skill-contribution.md) for field requirements, digest computation, and the PD-6 notice.
+See [`docs/skill-contribution.md`](docs/skill-contribution.md) for field requirements, digest computation, reviewer CI tips, and publication gates.
 
 ## Code contributions
 
@@ -48,7 +81,8 @@ See [`docs/skill-contribution.md`](docs/skill-contribution.md) for field require
 - Respect `config/layers.json` (zero dependency cycles; no `service → runtime`).
 - No `shell: true`; child processes use argv + minimal env patterns already in the pack.
 - Do not commit `.worklogs/`, `bench/results/*.json`, or `test/_tmp-*`.
+- Always `git commit -s` (DCO).
 
 ## License
 
-Contributions are under the [MIT](LICENSE) license of this repository. Skill **publication** legal terms for external authors remain deferred (PD-6); submitting a PR does not open an external publication channel.
+Contributions are under the [MIT](LICENSE) license of this repository. Skill contribution legal terms for external authors are the DCO 1.1 (PD-36); no CLA.

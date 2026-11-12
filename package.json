@@ -73,6 +73,8 @@
     "ci": "npm run verify && npm run version:check && npm test",
     "verify": "node scripts/verify-sanity.js && node scripts/catalog-lint.cjs && node scripts/skill-lint.cjs && node scripts/generate-skills.cjs --check && node scripts/skill-eval.cjs run --all-skills && node scripts/model-conformance.cjs && node scripts/render-catalog-counts.cjs --check && node scripts/dependency-cycles.cjs && node scripts/layer-lint.cjs && node scripts/shell-true-lint.cjs && node scripts/skill-contribution-validate.cjs --self-check",
     "skill-contribution-validate": "node scripts/skill-contribution-validate.cjs",
+    "dco-check": "node scripts/dco-check.cjs",
+    "skill-external-publish": "node scripts/skill-external-publish.cjs",
     "catalog:lint": "node scripts/catalog-lint.cjs",
     "catalog:counts": "node scripts/render-catalog-counts.cjs",
     "catalog:route": "node scripts/catalog-route.cjs",

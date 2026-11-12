@@ -15,7 +15,7 @@
 - [ ] Tests only
 - [ ] Other: <!-- describe -->
 
-<!-- Skill PRs: external publication waits on PD-6 — validation only until then. -->
+<!-- Skill PRs: use skill.md template; sign commits with git commit -s (DCO 1.1 / PD-36). -->
 
 ## Testing done
 

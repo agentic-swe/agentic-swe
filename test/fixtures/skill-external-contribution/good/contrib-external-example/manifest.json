@@ -1,0 +1,42 @@
+{
+  "name": "contrib-external-example",
+  "version": "1.0.0",
+  "description": "External contributor skill fixture for AE-028b dry-run path.",
+  "kind": "prompt",
+  "inputs": [
+    {
+      "name": "topic",
+      "type": "string",
+      "required": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "notes",
+      "type": "string"
+    }
+  ],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": {
+    "node": ">=22.0.0"
+  },
+  "compatibility": {
+    "pack": "^3.0.0"
+  },
+  "validation": {
+    "rules": [
+      "schema",
+      "digest"
+    ]
+  },
+  "provenance": {
+    "origin": "third-party",
+    "license": "MIT",
+    "authors": [
+      "external-contributor"
+    ]
+  },
+  "maintainer": "external-contributor",
+  "digest": "0d69560f6ca730eaf221c03099c577511af7e063ca56bb8834bd58178fb86203"
+}
