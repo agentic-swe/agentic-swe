@@ -1,8 +1,15 @@
 'use strict';
 
 /**
- * AE-025a: local file + git-tag skill registry (PD-30).
+ * AE-025a/b: local file + git-tag skill registry (PD-30).
  * Layer: skills (service). No tools/ require.
+ *
+ * Git tag / ref conventions (immutable version pointers):
+ *   skill/<name>/v<semver>   e.g. skill/alpha/v1.2.0
+ * Digest in the lockfile is authoritative if a tag moves.
+ * Revocation list is local: skills-revocation.json under the registry root.
+ * Update = publish a new semver; never mutate a published digest.
+ * Revoke blocks NEW installs; already-installed files are left in place.
  */
 
 const fs = require('node:fs');
@@ -21,9 +28,36 @@ const {
 const { scanInstallPackage } = require('./install-scan.cjs');
 
 const INDEX_NAME = 'skills-index.json';
+const REVOCATION_NAME = 'skills-revocation.json';
+const REGISTRY_LOG_NAME = 'skills-registry.jsonl';
+
+const STATUS_ACTIVE = 'active';
+const STATUS_DEPRECATED = 'deprecated';
+const STATUS_REVOKED = 'revoked';
+
+/**
+ * Canonical git tag ref for a published skill version (PD-30 / ADR-010).
+ * @param {string} name
+ * @param {string} version
+ * @returns {string}
+ */
+function gitTagRef(name, version) {
+  const n = String(name || '').trim();
+  const v = String(version || '').trim().replace(/^v/i, '');
+  if (!n || !v) {
+    const err = new Error('git tag ref requires name and version');
+    err.code = 'TAG_REF_INVALID';
+    throw err;
+  }
+  return `skill/${n}/v${v}`;
+}
 
 function emptyIndex() {
   return { version: 1, skills: {} };
+}
+
+function emptyRevocation() {
+  return { version: 1, entries: [] };
 }
 
 function readIndex(indexPath) {
@@ -47,31 +81,185 @@ function writeIndexAtomic(indexPath, index) {
   fs.renameSync(tmp, indexPath);
 }
 
+function readRevocation(revocationPath) {
+  if (!fs.existsSync(revocationPath)) return emptyRevocation();
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(revocationPath, 'utf8'));
+  } catch {
+    const err = new Error('skills revocation list parse failed');
+    err.code = 'REVOCATION_INVALID';
+    throw err;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !Array.isArray(parsed.entries)) {
+    const err = new Error('skills revocation list schema invalid');
+    err.code = 'REVOCATION_INVALID';
+    throw err;
+  }
+  return parsed;
+}
+
+function writeRevocationAtomic(revocationPath, list) {
+  const dir = path.dirname(revocationPath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${revocationPath}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmp, revocationPath);
+}
+
+function normalizeActor(actor) {
+  const a = String(actor || '').trim();
+  if (!a) {
+    const err = new Error('actor required for registry lifecycle');
+    err.code = 'ACTOR_REQUIRED';
+    throw err;
+  }
+  return a;
+}
+
+/**
+ * Append-only registry audit log (JSONL). No invented events — caller supplies action.
+ * Fail closed on blank actor/action or write error (surfaces to caller).
+ */
+function appendRegistryLog(registryRoot, event) {
+  const actor = String(event && event.actor || '').trim();
+  const action = String(event && event.action || '').trim();
+  if (!actor) {
+    const err = new Error('registry log requires actor');
+    err.code = 'ACTOR_REQUIRED';
+    throw err;
+  }
+  if (!action) {
+    const err = new Error('registry log requires action');
+    err.code = 'LOG_ACTION_REQUIRED';
+    throw err;
+  }
+  const line = JSON.stringify({
+    ts: event.ts || new Date().toISOString(),
+    action,
+    actor,
+    name: event.name != null ? String(event.name) : undefined,
+    version: event.version != null ? String(event.version) : undefined,
+    digest: event.digest != null ? String(event.digest) : undefined,
+    reason: event.reason != null ? String(event.reason) : undefined,
+    tag: event.tag != null ? String(event.tag) : undefined,
+    code: event.code != null ? String(event.code) : undefined,
+  });
+  const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
+  fs.mkdirSync(path.dirname(logPath), { recursive: true });
+  fs.appendFileSync(logPath, `${line}\n`, 'utf8');
+  return logPath;
+}
+
+function readRegistryLog(registryRoot) {
+  const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
+  if (!fs.existsSync(logPath)) return [];
+  const text = fs.readFileSync(logPath, 'utf8');
+  const out = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      out.push(JSON.parse(line));
+    } catch {
+      const err = new Error('skills registry log parse failed');
+      err.code = 'REGISTRY_LOG_INVALID';
+      throw err;
+    }
+  }
+  return out;
+}
+
+function versionStatus(v) {
+  const s = String((v && v.status) || STATUS_ACTIVE).trim().toLowerCase();
+  if (s === STATUS_DEPRECATED || s === STATUS_REVOKED) return s;
+  return STATUS_ACTIVE;
+}
+
+function findVersionEntry(index, name, version) {
+  const entry = index.skills[name];
+  if (!entry || !Array.isArray(entry.versions)) return null;
+  return entry.versions.find((v) => v && v.manifest && String(v.manifest.version) === String(version)) || null;
+}
+
+function isRevokedInList(list, name, version) {
+  const n = String(name || '').trim();
+  const ver = String(version || '').trim();
+  if (!n || !ver) return false;
+  return (list.entries || []).some(
+    (e) => e && String(e.name || '').trim() === n && String(e.version || '').trim() === ver
+  );
+}
+
 /**
  * @param {string} name
  * @param {string} range
  * @param {object} index
- * @returns {{ ok: true, manifest: object, version: string } | { ok: false, code: string }}
+ * @param {{ allowRevoked?: boolean, revocation?: object }} [opts]
+ * @returns {{ ok: true, manifest: object, version: string, status: string, warning?: object } | { ok: false, code: string }}
  */
-function resolve(name, range, index) {
+function resolve(name, range, index, opts = {}) {
   const n = String(name || '').trim();
   if (!n) return { ok: false, code: 'NOT_FOUND' };
   const entry = index.skills[n];
   if (!entry || !Array.isArray(entry.versions) || !entry.versions.length) {
     return { ok: false, code: 'NOT_FOUND' };
   }
+  const allowRevoked = opts.allowRevoked === true;
+  const revocation = opts.revocation || null;
+
   const matching = entry.versions
     .filter((v) => v && v.manifest && satisfiesRange(v.manifest.version, range || '*'))
-    .sort((a, b) => String(b.manifest.version).localeCompare(String(a.manifest.version), undefined, { numeric: true }));
-  if (!matching.length) return { ok: false, code: 'NO_SATISFYING_VERSION' };
-  return { ok: true, manifest: structuredClone(matching[0].manifest), version: matching[0].manifest.version };
+    .filter((v) => {
+      const status = versionStatus(v);
+      if (status === STATUS_REVOKED && !allowRevoked) return false;
+      if (
+        revocation &&
+        isRevokedInList(revocation, n, v.manifest.version) &&
+        !allowRevoked
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) =>
+      String(b.manifest.version).localeCompare(String(a.manifest.version), undefined, { numeric: true })
+    );
+
+  if (!matching.length) {
+    // Distinguish: versions exist but all revoked / none satisfy range.
+    const anySatisfy = entry.versions.some(
+      (v) => v && v.manifest && satisfiesRange(v.manifest.version, range || '*')
+    );
+    if (anySatisfy) return { ok: false, code: 'NO_SATISFYING_VERSION' };
+    return { ok: false, code: 'NO_SATISFYING_VERSION' };
+  }
+
+  const chosen = matching[0];
+  const status = versionStatus(chosen);
+  const result = {
+    ok: true,
+    manifest: structuredClone(chosen.manifest),
+    version: chosen.manifest.version,
+    status,
+  };
+  if (status === STATUS_DEPRECATED) {
+    result.warning = {
+      code: 'DEPRECATED',
+      name: n,
+      version: chosen.manifest.version,
+      reason: chosen.deprecated_reason || undefined,
+    };
+  }
+  return result;
 }
 
 function detectDepCycle(name, index, stack = []) {
   if (stack.includes(name)) return [...stack, name];
   const entry = index.skills[name];
   if (!entry || !entry.versions || !entry.versions.length) return null;
-  const manifest = entry.versions[0].manifest;
+  // Use highest non-revoked for cycle probe when possible
+  const active = entry.versions.find((v) => versionStatus(v) !== STATUS_REVOKED) || entry.versions[0];
+  const manifest = active && active.manifest;
   const deps = (manifest && manifest.dependencies) || [];
   for (const d of deps) {
     const hit = detectDepCycle(d.name, index, [...stack, name]);
@@ -81,21 +269,20 @@ function detectDepCycle(name, index, stack = []) {
 }
 
 /**
- * Validate dependencies against index. Missing or cyclic → DEP_INVALID.
+ * Validate dependencies against index. Missing, revoked-only, or cyclic → DEP_INVALID.
  */
-function validateDependencies(manifest, index) {
+function validateDependencies(manifest, index, opts = {}) {
   const deps = Array.isArray(manifest.dependencies) ? manifest.dependencies : [];
   for (const d of deps) {
-    const r = resolve(d.name, d.range || '*', index);
+    const r = resolve(d.name, d.range || '*', index, opts);
     if (!r.ok) {
       return { ok: false, code: 'DEP_INVALID', errors: [`dependency ${d.name}@${d.range || '*'} ${r.code}`] };
     }
   }
   const cycle = detectDepCycle(manifest.name, index);
-  // Also check if adding this manifest would create a cycle via its deps pointing back
   const probe = structuredClone(index);
   if (!probe.skills[manifest.name]) {
-    probe.skills[manifest.name] = { versions: [{ manifest }] };
+    probe.skills[manifest.name] = { versions: [{ manifest, status: STATUS_ACTIVE }] };
   }
   for (const d of deps) {
     const hit = detectDepCycle(d.name, probe, [manifest.name]);
@@ -116,6 +303,8 @@ function validateDependencies(manifest, index) {
  *   sourceDir: string,
  *   transport?: { fetch?: Function } | null,
  *   crashBeforeActivate?: boolean,
+ *   actor?: string,
+ *   requireNetwork?: boolean,
  * }} opts
  */
 function installSkill(opts) {
@@ -188,8 +377,27 @@ function installSkill(opts) {
 
   const indexPath = path.join(registryRoot, INDEX_NAME);
   const lockPath = path.join(registryRoot, LOCKFILE_NAME);
-  const index = readIndex(indexPath);
-  const deps = validateDependencies(manifest, index);
+  const revocationPath = path.join(registryRoot, REVOCATION_NAME);
+
+  let index;
+  let revocation;
+  try {
+    index = readIndex(indexPath);
+    revocation = readRevocation(revocationPath);
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
+  }
+
+  // Revoked versions cannot be newly installed (list or index status).
+  const existingEntry = findVersionEntry(index, manifest.name, manifest.version);
+  if (
+    isRevokedInList(revocation, manifest.name, manifest.version) ||
+    (existingEntry && versionStatus(existingEntry) === STATUS_REVOKED)
+  ) {
+    return { ok: false, code: 'REVOKED', name: manifest.name, version: manifest.version };
+  }
+
+  const deps = validateDependencies(manifest, index, { revocation });
   if (!deps.ok) return deps;
 
   // Fail closed on corrupt lock before any activation (do not swallow parse errors).
@@ -229,8 +437,16 @@ function installSkill(opts) {
     }
 
     if (!index.skills[manifest.name]) index.skills[manifest.name] = { versions: [] };
-    const versions = index.skills[manifest.name].versions.filter((v) => v.manifest.version !== manifest.version);
-    versions.push({ manifest, path: path.relative(registryRoot, destDir) });
+    const versions = index.skills[manifest.name].versions.filter(
+      (v) => v.manifest.version !== manifest.version
+    );
+    const priorStatus = existingEntry ? versionStatus(existingEntry) : STATUS_ACTIVE;
+    versions.push({
+      manifest,
+      path: path.relative(registryRoot, destDir),
+      status: priorStatus === STATUS_REVOKED ? STATUS_REVOKED : priorStatus,
+      tag: gitTagRef(manifest.name, manifest.version),
+    });
     index.skills[manifest.name].versions = versions;
     writeIndexAtomic(indexPath, index);
 
@@ -245,30 +461,230 @@ function installSkill(opts) {
 }
 
 /**
+ * Publish = install + immutability gate + audit log with actor.
+ * Re-publishing the same version with a different digest fails VERSION_IMMUTABLE.
+ */
+function publishSkill(opts) {
+  let actor;
+  try {
+    actor = normalizeActor(opts.actor);
+  } catch (err) {
+    return { ok: false, code: err.code || 'ACTOR_REQUIRED', errors: [err.message] };
+  }
+
+  const result = installSkill(opts);
+  if (!result.ok) return result;
+
+  const tag = gitTagRef(result.manifest.name, result.manifest.version);
+  try {
+    appendRegistryLog(opts.registryRoot, {
+      action: 'publish',
+      actor,
+      name: result.manifest.name,
+      version: result.manifest.version,
+      digest: result.digest,
+      tag,
+    });
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_LOG_FAILED', errors: [err.message] };
+  }
+
+  return { ...result, tag, actor };
+}
+
+/**
+ * Mark a published version deprecated. Still resolvable with a warning record.
+ */
+function deprecateSkill(opts) {
+  const registryRoot = path.resolve(opts.registryRoot);
+  const name = String(opts.name || '').trim();
+  const version = String(opts.version || '').trim();
+  let actor;
+  try {
+    actor = normalizeActor(opts.actor);
+  } catch (err) {
+    return { ok: false, code: err.code || 'ACTOR_REQUIRED', errors: [err.message] };
+  }
+  if (!name || !version) return { ok: false, code: 'NOT_FOUND' };
+
+  const indexPath = path.join(registryRoot, INDEX_NAME);
+  let index;
+  try {
+    index = readIndex(indexPath);
+  } catch (err) {
+    return { ok: false, code: err.code || 'INDEX_INVALID', errors: [err.message] };
+  }
+
+  const entry = findVersionEntry(index, name, version);
+  if (!entry) return { ok: false, code: 'NOT_FOUND' };
+  if (versionStatus(entry) === STATUS_REVOKED) {
+    return { ok: false, code: 'REVOKED', name, version };
+  }
+
+  entry.status = STATUS_DEPRECATED;
+  entry.deprecated_at = new Date().toISOString();
+  entry.deprecated_by = actor;
+  if (opts.reason != null && String(opts.reason).trim()) {
+    entry.deprecated_reason = String(opts.reason).trim();
+  }
+  writeIndexAtomic(indexPath, index);
+
+  try {
+    appendRegistryLog(registryRoot, {
+      action: 'deprecate',
+      actor,
+      name,
+      version,
+      digest: entry.manifest && entry.manifest.digest,
+      reason: entry.deprecated_reason,
+      tag: entry.tag || gitTagRef(name, version),
+    });
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_LOG_FAILED', errors: [err.message] };
+  }
+
+  return { ok: true, name, version, status: STATUS_DEPRECATED, actor };
+}
+
+/**
+ * Revoke a version: blocks NEW installs; does not delete already-installed files.
+ * Dependency resolve will not newly select a revoked version.
+ */
+function revokeSkill(opts) {
+  const registryRoot = path.resolve(opts.registryRoot);
+  const name = String(opts.name || '').trim();
+  const version = String(opts.version || '').trim();
+  let actor;
+  try {
+    actor = normalizeActor(opts.actor);
+  } catch (err) {
+    return { ok: false, code: err.code || 'ACTOR_REQUIRED', errors: [err.message] };
+  }
+  if (!name || !version) return { ok: false, code: 'NOT_FOUND' };
+
+  const indexPath = path.join(registryRoot, INDEX_NAME);
+  const revocationPath = path.join(registryRoot, REVOCATION_NAME);
+
+  let index;
+  let revocation;
+  try {
+    index = readIndex(indexPath);
+    revocation = readRevocation(revocationPath);
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
+  }
+
+  const entry = findVersionEntry(index, name, version);
+  if (!entry) return { ok: false, code: 'NOT_FOUND' };
+
+  entry.status = STATUS_REVOKED;
+  entry.revoked_at = new Date().toISOString();
+  entry.revoked_by = actor;
+  if (opts.reason != null && String(opts.reason).trim()) {
+    entry.revoked_reason = String(opts.reason).trim();
+  }
+  writeIndexAtomic(indexPath, index);
+
+  if (!isRevokedInList(revocation, name, version)) {
+    revocation.entries.push({
+      name,
+      version,
+      digest: entry.manifest && entry.manifest.digest,
+      revoked_at: entry.revoked_at,
+      revoked_by: actor,
+      reason: entry.revoked_reason || undefined,
+      tag: entry.tag || gitTagRef(name, version),
+    });
+    writeRevocationAtomic(revocationPath, revocation);
+  }
+
+  try {
+    appendRegistryLog(registryRoot, {
+      action: 'revoke',
+      actor,
+      name,
+      version,
+      digest: entry.manifest && entry.manifest.digest,
+      reason: entry.revoked_reason,
+      tag: entry.tag || gitTagRef(name, version),
+    });
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_LOG_FAILED', errors: [err.message] };
+  }
+
+  const installedPath = path.join(registryRoot, 'skills', name, version);
+  return {
+    ok: true,
+    name,
+    version,
+    status: STATUS_REVOKED,
+    actor,
+    // Document already-installed behavior (ADR / M3.2): files remain; new installs blocked.
+    already_installed: fs.existsSync(installedPath)
+      ? 'retained; new installs blocked'
+      : 'none',
+  };
+}
+
+/**
  * Resolve from registry and verify lock pin.
  */
 function resolveAndVerify(registryRoot, name, range) {
-  const index = readIndex(path.join(registryRoot, INDEX_NAME));
-  const r = resolve(name, range, index);
+  const root = path.resolve(registryRoot);
+  let index;
+  let revocation;
+  try {
+    index = readIndex(path.join(root, INDEX_NAME));
+    revocation = readRevocation(path.join(root, REVOCATION_NAME));
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
+  }
+  const r = resolve(name, range, index, { revocation });
   if (!r.ok) return r;
-  const lockPath = path.join(registryRoot, LOCKFILE_NAME);
+  const lockPath = path.join(root, LOCKFILE_NAME);
   if (!fs.existsSync(lockPath)) return { ok: false, code: 'LOCK_NOT_FOUND' };
-  const lock = readLockfile(lockPath);
-  const skillDir = path.join(registryRoot, 'skills', name, r.version);
+  let lock;
+  try {
+    lock = readLockfile(lockPath);
+  } catch (err) {
+    return { ok: false, code: 'LOCKFILE_INVALID', errors: [err.message] };
+  }
+  const skillDir = path.join(root, 'skills', name, r.version);
   const raw = fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf8');
   const pin = resolveLockPin(lock, name, raw);
   if (!pin.ok) return pin;
-  return { ok: true, manifest: r.manifest, version: r.version, digest: pin.digest };
+  return {
+    ok: true,
+    manifest: r.manifest,
+    version: r.version,
+    digest: pin.digest,
+    status: r.status,
+    warning: r.warning,
+  };
 }
 
 module.exports = {
   INDEX_NAME,
+  REVOCATION_NAME,
+  REGISTRY_LOG_NAME,
+  STATUS_ACTIVE,
+  STATUS_DEPRECATED,
+  STATUS_REVOKED,
   emptyIndex,
+  emptyRevocation,
   readIndex,
   writeIndexAtomic,
+  readRevocation,
+  writeRevocationAtomic,
+  gitTagRef,
+  appendRegistryLog,
+  readRegistryLog,
   resolve,
   validateDependencies,
   installSkill,
+  publishSkill,
+  deprecateSkill,
+  revokeSkill,
   resolveAndVerify,
   scanInstallPackage,
 };
