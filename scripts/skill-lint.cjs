@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Lint Agent Skills under skills/<name>/SKILL.md
- * Extends catalog governance with eval_status and spec constraints.
+ * Extends catalog governance with eval_status, spec constraints, and
+ * ADR-010 SkillManifest validation when skills/<name>/manifest.json is present (AE-024a).
  */
 'use strict';
 
@@ -12,8 +13,15 @@ const {
   parseSimpleFields,
 } = require('./lib/catalog/parse-frontmatter.cjs');
 const { LINT_ONLY_EVAL_REFS } = require('./lib/skills/golden-eval.cjs');
+const { loadManifestFile, validateSkillManifest } = require('./lib/skills/skill-manifest.cjs');
 
-const root = path.join(__dirname, '..');
+function resolveRoot() {
+  const idx = process.argv.indexOf('--plugin-root');
+  if (idx !== -1 && process.argv[idx + 1]) return path.resolve(process.argv[idx + 1]);
+  return path.join(__dirname, '..');
+}
+
+const root = resolveRoot();
 const skillsRoot = path.join(root, 'skills');
 const SKILL_NAME_RE = /^[a-z0-9-]{1,64}$/;
 const EVAL_STATUSES = new Set(['unevaluated', 'lint_passed', 'evaluated', 'deprecated']);
@@ -55,8 +63,10 @@ function lint() {
   }
 
   const errors = [];
+  let structuredCount = 0;
   for (const dirName of dirs) {
-    const skillPath = path.join(skillsRoot, dirName, 'SKILL.md');
+    const skillDir = path.join(skillsRoot, dirName);
+    const skillPath = path.join(skillDir, 'SKILL.md');
     const rel = path.relative(root, skillPath);
     if (!fs.existsSync(skillPath)) {
       errors.push(`${rel}: missing SKILL.md`);
@@ -91,13 +101,56 @@ function lint() {
       errors.push(`${rel}: eval_ref ${meta.eval_ref} is lint-only; eval_status must be lint_passed, not evaluated`);
     }
     if (!meta.version) errors.push(`${rel}: metadata.version required`);
+
+    // AE-024a: structured SkillManifest sidecar (optional until migration).
+    const loaded = loadManifestFile(skillDir);
+    if (loaded) {
+      structuredCount += 1;
+      const manRel = path.relative(root, path.join(skillDir, 'manifest.json'));
+      if (!loaded.ok) {
+        for (const e of loaded.errors) errors.push(`${manRel}: ${e}`);
+      } else if (loaded.manifest.name && name && loaded.manifest.name !== name) {
+        errors.push(`${manRel}: name "${loaded.manifest.name}" must match SKILL.md / directory "${name}"`);
+      }
+    }
+  }
+
+  // Optional extra manifests passed as argv files (fixtures / CI).
+  const skip = new Set();
+  const rootFlag = process.argv.indexOf('--plugin-root');
+  if (rootFlag !== -1) {
+    skip.add(rootFlag);
+    skip.add(rootFlag + 1);
+  }
+  const fileArgs = process.argv
+    .map((a, i) => ({ a, i }))
+    .filter(({ a, i }) => a.endsWith('.json') && !skip.has(i))
+    .map(({ a }) => a);
+  for (const fileArg of fileArgs) {
+    const abs = path.resolve(fileArg);
+    const rel = path.relative(process.cwd(), abs) || abs;
+    let parsed;
+    try {
+      parsed = JSON.parse(fs.readFileSync(abs, 'utf8'));
+    } catch (err) {
+      errors.push(`${rel}: ${err.message}`);
+      continue;
+    }
+    const check = validateSkillManifest(parsed);
+    if (!check.ok) {
+      for (const e of check.errors) errors.push(`${rel}: ${e}`);
+    }
   }
 
   if (errors.length) {
     console.error('skill-lint: FAILED\n' + errors.map((e) => `  - ${e}`).join('\n'));
     process.exit(1);
   }
-  console.log(`skill-lint: OK (${dirs.length} skills)`);
+  console.log(
+    `skill-lint: OK (${dirs.length} skills` +
+      (structuredCount ? `, ${structuredCount} structured manifests` : '') +
+      ')'
+  );
 }
 
 lint();

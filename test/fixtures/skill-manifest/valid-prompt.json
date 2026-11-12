@@ -1,0 +1,15 @@
+{
+  "name": "fixture-prompt-skill",
+  "version": "1.0.0",
+  "description": "Read-only prompt skill fixture for AE-024a schema validation.",
+  "kind": "prompt",
+  "inputs": [{ "name": "query", "type": "string", "required": true }],
+  "outputs": [{ "name": "answer", "type": "string" }],
+  "dependencies": [],
+  "permissions": [],
+  "runtime": { "node": ">=22.0.0" },
+  "compatibility": { "pack": "^3.0.0" },
+  "validation": { "rules": ["schema"] },
+  "provenance": { "origin": "first-party", "license": "MIT", "authors": ["agentic-swe"] },
+  "maintainer": "agentic-swe"
+}
