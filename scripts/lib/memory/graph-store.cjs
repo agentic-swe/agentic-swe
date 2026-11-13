@@ -233,7 +233,9 @@ function applySchemaAndEngine(db, opts = {}) {
     err.code = 'STORE_UNKNOWN_ENGINE';
     throw err;
   }
-  if (opts.forceEngineMeta || existing !== STORE_ENGINE) {
+  // Avoid rewriting meta on every open (concurrent writers contend on that UPDATE).
+  void opts;
+  if (existing !== STORE_ENGINE) {
     writeMeta(db, STORE_ENGINE_META_KEY, STORE_ENGINE);
   }
 }
@@ -378,7 +380,7 @@ async function openOrCreateDatabase(sqlitePath, opts = {}) {
   }
 
   const db = openNative(sqlitePath);
-  applySchemaAndEngine(db, { forceEngineMeta: true });
+  applySchemaAndEngine(db);
   return {
     db,
     SQL: null,

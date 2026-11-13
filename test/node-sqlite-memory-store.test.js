@@ -171,26 +171,73 @@ const { openOrCreateDatabase, closeDatabase } = require(${JSON.stringify(
       )});
 const id = process.argv[2];
 const sqlitePath = process.argv[3];
+
+function sleep(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    /* busy wait — keep worker sync-friendly under SQLITE_BUSY */
+  }
+}
+
+function isLocked(err) {
+  return (
+    err &&
+    (err.errcode === 5 ||
+      err.code === 'ERR_SQLITE_ERROR' ||
+      /database is locked/i.test(String(err && err.message)))
+  );
+}
+
+function withBusyRetry(fn) {
+  let last;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    try {
+      return fn();
+    } catch (err) {
+      last = err;
+      if (!isLocked(err)) throw err;
+      sleep(25 + attempt * 5);
+    }
+  }
+  throw last;
+}
+
+async function withBusyRetryAsync(fn) {
+  let last;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      last = err;
+      if (!isLocked(err)) throw err;
+      sleep(25 + attempt * 5);
+    }
+  }
+  throw last;
+}
+
 (async () => {
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  const { db } = await withBusyRetryAsync(() => openOrCreateDatabase(sqlitePath));
   try {
     for (let i = 0; i < 40; i++) {
       const chunkId = id + ':' + i;
-      const stmt = db.prepare(
-        \`INSERT OR REPLACE INTO chunks
-          (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
-         VALUES (?, ?, ?, ?, ?, ?, ?)\`
-      );
-      stmt.run([
-        chunkId,
-        'concurrent/' + id + '.md',
-        'team',
-        i + 1,
-        i + 1,
-        'sha-' + chunkId,
-        'body-' + chunkId,
-      ]);
-      stmt.free();
+      withBusyRetry(() => {
+        const stmt = db.prepare(
+          \`INSERT OR REPLACE INTO chunks
+            (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
+           VALUES (?, ?, ?, ?, ?, ?, ?)\`
+        );
+        stmt.run([
+          chunkId,
+          'concurrent/' + id + '.md',
+          'team',
+          i + 1,
+          i + 1,
+          'sha-' + chunkId,
+          'body-' + chunkId,
+        ]);
+        stmt.free();
+      });
     }
   } finally {
     closeDatabase(db);
@@ -262,20 +309,30 @@ const sqlitePath = process.argv[3];
     // Lock may mention sql.js historically only if still present — must not be.
     assert.doesNotMatch(lock, /"node_modules\/sql\.js"/);
 
-    const grep = spawnSync(
-      'rg',
-      [
-        '-n',
-        String.raw`require\([\'"]sql\.js[\'"]\)`,
-        'scripts',
-        'bin',
-        '--glob',
-        '!**/node_modules/**',
-      ],
-      { cwd: pluginRoot, encoding: 'utf8' }
-    );
-    // rg exit 1 = no matches
-    assert.equal(grep.status, 1, `unexpected sql.js requires:\n${grep.stdout}`);
+    // Pure Node scan — CI runners may not have `rg` on PATH.
+    const requireRe = /require\(['"]sql\.js['"]\)/;
+    /** @type {string[]} */
+    const hits = [];
+    function walkJs(dir) {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (ent.name === 'node_modules' || ent.name === '.git') continue;
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+          walkJs(full);
+          continue;
+        }
+        if (!/\.(cjs|js|mjs)$/.test(ent.name)) continue;
+        const src = fs.readFileSync(full, 'utf8');
+        if (requireRe.test(src)) {
+          hits.push(path.relative(pluginRoot, full));
+        }
+      }
+    }
+    walkJs(path.join(pluginRoot, 'scripts'));
+    if (fs.existsSync(path.join(pluginRoot, 'bin'))) {
+      walkJs(path.join(pluginRoot, 'bin'));
+    }
+    assert.deepEqual(hits, [], `unexpected sql.js requires:\n${hits.join('\n')}`);
 
     assert.throws(
       () => require('sql.js'),
