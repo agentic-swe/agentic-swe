@@ -170,6 +170,13 @@ function publishExternalContribution(opts) {
     sourceDir: options.sourceDir,
     actor,
     approvalRef,
+    // AE-030h2: external governed publish declares public-safe memory source explicitly.
+    memorySource: { declaration: 'external-public', publicSafe: true },
+    governedPublish: true,
+    // AE-032c: forward independent review artifact when provided; otherwise
+    // publishSkill loads sourceDir/publish-review.json (required).
+    reviewArtifact: options.reviewArtifact,
+    reviewPath: options.reviewPath,
   });
   if (!result.ok) return result;
 

@@ -10,7 +10,10 @@
 
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
-const { buildPrimeMarkdown } = require('./lib/memory/memory-prime.cjs');
+const {
+  buildPrimeMarkdown,
+  buildPrimeEnvelope,
+} = require('./lib/memory/memory-prime.cjs');
 const { resolvePrimeQuery } = require('./lib/memory/resolve-prime-query.cjs');
 
 function parseArgs(argv) {
@@ -36,19 +39,33 @@ async function main() {
     workId: args.workId || null,
   });
 
-  const md = await buildPrimeMarkdown({
+  const primeOpts = {
     projectRoot,
     pluginRoot,
     query: resolved.query,
     workId: resolved.workId,
     querySource: resolved.source,
-  });
+  };
 
   if (args.json) {
-    console.log(JSON.stringify({ ok: true, markdown: md }, null, 2));
+    const envelope = await buildPrimeEnvelope(primeOpts);
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          trust: envelope.trust,
+          body: envelope.body,
+          citation: envelope.citation,
+          // Host-facing delimited form for adapters that inject into session context.
+          markdown: await buildPrimeMarkdown(primeOpts),
+        },
+        null,
+        2
+      )
+    );
     return;
   }
-  console.log(md);
+  console.log(await buildPrimeMarkdown(primeOpts));
 }
 
 main().catch((e) => {

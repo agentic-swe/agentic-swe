@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
   "id": "dev-smoke",
-  "description": "AE-034a fixture: pinned starter tasks (dev pool)",
+  "description": "AE-034b: pinned starter tasks (dev pool) with real content hashes",
   "pool": "dev",
   "cold_run_required": true,
   "retain_negatives": true,
-  "pack_commit": "c0b83fa",
+  "pack_commit": "245eb68",
   "tasks": [
     {
       "id": "01-off-by-one",
-      "content_sha256": "4831548f001f4409d6a9530d4ea125bbf9d5d4ed0aec3fb8c65d67b725c4a301",
+      "content_sha256": "2b71030e4609b299f8c5fc159316dd0570935c880c95566d2be2c9f66834c84c",
       "path": "bench/tasks/01-off-by-one"
     },
     {
       "id": "02-add-retry",
-      "content_sha256": "dfb54ed40d6f9222e382f8b2c229ca1d08f2b9d3b2855a145f4faac30d400b46",
+      "content_sha256": "0f08c3918fd2baabb58169a4923225959c18471784c0f37586f46ce66c600c4f",
       "path": "bench/tasks/02-add-retry"
     },
     {
       "id": "03-rate-limiter",
-      "content_sha256": "c7c4378ce6c917d255e42cf04894ff38c1976dec5a4604527297f6dfff994a75",
+      "content_sha256": "6e70f3ef84b2e48bab1996b59c8a87590ba98511b4df7c7dd5759de9218ddebb",
       "path": "bench/tasks/03-rate-limiter"
     }
   ],
@@ -29,5 +29,5 @@
     "label": "measured",
     "sole_e8_proof": false
   },
-  "manifest_digest": "f6770cf29484a5b588dbda4e5c72cbee064d3716268e027b3eb61b0171a29598"
+  "manifest_digest": "c97fbfc3a8022e522d45c53b1d9de2f4257ee88159d3a989b83d16d41a7fc690"
 }

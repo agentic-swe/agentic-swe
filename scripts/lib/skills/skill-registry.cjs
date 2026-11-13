@@ -26,6 +26,7 @@ const {
   LOCKFILE_NAME,
 } = require('./skill-integrity.cjs');
 const { scanInstallPackage } = require('./install-scan.cjs');
+const { requirePublishReview } = require('./skill-publish-review.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
@@ -155,6 +156,8 @@ function appendRegistryLog(registryRoot, event) {
     tag: event.tag != null ? String(event.tag) : undefined,
     code: event.code != null ? String(event.code) : undefined,
     approval_ref: event.approval_ref != null ? String(event.approval_ref) : undefined,
+    reviewer: event.reviewer != null ? String(event.reviewer) : undefined,
+    review_verdict: event.review_verdict != null ? String(event.review_verdict) : undefined,
   });
   const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -552,20 +555,72 @@ function compensatePublishInstall(snap) {
  * Audit-append failure rolls back the just-installed version + index/lock (no partial state).
  */
 /**
- * AE-030d / PD-46 / ADR-012 A6 — skill content sourced only from organizational
- * or private memory must use a governed publish path (approval_ref / governedPublish).
+ * AE-030d/h2 / PD-46 / ADR-012 A6 — publish must declare memorySource.
+ * Omitted or unknown memorySource fails closed (no silent private→public).
+ * Positively declared public-safe content is allowed; org/private still needs
+ * a governed path (approval_ref / governedPublish).
  * @param {object} opts
  */
+const MEMORY_SOURCE_PUBLIC_SAFE = new Set(['public-safe', 'first-party', 'external-public']);
+const MEMORY_SOURCE_SCOPES = new Set([
+  'execution',
+  'repository',
+  'project',
+  'skill',
+  'organizational',
+  'evaluation',
+]);
+const MEMORY_SOURCE_VISIBILITIES = new Set(['private', 'local', 'public']);
+
 function assertMemorySourcePublishAllowed(opts) {
   const src = opts && opts.memorySource;
-  if (!src || typeof src !== 'object') return;
-  const scope = String(src.scope || '').trim();
-  const visibility = String(src.visibility || 'private').trim();
+  if (!src || typeof src !== 'object' || Array.isArray(src)) {
+    const err = new Error(
+      'memorySource is required on publish (omitted source fails closed; declare public-safe or org/private explicitly)'
+    );
+    err.code = 'MEMORY_SOURCE_REQUIRED';
+    err.path = 'memorySource';
+    throw err;
+  }
+
+  const declaration =
+    src.declaration != null ? String(src.declaration).trim().toLowerCase() : '';
+  if (src.publicSafe === true || MEMORY_SOURCE_PUBLIC_SAFE.has(declaration)) {
+    return;
+  }
+
+  const scope = src.scope != null ? String(src.scope).trim() : '';
+  const visibility = src.visibility != null ? String(src.visibility).trim() : '';
+
+  if (!scope && !visibility) {
+    const err = new Error(
+      'unknown memorySource: declare publicSafe/declaration or scope+visibility'
+    );
+    err.code = 'UNKNOWN_MEMORY_SOURCE';
+    err.path = 'memorySource';
+    throw err;
+  }
+  if (scope && !MEMORY_SOURCE_SCOPES.has(scope)) {
+    const err = new Error(`unknown memorySource.scope: ${scope}`);
+    err.code = 'UNKNOWN_MEMORY_SOURCE';
+    err.path = 'memorySource.scope';
+    throw err;
+  }
+  if (visibility && !MEMORY_SOURCE_VISIBILITIES.has(visibility)) {
+    const err = new Error(`unknown memorySource.visibility: ${visibility}`);
+    err.code = 'UNKNOWN_MEMORY_SOURCE';
+    err.path = 'memorySource.visibility';
+    throw err;
+  }
+
   const fromPrivateOrg =
     scope === 'organizational' ||
     visibility === 'private' ||
     visibility === 'local';
-  if (!fromPrivateOrg) return;
+  if (!fromPrivateOrg) {
+    // Known non-private declaration (e.g. visibility public) — allowed.
+    return;
+  }
   const governed =
     opts.governedPublish === true ||
     (opts.approvalRef != null && String(opts.approvalRef).trim() !== '');
@@ -577,6 +632,27 @@ function assertMemorySourcePublishAllowed(opts) {
     err.path = 'memorySource';
     throw err;
   }
+}
+
+/**
+ * Resolve AE-032c review input: explicit artifact/path, else sourceDir/publish-review.json.
+ * Explicit `reviewArtifact: null` (own property) means missing — fail closed.
+ * @param {object} opts
+ * @param {string} sourceDir
+ */
+function resolvePublishReviewInput(opts, sourceDir) {
+  // Explicit null (not undefined) means "no review" — fail closed without sidecar fallback.
+  if (Object.prototype.hasOwnProperty.call(opts, 'reviewArtifact') && opts.reviewArtifact === null) {
+    return null;
+  }
+  if (opts.reviewArtifact != null) return opts.reviewArtifact;
+  if (opts.reviewPath != null && String(opts.reviewPath).trim()) {
+    return opts.reviewPath;
+  }
+  if (!sourceDir) return null;
+  const sidecar = path.join(path.resolve(sourceDir), 'publish-review.json');
+  if (fs.existsSync(sidecar)) return sidecar;
+  return null;
 }
 
 function publishSkill(opts) {
@@ -603,8 +679,60 @@ function publishSkill(opts) {
     ? snapshotPublishState(registryRoot, identity.name, identity.version)
     : null;
 
+  // AE-032c: machine-checkable independent review required before install/publish.
+  // When identity is known, bind skill/version; digest checked against installed result below
+  // and against package digest when present in the review.
+  let packageDigest = null;
+  if (opts.sourceDir) {
+    try {
+      const mPath = path.join(path.resolve(opts.sourceDir), 'manifest.json');
+      if (fs.existsSync(mPath)) {
+        const parsed = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+        packageDigest = parsed && parsed.digest != null ? String(parsed.digest).trim().toLowerCase() : null;
+      }
+    } catch {
+      packageDigest = null;
+    }
+  }
+  const reviewInput = resolvePublishReviewInput(opts, opts.sourceDir);
+  const reviewGate = requirePublishReview({
+    reviewArtifact: reviewInput,
+    skill: identity ? identity.name : undefined,
+    version: identity ? identity.version : undefined,
+    digest: packageDigest || undefined,
+  });
+  if (!reviewGate.ok) {
+    return {
+      ok: false,
+      code: reviewGate.code || 'REVIEW_REQUIRED',
+      errors: reviewGate.errors || ['review artifact required before publishSkill'],
+    };
+  }
+
   const result = installSkill(opts);
   if (!result.ok) return result;
+
+  // Re-check digest against installed package (fail closed on review/package drift).
+  const postReview = requirePublishReview({
+    reviewArtifact: reviewGate.review,
+    skill: result.manifest.name,
+    version: result.manifest.version,
+    digest: result.digest,
+  });
+  if (!postReview.ok) {
+    if (snap) {
+      try {
+        compensatePublishInstall(snap);
+      } catch {
+        /* best-effort */
+      }
+    }
+    return {
+      ok: false,
+      code: postReview.code || 'REVIEW_INVALID',
+      errors: postReview.errors || ['review digest mismatch after install'],
+    };
+  }
 
   const tag = gitTagRef(result.manifest.name, result.manifest.version);
   const approvalRef =
@@ -620,6 +748,8 @@ function publishSkill(opts) {
       digest: result.digest,
       tag,
       approval_ref: approvalRef,
+      reviewer: postReview.review.reviewer,
+      review_verdict: postReview.review.verdict,
     });
   } catch (err) {
     return registryLogFailure(err, () => {
@@ -630,7 +760,13 @@ function publishSkill(opts) {
     });
   }
 
-  return { ...result, tag, actor, approvalRef };
+  return {
+    ...result,
+    tag,
+    actor,
+    approvalRef,
+    review: postReview.review,
+  };
 }
 
 /**
@@ -842,6 +978,9 @@ module.exports = {
   installSkill,
   publishSkill,
   assertMemorySourcePublishAllowed,
+  MEMORY_SOURCE_PUBLIC_SAFE,
+  MEMORY_SOURCE_SCOPES,
+  MEMORY_SOURCE_VISIBILITIES,
   deprecateSkill,
   revokeSkill,
   resolveAndVerify,
