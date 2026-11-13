@@ -17,6 +17,9 @@ function readSkillsDir(skillsRoot, origin) {
   const out = [];
   for (const d of fs.readdirSync(skillsRoot, { withFileTypes: true })) {
     if (!d.isDirectory()) continue;
+    // AE-032b / PD-44: staged candidates live under skills/candidates/ and are never
+    // part of the project skill catalog (autonomous selection stays false until publish).
+    if (origin === 'project' && d.name === 'candidates') continue;
     const skillPath = path.join(skillsRoot, d.name, 'SKILL.md');
     if (!fs.existsSync(skillPath)) continue;
     const raw = fs.readFileSync(skillPath, 'utf8');

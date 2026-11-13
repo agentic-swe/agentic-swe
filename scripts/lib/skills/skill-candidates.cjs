@@ -257,10 +257,46 @@ function discoverSkillCandidates(opts) {
   };
 }
 
+/**
+ * Discover candidates then write deterministic packages under
+ * `.agentic-swe/skills/candidates/` (AE-032b / PD-44).
+ * @param {{
+ *   projectRoot: string,
+ *   transcriptPath?: string,
+ *   history?: object,
+ *   skipQuarantined?: boolean,
+ *   validate?: boolean,
+ *   runTests?: boolean
+ * }} opts
+ */
+function packageDiscoveredCandidates(opts) {
+  const { writeCandidatePackages } = require('./candidate-package.cjs');
+  const discovered = discoverSkillCandidates({
+    projectRoot: opts.projectRoot,
+    transcriptPath: opts.transcriptPath,
+    history: opts.history,
+  });
+  const packaged = writeCandidatePackages({
+    projectRoot: opts.projectRoot,
+    candidates: discovered.candidates,
+    skipQuarantined: opts.skipQuarantined,
+    validate: opts.validate,
+    runTests: opts.runTests,
+  });
+  return {
+    ok: discovered.ok && packaged.ok,
+    candidates: discovered.candidates,
+    from_history: discovered.from_history,
+    from_transcript: discovered.from_transcript,
+    packaged,
+  };
+}
+
 module.exports = {
   candidatesFromHistory,
   candidatesFromTranscript,
   discoverSkillCandidates,
+  packageDiscoveredCandidates,
   isExternalProcedure,
   stableCandidateId,
 };
