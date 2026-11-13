@@ -7,6 +7,10 @@
   "required": ["schema_version", "nodes", "edges", "provenance"],
   "properties": {
     "schema_version": { "type": "integer", "minimum": 1, "maximum": 1 },
+    "legacy_import": {
+      "type": "boolean",
+      "description": "When true, nodes/edges without per-entry provenance are written as untrusted legacy-import rows"
+    },
     "nodes": {
       "type": "array",
       "items": {
@@ -18,7 +22,19 @@
           "kind": { "type": "string", "minLength": 1, "maxLength": 256 },
           "path": { "type": ["string", "null"] },
           "label": { "type": ["string", "null"] },
-          "meta": { "type": "object" }
+          "meta": { "type": "object" },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["origin", "actor", "source_hash", "ingested_at"],
+            "properties": {
+              "origin": { "type": "string", "minLength": 1 },
+              "actor": { "type": "string", "minLength": 1 },
+              "source_hash": { "type": "string", "minLength": 1 },
+              "ingested_at": { "type": "string", "minLength": 1 },
+              "source_uri": { "type": "string" }
+            }
+          }
         }
       }
     },
@@ -32,7 +48,19 @@
           "src_id": { "type": "string", "minLength": 1, "maxLength": 2048 },
           "dst_id": { "type": "string", "minLength": 1, "maxLength": 2048 },
           "kind": { "type": "string", "minLength": 1, "maxLength": 256 },
-          "meta": { "type": "object" }
+          "meta": { "type": "object" },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["origin", "actor", "source_hash", "ingested_at"],
+            "properties": {
+              "origin": { "type": "string", "minLength": 1 },
+              "actor": { "type": "string", "minLength": 1 },
+              "source_hash": { "type": "string", "minLength": 1 },
+              "ingested_at": { "type": "string", "minLength": 1 },
+              "source_uri": { "type": "string" }
+            }
+          }
         }
       }
     },
@@ -43,7 +71,8 @@
       "properties": {
         "source": { "type": "string", "minLength": 1, "maxLength": 1024 },
         "imported_at": { "type": "string" },
-        "note": { "type": "string" }
+        "note": { "type": "string" },
+        "legacy_import": { "type": "boolean" }
       }
     }
   }

@@ -30,6 +30,7 @@ describe('memory-import bundle', () => {
   it('merges nodes and edges with --force when adapter disabled', async () => {
     const bundle = {
       schema_version: 1,
+      legacy_import: true,
       nodes: [
         { id: 'custom:node-a', kind: 'custom', label: 'A' },
         { id: 'custom:node-b', kind: 'custom', label: 'B' },

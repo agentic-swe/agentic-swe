@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * AE-030e — native node:sqlite memory graph store (WAL + busy_timeout).
+ * AE-030e/h5 — native node:sqlite memory graph store (WAL + busy_timeout).
  * Replaces sql.js whole-file export/writeFileSync. Fail closed; no sql.js fallback.
+ * AE-030h5: node/edge writes require provenance in record_json (ADR-012 A4).
  * Refs ADR-004b A1–A6 / PD-40 / PD-48 C1–C2.
  */
 
@@ -151,23 +152,49 @@ function ensureChunksSchema(db) {
 }
 
 /**
- * AE-030h1 — scope + record_json columns required for provenance-carrying writes.
  * @param {*} db
+ * @param {string} table
+ * @returns {Set<string>}
  */
-function ensureRecordColumns(db) {
-  ensureChunksSchema(db);
-  const info = db.exec('PRAGMA table_info(chunks)');
+function tableColumnNames(db, table) {
+  const info = db.exec(`PRAGMA table_info(${table})`);
   const cols = new Set();
   if (info[0]) {
     for (const row of info[0].values) {
       cols.add(String(row[1]));
     }
   }
+  return cols;
+}
+
+/**
+ * AE-030h1 — scope + record_json columns required for provenance-carrying writes.
+ * @param {*} db
+ */
+function ensureRecordColumns(db) {
+  ensureChunksSchema(db);
+  const cols = tableColumnNames(db, 'chunks');
   if (!cols.has('scope')) {
     db.run('ALTER TABLE chunks ADD COLUMN scope TEXT');
   }
   if (!cols.has('record_json')) {
     db.run('ALTER TABLE chunks ADD COLUMN record_json TEXT');
+  }
+}
+
+/**
+ * AE-030h5 — additive record_json on nodes/edges (legacy rows stay readable).
+ * @param {*} db
+ */
+function ensureGraphRecordColumns(db) {
+  initSchema(db);
+  const nodeCols = tableColumnNames(db, 'nodes');
+  if (!nodeCols.has('record_json')) {
+    db.run('ALTER TABLE nodes ADD COLUMN record_json TEXT');
+  }
+  const edgeCols = tableColumnNames(db, 'edges');
+  if (!edgeCols.has('record_json')) {
+    db.run('ALTER TABLE edges ADD COLUMN record_json TEXT');
   }
 }
 
@@ -218,6 +245,150 @@ function upsertChunkRow(db, row) {
   ]);
   stmt.free();
   return { chunkId, contentSha256: sha, provenance };
+}
+
+/**
+ * Lowest common node write: fails closed without provenance in recordJson.
+ * @param {*} db
+ * @param {{
+ *   id: string,
+ *   kind: string,
+ *   path?: string|null,
+ *   label?: string|null,
+ *   metaJson?: string|null,
+ *   recordJson: string,
+ * }} row
+ */
+function upsertNodeRow(db, row) {
+  ensureGraphRecordColumns(db);
+  const { provenance } = requireProvenanceFromRecordJson(row.recordJson);
+  const id = String(row.id || '').trim();
+  const kind = String(row.kind || '').trim();
+  if (!id || !kind) {
+    const err = new Error('node id and kind are required');
+    err.code = 'MISSING_NODE_FIELDS';
+    throw err;
+  }
+  const stmt = db.prepare(
+    `INSERT OR REPLACE INTO nodes (id, kind, path, label, meta_json, record_json)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  );
+  stmt.run([
+    id,
+    kind,
+    row.path != null && String(row.path) !== '' ? String(row.path) : null,
+    row.label != null ? String(row.label) : null,
+    row.metaJson != null ? String(row.metaJson) : null,
+    String(row.recordJson),
+  ]);
+  stmt.free();
+  return { id, provenance };
+}
+
+/**
+ * Lowest common edge write: fails closed without provenance in recordJson.
+ * @param {*} db
+ * @param {{
+ *   srcId: string,
+ *   dstId: string,
+ *   kind: string,
+ *   metaJson?: string|null,
+ *   recordJson: string,
+ * }} row
+ */
+function upsertEdgeRow(db, row) {
+  ensureGraphRecordColumns(db);
+  const { provenance } = requireProvenanceFromRecordJson(row.recordJson);
+  const srcId = String(row.srcId || '').trim();
+  const dstId = String(row.dstId || '').trim();
+  const kind = String(row.kind || '').trim();
+  if (!srcId || !dstId || !kind) {
+    const err = new Error('edge srcId, dstId, and kind are required');
+    err.code = 'MISSING_EDGE_FIELDS';
+    throw err;
+  }
+  const stmt = db.prepare(
+    `INSERT OR REPLACE INTO edges (src_id, dst_id, kind, meta_json, record_json)
+     VALUES (?, ?, ?, ?, ?)`
+  );
+  stmt.run([
+    srcId,
+    dstId,
+    kind,
+    row.metaJson != null ? String(row.metaJson) : null,
+    String(row.recordJson),
+  ]);
+  stmt.free();
+  return { srcId, dstId, kind, provenance };
+}
+
+/**
+ * Read-time provenance for a nodes/edges row. Missing record_json → legacy label
+ * (never silently trusted).
+ * @param {{ record_json?: string|null }} row
+ * @param {'node'|'edge'} kind
+ */
+function provenanceFromGraphRow(row, kind) {
+  const legacyOrigin = kind === 'edge' ? 'legacy-edge' : 'legacy-node';
+  if (!row || row.record_json == null || String(row.record_json).trim() === '') {
+    return {
+      origin: legacyOrigin,
+      actor: 'system',
+      source_hash: '',
+      ingested_at: '1970-01-01T00:00:00.000Z',
+      legacy: true,
+      trust: 'untrusted',
+    };
+  }
+  try {
+    const parsed = JSON.parse(String(row.record_json));
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      parsed.provenance &&
+      typeof parsed.provenance === 'object'
+    ) {
+      const p = parsed.provenance;
+      const origin = p.origin != null ? String(p.origin).trim() : '';
+      if (!origin) {
+        return {
+          origin: legacyOrigin,
+          actor: 'system',
+          source_hash: '',
+          ingested_at: '1970-01-01T00:00:00.000Z',
+          legacy: true,
+          trust: 'untrusted',
+        };
+      }
+      return {
+        origin,
+        actor: p.actor != null ? String(p.actor) : '',
+        source_hash: p.source_hash != null ? String(p.source_hash) : '',
+        ingested_at: p.ingested_at != null ? String(p.ingested_at) : '',
+        ...(p.source_uri != null && String(p.source_uri).trim() !== ''
+          ? { source_uri: String(p.source_uri) }
+          : {}),
+        ...(p.legacy === true || parsed.legacy === true ? { legacy: true } : {}),
+        trust:
+          parsed.trust != null
+            ? String(parsed.trust)
+            : p.legacy === true || parsed.legacy === true
+              ? 'untrusted'
+              : 'untrusted',
+      };
+    }
+  } catch {
+    /* fall through to legacy */
+  }
+  return {
+    origin: legacyOrigin,
+    actor: 'system',
+    source_hash: '',
+    ingested_at: '1970-01-01T00:00:00.000Z',
+    legacy: true,
+    trust: 'untrusted',
+  };
 }
 
 /**
@@ -300,6 +471,8 @@ function applySchemaAndEngine(db, opts = {}) {
   initSchema(db);
   ensureChunksSchema(db);
   ensureEmbeddingsSchema(db);
+  ensureRecordColumns(db);
+  ensureGraphRecordColumns(db);
   const existing = readMeta(db, STORE_ENGINE_META_KEY);
   if (existing && existing !== STORE_ENGINE && existing !== 'sql.js') {
     const err = new Error(`unknown memory store_engine: ${existing}`);
@@ -510,7 +683,11 @@ module.exports = {
   initSchema,
   ensureChunksSchema,
   ensureRecordColumns,
+  ensureGraphRecordColumns,
   upsertChunkRow,
+  upsertNodeRow,
+  upsertEdgeRow,
+  provenanceFromGraphRow,
   ensureEmbeddingsSchema,
   clearGraphTables,
   clearChunkTables,

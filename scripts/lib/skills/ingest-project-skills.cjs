@@ -1,9 +1,11 @@
 'use strict';
 
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('../memory/graph-store.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
 const { upsertTypedNodes } = require('../memory/session-capture.cjs');
+const { buildIngestProvenance } = require('../memory/provenance.cjs');
 const { insertScopedChunk } = require('../memory/ingest-scopes.cjs');
 const { listSkills } = require('./project-skills.cjs');
 
@@ -43,6 +45,12 @@ async function ingestProjectSkills(opts) {
         kind: 'project-skill',
         label: s.name,
         body: body.slice(0, 2000),
+        provenance: buildIngestProvenance({
+          source: 'ingest-project-skills',
+          originPathOrEvent: skillPath,
+          actor: 'system:ingest-project-skills',
+          sourceHash: crypto.createHash('sha256').update(body).digest('hex'),
+        }),
       });
     }
     if (nodes.length) upsertTypedNodes(db, nodes);

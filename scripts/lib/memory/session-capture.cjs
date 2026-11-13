@@ -3,6 +3,8 @@
 const crypto = require('node:crypto');
 const { scoreCapture, acceptsPattern } = require('./evidence-score.cjs');
 const { redactSecrets, redactDeep } = require('../shared/redact.cjs');
+const { upsertNodeRow } = require('./graph-store.cjs');
+const { requireProvenance } = require('./provenance.cjs');
 
 function pushNode(nodes, fields) {
   nodes.push({
@@ -68,29 +70,45 @@ function distillSessionChunk(input) {
 
 /**
  * Persist distilled nodes into SQLite graph (upsert).
- * @param {*} db sql.js database
- * @param {Array<{ id: string, kind: string, label: string, body: string }>} nodes
+ * Each node must carry real provenance (ADR-012 / AE-030h5) — no silent defaults.
+ * @param {*} db sql.js / node:sqlite wrapped database
+ * @param {Array<{
+ *   id: string,
+ *   kind: string,
+ *   label: string,
+ *   body: string,
+ *   score?: number,
+ *   evidence?: string[],
+ *   provenance: object,
+ * }>} nodes
  */
 function upsertTypedNodes(db, nodes) {
   for (const n of nodes) {
-    const stmt = db.prepare(
-      'INSERT OR REPLACE INTO nodes (id, kind, path, label, meta_json) VALUES (?, ?, ?, ?, ?)'
-    );
+    const provenance = requireProvenance(n);
     const evidence = Array.isArray(n.evidence)
       ? n.evidence.map((item) => redactSecrets(String(item)).redacted)
       : [];
-    stmt.run([
-      n.id,
-      n.kind,
-      null,
-      redactSecrets(String(n.label || '')).redacted,
-      JSON.stringify({
-        body: redactSecrets(String(n.body || '')).redacted,
-        score: n.score,
-        evidence,
+    const label = redactSecrets(String(n.label || '')).redacted;
+    const body = redactSecrets(String(n.body || '')).redacted;
+    const meta = {
+      body,
+      score: n.score,
+      evidence,
+    };
+    upsertNodeRow(db, {
+      id: n.id,
+      kind: n.kind,
+      path: null,
+      label,
+      metaJson: JSON.stringify(meta),
+      recordJson: JSON.stringify({
+        id: n.id,
+        kind: n.kind,
+        provenance,
+        trust: 'untrusted',
+        redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
       }),
-    ]);
-    stmt.free();
+    });
   }
 }
 

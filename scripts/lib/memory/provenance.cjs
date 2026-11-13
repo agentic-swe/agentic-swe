@@ -1,9 +1,11 @@
 'use strict';
 
 /**
- * AE-030h1 — shared provenance fail-closed helpers for every memory write path.
+ * AE-030h1/h5 — shared provenance fail-closed helpers for every memory write path.
  * Refs ADR-012 A4 / AE-030c. No default/fake filler — missing fields throw.
  */
+
+const crypto = require('node:crypto');
 
 /**
  * AE-030c / ADR-012 A4 — write without provenance fails closed (no silent defaults).
@@ -108,8 +110,36 @@ function buildIngestProvenance(opts) {
   });
 }
 
+/**
+ * Attach real ingest provenance to distilled graph nodes before upsertTypedNodes.
+ * @param {Array<object>} nodes
+ * @param {{
+ *   source: string,
+ *   actor: string,
+ *   originForNode: (n: object) => string,
+ *   ingestedAt?: string,
+ * }} opts
+ */
+function attachNodeProvenance(nodes, opts) {
+  const list = Array.isArray(nodes) ? nodes : [];
+  return list.map((n) => {
+    const body = String((n && n.body) || (n && n.id) || '');
+    return {
+      ...n,
+      provenance: buildIngestProvenance({
+        source: opts.source,
+        originPathOrEvent: opts.originForNode(n),
+        actor: opts.actor,
+        sourceHash: crypto.createHash('sha256').update(body).digest('hex'),
+        ingestedAt: opts.ingestedAt,
+      }),
+    };
+  });
+}
+
 module.exports = {
   requireProvenance,
   requireProvenanceFromRecordJson,
   buildIngestProvenance,
+  attachNodeProvenance,
 };
