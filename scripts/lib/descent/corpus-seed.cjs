@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildFingerprint } = require('./fingerprint.cjs');
 const { promoteOrDemote } = require('./promotion.cjs');
-const { loadHoldoutBan } = require('../memory/eval-learning-guard.cjs');
+const { loadHoldoutBan } = require('../shared/eval-learning-guard.cjs');
 
 /**
  * Build procedure object from corpus scoring task_pass dimension.
