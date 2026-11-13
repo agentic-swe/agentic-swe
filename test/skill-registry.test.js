@@ -23,6 +23,15 @@ const { digestSkillBody, LOCKFILE_NAME } = require('../scripts/lib/skills/skill-
 
 const tmpRoot = path.join(__dirname, '_tmp-skill-registry');
 
+/** AE-030h2 — first-party test publishes declare public-safe memorySource explicitly. */
+const FIRST_PARTY_MEMORY_SOURCE = Object.freeze({
+  publicSafe: true,
+  declaration: 'first-party',
+});
+function publishFirstParty(opts) {
+  return publishSkill({ ...opts, memorySource: FIRST_PARTY_MEMORY_SOURCE });
+}
+
 function writePackage(dir, manifest, body = '# body\n') {
   fs.mkdirSync(dir, { recursive: true });
   const skillMd = `---
@@ -257,23 +266,23 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const registry = path.join(lifeRoot, 'reg-immutable');
     const src = path.join(lifeRoot, 'src-immutable');
     writePackage(src, baseManifest('immut', '1.0.0'), '# v1 body\n');
-    const pub = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
+    const pub = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
     assert.equal(pub.ok, true);
     assert.equal(pub.tag, 'skill/immut/v1.0.0');
     assert.equal(gitTagRef('immut', '1.0.0'), 'skill/immut/v1.0.0');
 
     // Same content republish ok
-    const again = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
+    const again = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
     assert.equal(again.ok, true);
 
     writePackage(src, baseManifest('immut', '1.0.0'), '# different body\n');
-    const drift = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
+    const drift = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
     assert.equal(drift.ok, false);
     assert.equal(drift.code, 'VERSION_IMMUTABLE');
 
     // Update = new version
     writePackage(src, baseManifest('immut', '1.1.0'), '# v1.1 body\n');
-    const updated = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
+    const updated = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'maintainer:test' });
     assert.equal(updated.ok, true);
     assert.equal(updated.manifest.version, '1.1.0');
   });
@@ -282,7 +291,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const registry = path.join(lifeRoot, 'reg-depr');
     const src = path.join(lifeRoot, 'src-depr');
     writePackage(src, baseManifest('lifecycle', '2.0.0'));
-    assert.equal(publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:a' }).ok, true);
+    assert.equal(publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'actor:a' }).ok, true);
 
     const dep = deprecateSkill({
       registryRoot: registry,
@@ -326,7 +335,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     assert.equal(reinstall.ok, false);
     assert.equal(reinstall.code, 'REVOKED');
 
-    const republish = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:a' });
+    const republish = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'actor:a' });
     assert.equal(republish.ok, false);
     assert.equal(republish.code, 'REVOKED');
   });
@@ -335,7 +344,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const registry = path.join(lifeRoot, 'reg-dep-rev');
     const srcLib = path.join(lifeRoot, 'src-lib');
     writePackage(srcLib, baseManifest('lib-x', '1.0.0'));
-    assert.equal(publishSkill({ registryRoot: registry, sourceDir: srcLib, actor: 'actor:b' }).ok, true);
+    assert.equal(publishFirstParty({ registryRoot: registry, sourceDir: srcLib, actor: 'actor:b' }).ok, true);
     assert.equal(
       revokeSkill({ registryRoot: registry, name: 'lib-x', version: '1.0.0', actor: 'actor:b' }).ok,
       true
@@ -355,7 +364,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
 
     // Publish a non-revoked lib version; dep should then resolve
     writePackage(srcLib, baseManifest('lib-x', '1.1.0'), '# lib 1.1\n');
-    assert.equal(publishSkill({ registryRoot: registry, sourceDir: srcLib, actor: 'actor:b' }).ok, true);
+    assert.equal(publishFirstParty({ registryRoot: registry, sourceDir: srcLib, actor: 'actor:b' }).ok, true);
     const ok = installSkill({ registryRoot: registry, sourceDir: srcApp });
     assert.equal(ok.ok, true);
   });
@@ -365,12 +374,12 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const src = path.join(lifeRoot, 'src-audit');
     writePackage(src, baseManifest('audited', '1.0.0'));
 
-    const noActor = publishSkill({ registryRoot: registry, sourceDir: src, actor: '   ' });
+    const noActor = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: '   ' });
     assert.equal(noActor.ok, false);
     assert.equal(noActor.code, 'ACTOR_REQUIRED');
     assert.equal(fs.existsSync(path.join(registry, REGISTRY_LOG_NAME)), false);
 
-    assert.equal(publishSkill({ registryRoot: registry, sourceDir: src, actor: 'founder' }).ok, true);
+    assert.equal(publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'founder' }).ok, true);
     assert.equal(
       deprecateSkill({
         registryRoot: registry,
@@ -407,7 +416,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const registry = path.join(lifeRoot, 'reg-gate-b');
     const src = path.join(lifeRoot, 'src-gate-b');
     writePackage(src, baseManifest('gateb', '1.0.0'));
-    assert.equal(publishSkill({ registryRoot: registry, sourceDir: src, actor: 'a' }).ok, true);
+    assert.equal(publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'a' }).ok, true);
 
     assert.equal(deprecateSkill({ registryRoot: registry, name: '', version: '1.0.0', actor: 'a' }).code, 'NOT_FOUND');
     assert.equal(deprecateSkill({ registryRoot: registry, name: 'gateb', version: '  ', actor: 'a' }).code, 'NOT_FOUND');
@@ -444,7 +453,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const lockPath = path.join(registry, LOCKFILE_NAME);
     assert.equal(fs.existsSync(indexPath), false);
 
-    const failed = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:rb' });
+    const failed = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'actor:rb' });
     assert.equal(failed.ok, false);
     assert.ok(failed.errors && failed.errors.length >= 1);
     assert.equal(fs.existsSync(path.join(registry, 'skills', 'rollpub', '1.0.0')), false);
@@ -453,7 +462,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
 
     // Clear the blocker and publish for real — must not hit VERSION_IMMUTABLE leftovers.
     fs.rmSync(logPath, { recursive: true, force: true });
-    const ok = publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:rb' });
+    const ok = publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'actor:rb' });
     assert.equal(ok.ok, true);
     assert.equal(ok.manifest.version, '1.0.0');
     assert.ok(fs.existsSync(path.join(registry, 'skills', 'rollpub', '1.0.0', 'SKILL.md')));
@@ -465,7 +474,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     writePackage(src2, baseManifest('rollpub2', '1.0.0'));
     fs.rmSync(logPath, { recursive: true, force: true });
     fs.mkdirSync(logPath, { recursive: true });
-    const failed2 = publishSkill({ registryRoot: registry, sourceDir: src2, actor: 'actor:rb' });
+    const failed2 = publishFirstParty({ registryRoot: registry, sourceDir: src2, actor: 'actor:rb' });
     assert.equal(failed2.ok, false);
     assert.equal(fs.existsSync(path.join(registry, 'skills', 'rollpub2', '1.0.0')), false);
     assert.equal(fs.readFileSync(indexPath).equals(indexBefore), true);
@@ -477,7 +486,7 @@ describe('AE-025b version immutability, deprecation, revocation', () => {
     const registry = path.join(lifeRoot, 'reg-life-rollback');
     const src = path.join(lifeRoot, 'src-life-rollback');
     writePackage(src, baseManifest('liferb', '1.0.0'));
-    assert.equal(publishSkill({ registryRoot: registry, sourceDir: src, actor: 'actor:life' }).ok, true);
+    assert.equal(publishFirstParty({ registryRoot: registry, sourceDir: src, actor: 'actor:life' }).ok, true);
 
     const indexPath = path.join(registry, INDEX_NAME);
     const revocationPath = path.join(registry, REVOCATION_NAME);

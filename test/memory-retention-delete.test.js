@@ -267,4 +267,75 @@ describe('AE-030d retention / delete / visibility', () => {
       })
     );
   });
+
+  it('omitted memorySource refused', () => {
+    assert.throws(
+      () => assertMemorySourcePublishAllowed({}),
+      (err) => err && err.code === 'MEMORY_SOURCE_REQUIRED'
+    );
+    assert.throws(
+      () => assertMemorySourcePublishAllowed({ memorySource: null }),
+      (err) => err && err.code === 'MEMORY_SOURCE_REQUIRED'
+    );
+    const blocked = publishSkill({
+      registryRoot: path.join(tmp, 'reg-omit'),
+      sourceDir: path.join(tmp, 'missing-skill-src'),
+      actor: 'user:test',
+    });
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.code, 'MEMORY_SOURCE_REQUIRED');
+  });
+
+  it('unknown memorySource value refused', () => {
+    assert.throws(
+      () => assertMemorySourcePublishAllowed({ memorySource: { kind: 'wat' } }),
+      (err) => err && err.code === 'UNKNOWN_MEMORY_SOURCE'
+    );
+    assert.throws(
+      () =>
+        assertMemorySourcePublishAllowed({
+          memorySource: { scope: 'not-a-scope', visibility: 'public' },
+        }),
+      (err) => err && err.code === 'UNKNOWN_MEMORY_SOURCE' && err.path === 'memorySource.scope'
+    );
+    assert.throws(
+      () =>
+        assertMemorySourcePublishAllowed({
+          memorySource: { visibility: 'semi-public' },
+        }),
+      (err) =>
+        err && err.code === 'UNKNOWN_MEMORY_SOURCE' && err.path === 'memorySource.visibility'
+    );
+    const blocked = publishSkill({
+      registryRoot: path.join(tmp, 'reg-unknown'),
+      sourceDir: path.join(tmp, 'missing-skill-src'),
+      actor: 'user:test',
+      memorySource: { declaration: 'mystery' },
+    });
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.code, 'UNKNOWN_MEMORY_SOURCE');
+  });
+
+  it('declared public-safe memorySource allowed', () => {
+    assert.doesNotThrow(() =>
+      assertMemorySourcePublishAllowed({
+        memorySource: { publicSafe: true },
+      })
+    );
+    assert.doesNotThrow(() =>
+      assertMemorySourcePublishAllowed({
+        memorySource: { declaration: 'public-safe' },
+      })
+    );
+    assert.doesNotThrow(() =>
+      assertMemorySourcePublishAllowed({
+        memorySource: { declaration: 'first-party' },
+      })
+    );
+    assert.doesNotThrow(() =>
+      assertMemorySourcePublishAllowed({
+        memorySource: { scope: 'skill', visibility: 'public' },
+      })
+    );
+  });
 });
