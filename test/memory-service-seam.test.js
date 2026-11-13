@@ -19,6 +19,12 @@ const {
 } = require('../scripts/lib/memory/memory-service.cjs');
 const { personalRoot } = require('../scripts/lib/memory/scopes.cjs');
 const { createNodeSqliteMemoryStore } = require('../scripts/lib/memory/adapters/node-sqlite-memory-store.cjs');
+const {
+  openOrCreateDatabase,
+  persistDatabase,
+  closeDatabase,
+  ensureChunksSchema,
+} = require('../scripts/lib/memory/graph-store.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');
 
@@ -141,28 +147,38 @@ describe('AE-030b MemoryService seam + scope router', () => {
   it('legacy work_id=team git-history rows read as repository (no in-place rewrite)', async () => {
     const projectDb = path.join(tmp, '.agentic-swe', 'memory.sqlite');
     fs.mkdirSync(path.dirname(projectDb), { recursive: true });
-    const store = createNodeSqliteMemoryStore({ sqlitePath: projectDb });
-    await store.open();
-    // Simulate historical git-history ingest stamp (work_id=team, no scope column).
-    await store.upsertChunk({
-      chunkId: 'git-hist-legacy-1',
-      path: `${GIT_HISTORY_PATH_PREFIX}abc123def456.md`,
-      workId: 'team',
-      scope: '', // blank → seam uses path+work_id
-      body: 'commit abc author Dev subject UNIQUE_GIT_HIST_030b\nREADME.md',
-      recordJson: null,
-    });
-    // True organizational sync event also work_id=team.
-    await store.upsertChunk({
-      chunkId: 'team-event-legacy-1',
-      path: '.agentic-swe/sync/events/evt-1.json',
-      workId: 'team',
-      scope: '',
-      body: 'team sync lesson UNIQUE_SYNC_EVENT_030b',
-      recordJson: null,
-    });
-    await store.persist();
-    await store.close();
+    // Pre-AE-030h1 rows: raw INSERT without record_json (adapter write now fails closed).
+    const { db } = await openOrCreateDatabase(projectDb);
+    try {
+      ensureChunksSchema(db);
+      const ins = db.prepare(
+        `INSERT OR REPLACE INTO chunks
+          (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      );
+      ins.run([
+        'git-hist-legacy-1',
+        `${GIT_HISTORY_PATH_PREFIX}abc123def456.md`,
+        'team',
+        1,
+        2,
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'commit abc author Dev subject UNIQUE_GIT_HIST_030b\nREADME.md',
+      ]);
+      ins.run([
+        'team-event-legacy-1',
+        '.agentic-swe/sync/events/evt-1.json',
+        'team',
+        1,
+        1,
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        'team sync lesson UNIQUE_SYNC_EVENT_030b',
+      ]);
+      ins.free();
+      persistDatabase(db, projectDb);
+    } finally {
+      closeDatabase(db);
+    }
 
     // Documented seam mapping (unit-level).
     assert.equal(
