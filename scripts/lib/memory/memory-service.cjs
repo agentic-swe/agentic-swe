@@ -1,10 +1,12 @@
 'use strict';
 
 /**
- * AE-030b/AE-030e — MemoryService write/read seam + six-scope router.
+ * AE-030b/e/c/d — MemoryService write/read/delete seam + six-scope router.
  * Store-agnostic: callers depend on this API; default adapter is node:sqlite (ADR-004b).
+ * AE-030c: provenance required on write; retrieve returns untrusted envelopes (ADR-012 / SEC-005).
+ * AE-030d: delete+tombstone, TTL dry-run, PD-46 visibility/tenant defaults.
  * Do not add store call sites here — go through adapters/node-sqlite-memory-store.cjs.
- * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47 field threading only (no TTL/envelope).
+ * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47/PD-48 C3 (regex redact.cjs only).
  */
 
 const crypto = require('node:crypto');
@@ -20,6 +22,12 @@ const { personalRoot } = require('./scopes.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
 const { createNodeSqliteMemoryStore } = require('./adapters/node-sqlite-memory-store.cjs');
 const { redactSecrets } = require('../shared/redact.cjs');
+const {
+  ttlDryRun,
+  defaultVisibilityForScope,
+  resolveTenantLabel,
+  evaluateExpiry,
+} = require('./memory-retention.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
 const TRUST_VALUES = new Set(['untrusted', 'reviewed', 'human_approved']);
@@ -138,31 +146,98 @@ function sqlitePathForMemoryScope(scope, roots) {
 }
 
 /**
- * @param {object} input
+ * AE-030c / ADR-012 A4 — write without provenance fails closed (no silent defaults).
+ * @param {unknown} input
+ * @returns {object}
  */
-function normalizeWriteRecord(input) {
-  const scope = assertKnownScope(input.scope);
-  const bodyRaw = input.body == null ? '' : String(input.body);
-  const redacted = redactSecrets(bodyRaw);
-  const provenance = input.provenance && typeof input.provenance === 'object'
-    ? { ...input.provenance }
-    : {};
-  const now = new Date().toISOString();
-  if (!provenance.origin) provenance.origin = 'memory-service';
-  if (!provenance.actor) provenance.actor = 'system';
-  if (!provenance.source_hash) {
-    provenance.source_hash = crypto.createHash('sha256').update(redacted.redacted).digest('hex');
+function requireProvenance(input) {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    Array.isArray(input) ||
+    input.provenance == null ||
+    typeof input.provenance !== 'object' ||
+    Array.isArray(input.provenance)
+  ) {
+    const err = new Error('provenance is required on memory write');
+    err.code = 'MISSING_PROVENANCE';
+    err.path = 'provenance';
+    throw err;
   }
-  if (!provenance.ingested_at) provenance.ingested_at = now;
-
+  const provenance = { ...input.provenance };
   for (const key of ['origin', 'actor', 'source_hash', 'ingested_at']) {
-    if (!provenance[key] || String(provenance[key]).trim() === '') {
+    if (provenance[key] == null || String(provenance[key]).trim() === '') {
       const err = new Error(`missing provenance.${key}`);
       err.code = 'MISSING_PROVENANCE_FIELD';
       err.path = `provenance.${key}`;
       throw err;
     }
   }
+  return provenance;
+}
+
+/**
+ * SEC-005 / ADR-012 A3 — retrieval envelope. Always trust=untrusted so callers
+ * never concatenate body into system/developer instructions as trusted content.
+ * @param {object} record MemoryRecord-shaped
+ * @param {{ path?: string }} [opts]
+ */
+function toUntrustedEnvelope(record, opts = {}) {
+  const provenance = record && record.provenance && typeof record.provenance === 'object'
+    ? record.provenance
+    : {};
+  return {
+    trust: 'untrusted',
+    body: String(record && record.body != null ? record.body : ''),
+    citation: {
+      id: record && record.id != null ? String(record.id) : '',
+      scope: record && record.scope != null ? String(record.scope) : '',
+      origin: provenance.origin != null ? String(provenance.origin) : '',
+      stored_trust: record && record.trust != null ? String(record.trust) : DEFAULT_TRUST,
+      ...(opts.path ? { path: String(opts.path) } : {}),
+      ...(provenance.source_uri
+        ? { source_uri: String(provenance.source_uri) }
+        : {}),
+    },
+    provenance: {
+      origin: provenance.origin != null ? String(provenance.origin) : '',
+      actor: provenance.actor != null ? String(provenance.actor) : '',
+      source_hash: provenance.source_hash != null ? String(provenance.source_hash) : '',
+      ingested_at: provenance.ingested_at != null ? String(provenance.ingested_at) : '',
+      ...(provenance.source_uri
+        ? { source_uri: String(provenance.source_uri) }
+        : {}),
+    },
+    redaction: record && record.redaction && typeof record.redaction === 'object'
+      ? record.redaction
+      : { applied: true, ruleset: 'redact.cjs', hits: 0 },
+    scope: record && record.scope != null ? String(record.scope) : '',
+    tenant_id: record && record.tenant_id != null ? String(record.tenant_id) : DEFAULT_TENANT_ID,
+  };
+}
+
+/**
+ * Refuse treating an envelope body as trusted system/developer instructions.
+ * @param {object} envelope
+ * @returns {never}
+ */
+function refuseTrustedInstructionConcatenation(envelope) {
+  const err = new Error(
+    'recalled memory must not be concatenated into system/developer instructions (SEC-005)'
+  );
+  err.code = 'UNTRUSTED_MEMORY_NOT_INSTRUCTIONS';
+  err.trust = envelope && envelope.trust;
+  throw err;
+}
+
+/**
+ * @param {object} input
+ */
+function normalizeWriteRecord(input) {
+  const scope = assertKnownScope(input.scope);
+  const bodyRaw = input.body == null ? '' : String(input.body);
+  const redacted = redactSecrets(bodyRaw);
+  const provenance = requireProvenance(input);
 
   const trust = input.trust != null ? String(input.trust) : DEFAULT_TRUST;
   if (!TRUST_VALUES.has(trust)) {
@@ -205,11 +280,19 @@ function normalizeWriteRecord(input) {
     redaction.hits = redacted.hits;
   }
 
-  const visibility =
-    input.visibility != null ? String(input.visibility) : 'private';
+  const visibility = defaultVisibilityForScope(scope, input.visibility);
   if (!VISIBILITY_VALUES.has(visibility)) {
     const err = new Error(`unknown visibility: ${visibility}`);
     err.code = 'UNKNOWN_VISIBILITY';
+    err.path = 'visibility';
+    throw err;
+  }
+  // PD-46: org stays private/local; public without governed path is forbidden later at publish.
+  if (scope === 'organizational' && visibility === 'public') {
+    const err = new Error(
+      'organizational memory cannot be written as public without AE-036/governed path'
+    );
+    err.code = 'ORG_MEMORY_PUBLIC_FORBIDDEN';
     err.path = 'visibility';
     throw err;
   }
@@ -221,10 +304,7 @@ function normalizeWriteRecord(input) {
 
   return {
     id,
-    tenant_id:
-      input.tenant_id != null && String(input.tenant_id).trim() !== ''
-        ? String(input.tenant_id)
-        : DEFAULT_TENANT_ID,
+    tenant_id: resolveTenantLabel(scope, input.tenant_id, DEFAULT_TENANT_ID),
     scope,
     body: redacted.redacted,
     provenance: {
@@ -401,6 +481,12 @@ function createMemoryService(opts) {
     const store = storeForPath(sqlitePath);
     await store.open();
     const rows = await store.listChunks({ limit: 5000 });
+    const tombs = typeof store.listTombstones === 'function'
+      ? await store.listTombstones({ limit: 5000 })
+      : [];
+    const tombIds = new Set(
+      tombs.map((t) => String(t.chunk_id || '')).filter(Boolean)
+    );
     const tokens = String(query.query || '')
       .toLowerCase()
       .split(/\s+/)
@@ -409,6 +495,7 @@ function createMemoryService(opts) {
 
     const out = [];
     for (const row of rows) {
+      if (tombIds.has(String(row.chunk_id || ''))) continue;
       const resolved = resolveScopeAtSeam(row);
       if (resolved !== scope) continue;
       if (tokens.length) {
@@ -418,11 +505,79 @@ function createMemoryService(opts) {
       out.push(rowToMemoryRecord(row));
       if (out.length >= limit) break;
     }
+    const envelopes = out.map((rec) => toUntrustedEnvelope(rec));
     return {
       scope,
       sqlitePath,
       records: out,
+      envelopes,
     };
+  }
+
+  /**
+   * AE-030d — soft-delete by selector; writes tombstones; subsequent prime/read miss ids.
+   * @param {{
+   *   id?: string,
+   *   ids?: string[],
+   *   path?: string,
+   *   scope?: string,
+   * }} selector
+   */
+  async function deleteRecords(selector = {}) {
+    const ids = [];
+    if (selector.id) ids.push(String(selector.id));
+    if (Array.isArray(selector.ids)) {
+      for (const id of selector.ids) ids.push(String(id));
+    }
+    if (!ids.length && !selector.path && !selector.scope) {
+      const err = new Error('delete selector requires id, ids, path, or scope');
+      err.code = 'DELETE_SELECTOR_REQUIRED';
+      err.path = 'selector';
+      throw err;
+    }
+
+    let scopeHint = selector.scope;
+    if (!scopeHint && ids.length) {
+      // Default to organizational for id-only deletes unless caller sets scope.
+      scopeHint = 'organizational';
+    }
+    if (scopeHint) assertKnownScope(scopeHint);
+
+    const scopesToTouch = scopeHint
+      ? [scopeHint]
+      : [...MEMORY_SCOPES];
+
+    const deleted = [];
+    for (const scope of scopesToTouch) {
+      const sqlitePath = sqlitePathForMemoryScope(scope, { pluginRoot, projectRoot });
+      const store = storeForPath(sqlitePath);
+      if (typeof store.deleteChunks !== 'function') continue;
+      const result = await store.deleteChunks({
+        ids: ids.length ? ids : undefined,
+        path: selector.path,
+        scope: ids.length || selector.path ? undefined : scope,
+        selector,
+      });
+      deleted.push(...(result.deleted || []));
+      await store.persist();
+      if (ids.length && deleted.length >= ids.length) break;
+      if (selector.path && result.count > 0) break;
+    }
+    return { deleted: [...new Set(deleted)], count: new Set(deleted).size };
+  }
+
+  /**
+   * TTL dry-run for a scope (or provided records). No network.
+   * @param {{ scope?: string, records?: object[], now?: string|number|Date }} opts
+   */
+  async function retentionDryRun(opts = {}) {
+    let records = opts.records;
+    if (!records) {
+      const scope = assertKnownScope(opts.scope || 'organizational');
+      const result = await read({ scope, limit: 5000 });
+      records = result.records;
+    }
+    return ttlDryRun(records, { now: opts.now });
   }
 
   async function close() {
@@ -435,6 +590,8 @@ function createMemoryService(opts) {
   return {
     write,
     read,
+    delete: deleteRecords,
+    retentionDryRun,
     close,
     sqlitePathForMemoryScope: (scope) =>
       sqlitePathForMemoryScope(scope, { pluginRoot, projectRoot }),
@@ -449,6 +606,14 @@ module.exports = {
   workIdForScope,
   sqlitePathForMemoryScope,
   isGitHistoryPath,
+  requireProvenance,
+  toUntrustedEnvelope,
+  refuseTrustedInstructionConcatenation,
+  normalizeWriteRecord,
+  ttlDryRun,
+  evaluateExpiry,
+  defaultVisibilityForScope,
+  resolveTenantLabel,
   GIT_HISTORY_PATH_PREFIX,
   MEMORY_SCOPES,
 };

@@ -90,11 +90,19 @@ function assertEvidenceRefs(record) {
   return { ok: true, refs };
 }
 
+/** Capture sources that are never trusted without human/eval attestation (AE-031b). */
+const UNVERIFIED_CAPTURE_SOURCES = Object.freeze([
+  'validation-capture',
+  'validation_capture',
+  'unverified',
+  'regex-capture',
+]);
+
 /**
- * AE-031a trust-promotion gate: missing evidence fails closed.
- * Full verified-only / human_approved / eval-digest rules land in AE-031b.
+ * AE-031b verified-only trust promotion. Missing evidence / unverified capture fail closed.
+ * human_approved requires user: actor or attested eval digest.
  * @param {object} record
- * @param {{ toTrust?: string }} [opts]
+ * @param {{ toTrust?: string, actor?: string, evalDigest?: string }} [opts]
  * @returns {object} record with elevated trust
  */
 function promoteLearningTrust(record, opts = {}) {
@@ -113,6 +121,22 @@ function promoteLearningTrust(record, opts = {}) {
     err.path = 'event_hash';
     throw err;
   }
+
+  const captureSource = String(
+    record.capture_source ||
+      record.source ||
+      (record.payload && record.payload.capture_source) ||
+      ''
+  ).trim();
+  if (UNVERIFIED_CAPTURE_SOURCES.includes(captureSource)) {
+    const err = new Error(
+      `unverified capture source cannot enter trusted learning: ${captureSource}`
+    );
+    err.code = 'UNVERIFIED_CAPTURE';
+    err.path = 'capture_source';
+    throw err;
+  }
+
   const toTrust = opts.toTrust != null ? String(opts.toTrust) : 'reviewed';
   if (!TRUST_VALUES.includes(toTrust) || toTrust === 'untrusted') {
     const err = new Error(`invalid promotion trust: ${toTrust}`);
@@ -120,14 +144,29 @@ function promoteLearningTrust(record, opts = {}) {
     err.path = 'trust';
     throw err;
   }
-  // AE-031a: evidence present → allow reviewed only. human_approved needs AE-031b.
-  if (toTrust === 'human_approved') {
-    const err = new Error('human_approved promotion requires AE-031b attestation');
+
+  if (toTrust === 'reviewed') {
+    return { ...record, trust: 'reviewed' };
+  }
+
+  const actor = opts.actor != null ? String(opts.actor) : '';
+  const evalDigest = opts.evalDigest != null ? String(opts.evalDigest).trim() : '';
+  const humanOk = actor.startsWith('user:');
+  const digestOk = /^[a-f0-9]{64}$/.test(evalDigest);
+  if (!humanOk && !digestOk) {
+    const err = new Error(
+      'human_approved requires user: actor or attested eval digest'
+    );
     err.code = 'TRUST_PROMOTION_DENIED';
     err.path = 'trust';
     throw err;
   }
-  return { ...record, trust: toTrust };
+  return {
+    ...record,
+    trust: 'human_approved',
+    ...(humanOk ? { approved_by: actor } : {}),
+    ...(digestOk ? { eval_digest: evalDigest } : {}),
+  };
 }
 
 /**
@@ -257,6 +296,7 @@ module.exports = {
   LEARNING_KINDS,
   TRUST_VALUES,
   DEFAULT_TRUST,
+  UNVERIFIED_CAPTURE_SOURCES,
   SCHEMA_PATH,
   loadSchema,
   validateLearningRecord,

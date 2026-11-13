@@ -135,6 +135,7 @@ test('memory MCP fallback initializes and lists all lifecycle tools', () => {
     [
       'agentic_swe_memory_refresh',
       'agentic_swe_memory_prime',
+      'agentic_swe_memory_search',
       'agentic_swe_memory_status',
     ],
   );
