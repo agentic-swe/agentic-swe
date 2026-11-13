@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildFingerprint } = require('./fingerprint.cjs');
 const { promoteOrDemote } = require('./promotion.cjs');
+const { loadHoldoutBan } = require('../memory/eval-learning-guard.cjs');
 
 /**
  * Build procedure object from corpus scoring task_pass dimension.
@@ -58,6 +59,15 @@ function seedCorpusProcedures(opts) {
 
     const verifyCmd = dim.command || ent.name;
     const fp = buildFingerprint({ files, verifyCommand: verifyCmd, failureSignature: '' });
+    // AE-031c: never seed L0 from banned holdout / eval fingerprints.
+    const ban = loadHoldoutBan(projectRoot);
+    if (
+      ban.fingerprints.includes(fp) ||
+      ban.holdout_ids.includes(ent.name) ||
+      ban.labels.some((l) => l === `holdout:${ent.name}` || l.includes(ent.name))
+    ) {
+      continue;
+    }
     const procedure = procedureFromScoring(taskDir, dim);
     promoteOrDemote({
       projectRoot,

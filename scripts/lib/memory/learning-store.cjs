@@ -9,6 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { validateLearningRecord } = require('./learning-record.cjs');
 const { prepareLearningWrite, contentFingerprint } = require('./learning-write.cjs');
+const { assertLearningWriteAllowed } = require('./eval-learning-guard.cjs');
 
 const DEFAULT_STORE = '.agentic-swe/learning_records.jsonl';
 const QUARANTINE_STORE = '.agentic-swe/learning_records.quarantine.jsonl';
@@ -97,6 +98,7 @@ function assertCoreValid(record) {
 function appendLearningRecord(projectRoot, record) {
   const prepared = prepareLearningWrite(record);
   assertCoreValid(prepared);
+  assertLearningWriteAllowed(prepared, projectRoot);
   const fp = contentFingerprint(prepared);
   const live = readLearningRecords(projectRoot).filter((r) => r.status !== 'quarantined');
   const existing = live.find((r) => contentFingerprint(r) === fp);
@@ -133,6 +135,7 @@ function writeLearningBundle(projectRoot, records) {
   for (const raw of records) {
     const prepared = prepareLearningWrite(raw);
     assertCoreValid(prepared);
+    assertLearningWriteAllowed(prepared, projectRoot);
     const fp = contentFingerprint(prepared);
     if (seen.has(fp)) {
       const live = seen.get(fp);
