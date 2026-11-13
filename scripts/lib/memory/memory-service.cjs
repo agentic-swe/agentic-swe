@@ -1,10 +1,11 @@
 'use strict';
 
 /**
- * AE-030b/AE-030e — MemoryService write/read seam + six-scope router.
+ * AE-030b/e/c — MemoryService write/read seam + six-scope router.
  * Store-agnostic: callers depend on this API; default adapter is node:sqlite (ADR-004b).
+ * AE-030c: provenance required on write; retrieve returns untrusted envelopes (ADR-012 / SEC-005).
  * Do not add store call sites here — go through adapters/node-sqlite-memory-store.cjs.
- * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47 field threading only (no TTL/envelope).
+ * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47/PD-48 C3 (regex redact.cjs only).
  */
 
 const crypto = require('node:crypto');
@@ -138,31 +139,98 @@ function sqlitePathForMemoryScope(scope, roots) {
 }
 
 /**
- * @param {object} input
+ * AE-030c / ADR-012 A4 — write without provenance fails closed (no silent defaults).
+ * @param {unknown} input
+ * @returns {object}
  */
-function normalizeWriteRecord(input) {
-  const scope = assertKnownScope(input.scope);
-  const bodyRaw = input.body == null ? '' : String(input.body);
-  const redacted = redactSecrets(bodyRaw);
-  const provenance = input.provenance && typeof input.provenance === 'object'
-    ? { ...input.provenance }
-    : {};
-  const now = new Date().toISOString();
-  if (!provenance.origin) provenance.origin = 'memory-service';
-  if (!provenance.actor) provenance.actor = 'system';
-  if (!provenance.source_hash) {
-    provenance.source_hash = crypto.createHash('sha256').update(redacted.redacted).digest('hex');
+function requireProvenance(input) {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    Array.isArray(input) ||
+    input.provenance == null ||
+    typeof input.provenance !== 'object' ||
+    Array.isArray(input.provenance)
+  ) {
+    const err = new Error('provenance is required on memory write');
+    err.code = 'MISSING_PROVENANCE';
+    err.path = 'provenance';
+    throw err;
   }
-  if (!provenance.ingested_at) provenance.ingested_at = now;
-
+  const provenance = { ...input.provenance };
   for (const key of ['origin', 'actor', 'source_hash', 'ingested_at']) {
-    if (!provenance[key] || String(provenance[key]).trim() === '') {
+    if (provenance[key] == null || String(provenance[key]).trim() === '') {
       const err = new Error(`missing provenance.${key}`);
       err.code = 'MISSING_PROVENANCE_FIELD';
       err.path = `provenance.${key}`;
       throw err;
     }
   }
+  return provenance;
+}
+
+/**
+ * SEC-005 / ADR-012 A3 — retrieval envelope. Always trust=untrusted so callers
+ * never concatenate body into system/developer instructions as trusted content.
+ * @param {object} record MemoryRecord-shaped
+ * @param {{ path?: string }} [opts]
+ */
+function toUntrustedEnvelope(record, opts = {}) {
+  const provenance = record && record.provenance && typeof record.provenance === 'object'
+    ? record.provenance
+    : {};
+  return {
+    trust: 'untrusted',
+    body: String(record && record.body != null ? record.body : ''),
+    citation: {
+      id: record && record.id != null ? String(record.id) : '',
+      scope: record && record.scope != null ? String(record.scope) : '',
+      origin: provenance.origin != null ? String(provenance.origin) : '',
+      stored_trust: record && record.trust != null ? String(record.trust) : DEFAULT_TRUST,
+      ...(opts.path ? { path: String(opts.path) } : {}),
+      ...(provenance.source_uri
+        ? { source_uri: String(provenance.source_uri) }
+        : {}),
+    },
+    provenance: {
+      origin: provenance.origin != null ? String(provenance.origin) : '',
+      actor: provenance.actor != null ? String(provenance.actor) : '',
+      source_hash: provenance.source_hash != null ? String(provenance.source_hash) : '',
+      ingested_at: provenance.ingested_at != null ? String(provenance.ingested_at) : '',
+      ...(provenance.source_uri
+        ? { source_uri: String(provenance.source_uri) }
+        : {}),
+    },
+    redaction: record && record.redaction && typeof record.redaction === 'object'
+      ? record.redaction
+      : { applied: true, ruleset: 'redact.cjs', hits: 0 },
+    scope: record && record.scope != null ? String(record.scope) : '',
+    tenant_id: record && record.tenant_id != null ? String(record.tenant_id) : DEFAULT_TENANT_ID,
+  };
+}
+
+/**
+ * Refuse treating an envelope body as trusted system/developer instructions.
+ * @param {object} envelope
+ * @returns {never}
+ */
+function refuseTrustedInstructionConcatenation(envelope) {
+  const err = new Error(
+    'recalled memory must not be concatenated into system/developer instructions (SEC-005)'
+  );
+  err.code = 'UNTRUSTED_MEMORY_NOT_INSTRUCTIONS';
+  err.trust = envelope && envelope.trust;
+  throw err;
+}
+
+/**
+ * @param {object} input
+ */
+function normalizeWriteRecord(input) {
+  const scope = assertKnownScope(input.scope);
+  const bodyRaw = input.body == null ? '' : String(input.body);
+  const redacted = redactSecrets(bodyRaw);
+  const provenance = requireProvenance(input);
 
   const trust = input.trust != null ? String(input.trust) : DEFAULT_TRUST;
   if (!TRUST_VALUES.has(trust)) {
@@ -418,10 +486,12 @@ function createMemoryService(opts) {
       out.push(rowToMemoryRecord(row));
       if (out.length >= limit) break;
     }
+    const envelopes = out.map((rec) => toUntrustedEnvelope(rec));
     return {
       scope,
       sqlitePath,
       records: out,
+      envelopes,
     };
   }
 
@@ -449,6 +519,10 @@ module.exports = {
   workIdForScope,
   sqlitePathForMemoryScope,
   isGitHistoryPath,
+  requireProvenance,
+  toUntrustedEnvelope,
+  refuseTrustedInstructionConcatenation,
+  normalizeWriteRecord,
   GIT_HISTORY_PATH_PREFIX,
   MEMORY_SCOPES,
 };
