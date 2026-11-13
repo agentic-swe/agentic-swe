@@ -1,0 +1,16 @@
+{
+  "id": "mem:organizational:fixture-1",
+  "tenant_id": "personal",
+  "scope": "organizational",
+  "body": "team sync lesson: prefer descent-first",
+  "provenance": {
+    "origin": "ingest-team-events",
+    "actor": "system",
+    "source_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "ingested_at": "2026-11-13T00:00:00.000Z"
+  },
+  "trust": "untrusted",
+  "retention_class": "organizational",
+  "redaction": { "applied": true, "ruleset": "redact.cjs", "hits": 0 },
+  "visibility": "local"
+}

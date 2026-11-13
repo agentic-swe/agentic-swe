@@ -1,0 +1,16 @@
+{
+  "id": "mem:skill:fixture-1",
+  "tenant_id": "personal",
+  "scope": "skill",
+  "body": "Prefer descent-first when editing memory scopes.",
+  "provenance": {
+    "origin": "ingest-personal-profile",
+    "actor": "user:founder",
+    "source_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "ingested_at": "2026-11-13T00:00:00.000Z"
+  },
+  "trust": "untrusted",
+  "retention_class": "session",
+  "redaction": { "applied": true, "ruleset": "redact.cjs", "hits": 0 },
+  "visibility": "private"
+}

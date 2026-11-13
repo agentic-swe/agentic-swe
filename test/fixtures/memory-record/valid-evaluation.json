@@ -1,0 +1,18 @@
+{
+  "id": "mem:evaluation:fixture-1",
+  "tenant_id": "personal",
+  "scope": "evaluation",
+  "body": "holdout descent eval failed: oracle mismatch",
+  "provenance": {
+    "origin": "bench-holdout",
+    "actor": "system",
+    "source_uri": "bench/results/fixture-holdout.json",
+    "source_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "ingested_at": "2026-11-13T00:00:00.000Z"
+  },
+  "trust": "untrusted",
+  "retention_class": "evaluation_negative",
+  "redaction": { "applied": true, "ruleset": "redact.cjs", "hits": 0 },
+  "expires_at": null,
+  "visibility": "private"
+}
