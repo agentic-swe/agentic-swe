@@ -121,6 +121,7 @@ Runtime writers still stamp `work_id` and the three CLI scopes above. The Accept
 - **Store:** append-only **`.agentic-swe/learning_records.jsonl`** via [`learning-store.cjs`](../../scripts/lib/memory/learning-store.cjs) — **not** the SQLite memory DB (independent of AE-030e graph-store cutover). Duplicates go to **`.agentic-swe/learning_records.quarantine.jsonl`**.
 - **Subscriber:** [`learning-from-journal.cjs`](../../scripts/lib/memory/learning-from-journal.cjs) maps a verified work journal into a learning bundle; default `trust: untrusted`.
 - **AE-031b trust:** [`learning-write.cjs`](../../scripts/lib/memory/learning-write.cjs) — redact-on-write via `redact.cjs` only (PD-48 C3); fingerprint dedupe; unverified `validation-capture` cannot promote; `human_approved` requires `user:` actor or attested eval digest. AE-R04: auto L0 `auto_confirmed` ≠ `human_approved` (`promotion.cjs`).
+- **AE-031c isolation:** [`eval-learning-guard.cjs`](../../scripts/lib/memory/eval-learning-guard.cjs) — holdout ban list; learning writes cannot carry eval fingerprints/labels; learning subscribers cannot read `evaluation` scope; contamination canary asserts no eval fingerprint in L0 after a guarded run (ADR-013).
 - **Network:** ingest is local filesystem + hash verify only; no non-loopback network.
 
 ## Session lifecycle
