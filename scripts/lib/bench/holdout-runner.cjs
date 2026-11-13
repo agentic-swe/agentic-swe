@@ -9,6 +9,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { spawnSync } = require('node:child_process');
 const {
   prepareColdHoldoutRun,
   loadHiddenOracle,
@@ -23,6 +24,55 @@ const {
   computeManifestDigest,
   validateEvalManifestFile,
 } = require('./eval-manifest.cjs');
+
+/**
+ * Resolve the pack tip commit for honesty reports (M4 audit NB4).
+ * Always uses live `git rev-parse HEAD` — never the manifest-pinned short SHA.
+ * E8-cited cold runs fail closed if HEAD cannot be determined or the tree is dirty.
+ *
+ * @param {string} packRoot git checkout that owns the pack
+ * @param {{ e8Cited?: boolean, coldRun?: boolean }} [opts]
+ * @returns {string} full HEAD SHA
+ */
+function resolvePackCommit(packRoot, opts = {}) {
+  const root = path.resolve(packRoot);
+  const e8Cited = opts.e8Cited !== false;
+  const coldRun = opts.coldRun !== false;
+
+  const head = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+  });
+  const sha = String(head.stdout || '').trim();
+  if (head.status !== 0 || !/^[0-9a-f]{40}$/i.test(sha)) {
+    const err = new Error(
+      `holdout pack_commit undetermined at ${root}: ${String(head.stderr || head.error || 'rev-parse failed').trim()}`
+    );
+    err.code = 'PACK_COMMIT_UNDETERMINED';
+    throw err;
+  }
+
+  if (e8Cited && coldRun) {
+    const st = spawnSync('git', ['-C', root, 'status', '--porcelain'], {
+      encoding: 'utf8',
+    });
+    if (st.status !== 0) {
+      const err = new Error(
+        `holdout pack dirty-check failed at ${root}: ${String(st.stderr || st.error || 'status failed').trim()}`
+      );
+      err.code = 'PACK_COMMIT_UNDETERMINED';
+      throw err;
+    }
+    if (String(st.stdout || '').trim()) {
+      const err = new Error(
+        `holdout E8-cited cold run refused: pack tree is dirty at ${root}`
+      );
+      err.code = 'PACK_COMMIT_DIRTY_TREE';
+      throw err;
+    }
+  }
+
+  return sha;
+}
 
 function copyDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
@@ -167,6 +217,10 @@ async function runHoldoutSuite(opts = {}) {
   }
   const manifest = loaded.manifest;
 
+  const packRoot = path.resolve(opts.packRoot || repoRoot);
+  // Honesty pack_commit is the live tip, not manifest.pack_commit (audit NB4).
+  const packCommit = resolvePackCommit(packRoot, { e8Cited, coldRun: true });
+
   const holdoutIds = (manifest.tasks || []).map((t) => t.id);
   prepareColdHoldoutRun({
     projectRoot: evalRoot,
@@ -267,7 +321,7 @@ async function runHoldoutSuite(opts = {}) {
   const report = buildHonestyReport({
     manifest_id: manifest.id,
     manifest_digest: manifest.manifest_digest || computeManifestDigest(manifest),
-    pack_commit: manifest.pack_commit || null,
+    pack_commit: packCommit,
     provider,
     model: opts.model,
     label: opts.label || (provider === 'fixture' ? 'measured' : 'observed'),
@@ -277,6 +331,7 @@ async function runHoldoutSuite(opts = {}) {
     tasks: taskResults,
     limitations: opts.limitations,
   });
+  report.manifest_pack_commit = manifest.pack_commit || null;
 
   report.harness = {
     reached_validation_count: reachedValidation,
@@ -350,4 +405,5 @@ module.exports = {
   runHoldoutSuite,
   plantRegressionScorecard,
   defaultResultsPath,
+  resolvePackCommit,
 };

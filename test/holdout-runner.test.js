@@ -14,17 +14,45 @@ const {
   writeLeanWorklog,
   plantRegressionScorecard,
   copyDir,
+  resolvePackCommit,
 } = require('../scripts/lib/bench/holdout-runner.cjs');
 const { applyFixtureSolution } = require('../scripts/lib/bench/fixture-solutions.cjs');
 const { compareScorecards } = require('../scripts/bench/compare.cjs');
 const { buildHonestyReport } = require('../scripts/lib/bench/honesty-report.cjs');
 
+/**
+ * Tiny clean git checkout for pack_commit stamping (isolates from dirty worktrees).
+ * @returns {{ dir: string, head: string }}
+ */
+function makeCleanPackGit() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ae034c-pack-'));
+  const run = (args) => {
+    const r = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr || r.stdout);
+    return r;
+  };
+  run(['init']);
+  run(['config', 'user.name', 'Holdout Fixture']);
+  run(['config', 'user.email', 'holdout@example.com']);
+  fs.writeFileSync(path.join(dir, 'PACK'), 'holdout-pack\n');
+  run(['add', 'PACK']);
+  run(['commit', '-m', 'pack tip']);
+  const head = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: dir,
+    encoding: 'utf8',
+  });
+  assert.equal(head.status, 0);
+  return { dir, head: String(head.stdout).trim() };
+}
+
 describe('AE-034c holdout runner + honesty report', () => {
   it('fixture adapter: ≥1 task reaches validation and independent score delivers', async () => {
     const evalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ae034c-run-'));
+    const pack = makeCleanPackGit();
     const out = path.join(evalRoot, 'holdout-fixture-run.json');
     const result = await runHoldoutSuite({
       repoRoot: root,
+      packRoot: pack.dir,
       evalRoot,
       out,
       provider: 'fixture',
@@ -40,6 +68,7 @@ describe('AE-034c holdout runner + honesty report', () => {
     assert.ok(result.report.limitations.length >= 1);
     assert.ok(fs.existsSync(out));
     assert.ok(path.basename(out).startsWith('holdout-'));
+    assert.equal(result.report.pack_commit, pack.head);
     // No L0 contamination asserted inside runner; procedures file empty/wiped.
     const proc = path.join(evalRoot, '.agentic-swe', 'procedures.json');
     if (fs.existsSync(proc)) {
@@ -73,9 +102,11 @@ describe('AE-034c holdout runner + honesty report', () => {
 
   it('compare.cjs fails on a planted regression', async () => {
     const evalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ae034c-cmp-'));
+    const pack = makeCleanPackGit();
     const out = path.join(evalRoot, 'holdout-baseline.json');
     const result = await runHoldoutSuite({
       repoRoot: root,
+      packRoot: pack.dir,
       evalRoot,
       out,
       provider: 'fixture',
@@ -127,19 +158,43 @@ describe('AE-034c holdout runner + honesty report', () => {
     const evalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ae034c-cli-'));
     const out = path.join(root, 'bench', 'results', `holdout-test-${process.pid}.json`);
     try {
-      const cli = spawnSync(
-        process.execPath,
-        [
-          path.join(root, 'scripts/bench/run-holdout.cjs'),
-          '--provider',
-          'fixture',
-          '--out',
-          out,
-        ],
-        { cwd: root, encoding: 'utf8', env: { ...process.env, AE_HOLDOUT_HOSTED: '0' } }
-      );
+      // Commit first so E8-cited dirty check against the live pack can pass when
+      // this suite is run mid-edit; CI checkouts are already clean.
+      const dirty = spawnSync('git', ['status', '--porcelain'], {
+        cwd: root,
+        encoding: 'utf8',
+      });
+      const cliArgs = [
+        path.join(root, 'scripts/bench/run-holdout.cjs'),
+        '--provider',
+        'fixture',
+        '--out',
+        out,
+      ];
+      // When the worktree is dirty (local mid-edit), point packRoot at a clean tip.
+      let env = { ...process.env, AE_HOLDOUT_HOSTED: '0' };
+      let pack;
+      if (String(dirty.stdout || '').trim()) {
+        pack = makeCleanPackGit();
+        cliArgs.push('--pack-root', pack.dir);
+      }
+      const cli = spawnSync(process.execPath, cliArgs, {
+        cwd: root,
+        encoding: 'utf8',
+        env,
+      });
       assert.equal(cli.status, 0, cli.stderr || cli.stdout);
       assert.ok(fs.existsSync(out));
+      const report = JSON.parse(fs.readFileSync(out, 'utf8'));
+      if (pack) {
+        assert.equal(report.pack_commit, pack.head);
+      } else {
+        const head = spawnSync('git', ['rev-parse', 'HEAD'], {
+          cwd: root,
+          encoding: 'utf8',
+        });
+        assert.equal(report.pack_commit, String(head.stdout).trim());
+      }
       const gitignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
       assert.match(gitignore, /bench\/results\/holdout-\*/);
       // Ensure the produced path would be ignored.
@@ -167,5 +222,49 @@ describe('AE-034c holdout runner + honesty report', () => {
     });
     const scored = scoreHoldoutIndependently(workDir, taskSandbox);
     assert.equal(scored.delivered, true, JSON.stringify(scored.scores));
+  });
+
+  it('recorded pack_commit equals git rev-parse HEAD in a temp git repo fixture', async () => {
+    const pack = makeCleanPackGit();
+    assert.equal(resolvePackCommit(pack.dir, { e8Cited: true }), pack.head);
+
+    const evalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ae034c-pack-eq-'));
+    const out = path.join(evalRoot, 'holdout-pack-eq.json');
+    const result = await runHoldoutSuite({
+      repoRoot: root,
+      packRoot: pack.dir,
+      evalRoot,
+      out,
+      provider: 'fixture',
+      e8Cited: true,
+      stamp: 'pack-eq',
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.report.pack_commit, pack.head);
+    assert.match(result.report.pack_commit, /^[0-9a-f]{40}$/i);
+    // Manifest may still carry a short historical pin; honesty uses live HEAD.
+    assert.notEqual(result.report.pack_commit, result.report.manifest_pack_commit);
+  });
+
+  it('dirty tree on an E8-cited cold run is refused', () => {
+    const pack = makeCleanPackGit();
+    fs.writeFileSync(path.join(pack.dir, 'DIRTY'), 'uncommitted\n');
+    assert.throws(
+      () => resolvePackCommit(pack.dir, { e8Cited: true, coldRun: true }),
+      (err) => err && err.code === 'PACK_COMMIT_DIRTY_TREE'
+    );
+    // Non-E8 path still resolves HEAD (audit optional field).
+    assert.equal(
+      resolvePackCommit(pack.dir, { e8Cited: false, coldRun: true }),
+      pack.head
+    );
+  });
+
+  it('missing git HEAD fails closed with PACK_COMMIT_UNDETERMINED', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ae034c-nogit-'));
+    assert.throws(
+      () => resolvePackCommit(dir, { e8Cited: true }),
+      (err) => err && err.code === 'PACK_COMMIT_UNDETERMINED'
+    );
   });
 });
