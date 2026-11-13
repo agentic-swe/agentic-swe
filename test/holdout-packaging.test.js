@@ -19,7 +19,7 @@ const {
   computeManifestDigest,
 } = require('../scripts/lib/bench/eval-manifest.cjs');
 const { promoteOrDemote, loadStore } = require('../scripts/lib/descent/promotion.cjs');
-const { evalFingerprintForHoldout } = require('../scripts/lib/memory/eval-learning-guard.cjs');
+const { evalFingerprintForHoldout } = require('../scripts/lib/shared/eval-learning-guard.cjs');
 
 const root = path.join(__dirname, '..');
 

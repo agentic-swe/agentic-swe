@@ -12,7 +12,7 @@ const {
   registerHoldoutBan,
   evalFingerprintForHoldout,
   assertNoContaminationInL0,
-} = require('../memory/eval-learning-guard.cjs');
+} = require('../shared/eval-learning-guard.cjs');
 
 /**
  * Deterministic content hash of a task directory (sorted relative paths + bytes).
