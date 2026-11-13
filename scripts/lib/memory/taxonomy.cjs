@@ -119,7 +119,8 @@ function defaultRetentionClassForScope(scope, opts = {}) {
     return RETENTION_CLASS_DEFAULTS.organizational.retention_class;
   }
   if (scope === 'execution') {
-    return RETENTION_CLASS_DEFAULTS.session.retention_class;
+    // PD-47: execution procedures keep 180d (not the session 90d class).
+    return RETENTION_CLASS_DEFAULTS.execution_procedures.retention_class;
   }
   // repository / project / skill: no PD-47 row; session class is the conservative default.
   return RETENTION_CLASS_DEFAULTS.session.retention_class;

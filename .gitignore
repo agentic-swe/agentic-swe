@@ -71,6 +71,9 @@ __pycache__/
 *.pyc
 .venv/
 
+# Holdout eval results (AE-034c) — never commit (ADR-013)
+bench/results/holdout-*
+
 # Test / coverage
 coverage/
 .nyc_output/
