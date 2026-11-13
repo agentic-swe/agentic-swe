@@ -1,0 +1,9 @@
+{
+  "proposal_id": "imp-001",
+  "baseline_ref": "bench/results/baseline-scorecard.json",
+  "outcome": "pass",
+  "regression": false,
+  "scorecard_ref": "bench/results/candidate-scorecard.json",
+  "compare_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "notes": "no regression vs baseline"
+}

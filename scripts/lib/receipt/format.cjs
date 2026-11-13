@@ -68,6 +68,25 @@ function formatMarkdown(data) {
     counterEntries.forEach(([k, v]) => lines.push(`- \`${k}\`: ${v}`));
     lines.push('');
   }
+  const proposed = Array.isArray(data.improvementsProposed) ? data.improvementsProposed : [];
+  const evaluated = Array.isArray(data.improvementsEvaluated) ? data.improvementsEvaluated : [];
+  if (proposed.length > 0 || evaluated.length > 0) {
+    lines.push(`## Self-improvement (${proposed.length} proposed / ${evaluated.length} evaluated)`, '');
+    proposed.forEach((p) => {
+      const source = p.source_seq != null ? ` [source_seq: ${p.source_seq}]` : '';
+      lines.push(
+        `- proposed \`${safe(p.proposal_id)}\` vs baseline \`${safe(p.baseline_ref)}\` — ${safe(p.summary || '')}${source}`
+      );
+    });
+    evaluated.forEach((e) => {
+      const source = e.source_seq != null ? ` [source_seq: ${e.source_seq}]` : '';
+      const regress = e.regression ? ' regression=true' : '';
+      lines.push(
+        `- evaluated \`${safe(e.proposal_id)}\` outcome=${safe(e.outcome)}${regress}${source}`
+      );
+    });
+    lines.push('');
+  }
   lines.push('## Verifiable references', '');
   const wd = displayWorkDir(data.workDir);
   lines.push(`- All artifacts: \`${wd}/\``);
@@ -76,6 +95,12 @@ function formatMarkdown(data) {
   }
   if (data.usage && data.usage.length) {
     lines.push(`- Usage events: ${data.usage.length}`);
+  }
+  if (proposed.length) {
+    lines.push(`- Improvement proposals: ${proposed.length}`);
+  }
+  if (evaluated.length) {
+    lines.push(`- Improvement evaluations: ${evaluated.length}`);
   }
   if (data.artifacts && data.artifacts.length) {
     lines.push(`- Artifacts with SHA-256 digests: ${data.artifacts.length}`);

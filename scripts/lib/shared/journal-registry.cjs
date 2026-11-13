@@ -36,6 +36,9 @@ const SIDE_PAYLOAD_KEYS = {
   'sandbox.isolation.failed': null,
   'test.side': 'testSidePayload',
   'github.anchored': null,
+  // AE-035a: governed self-improvement proposals / evaluations (no merge/deploy).
+  'improvement.proposed': 'improvementProposedPayload',
+  'improvement.evaluated': 'improvementEvaluatedPayload',
 };
 
 let schemaDoc = null;

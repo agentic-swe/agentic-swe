@@ -1,0 +1,127 @@
+{
+  "schema_version": 2,
+  "work_id": "<work-id>",
+  "task": "<self-improvement proposal summary>",
+  "current_state": "initialized",
+  "created_at": "<ISO-8601 timestamp>",
+  "updated_at": "<ISO-8601 timestamp>",
+  "timeout_at": "<ISO-8601 timestamp>",
+  "owner": "agent",
+  "mode": "self-improvement",
+  "resume": {
+    "detected": false,
+    "last_session_id": null,
+    "detected_at": null,
+    "branch_validated": false,
+    "rebase_performed": false
+  },
+  "budget": {
+    "iteration_budget": 10,
+    "budget_remaining": 10,
+    "cost_budget_usd": 3.0,
+    "cost_used": 0.0
+  },
+  "counters": {
+    "lean_iter": 0,
+    "design_iter": 0,
+    "code_iter": 0,
+    "panel_runs": 0,
+    "merge_iter": 0,
+    "approval_iter": 0,
+    "self_review_iter": 0,
+    "test_adequacy_iter": 0,
+    "subagent_spawns": 0,
+    "doubt_cycles": 0
+  },
+  "ambiguity": {
+    "detected": false,
+    "notes": [],
+    "resolved": false
+  },
+  "approvals": {
+    "pr_approved": false,
+    "changes_requested": false
+  },
+  "metrics": {
+    "tests_passed": false
+  },
+  "risk": {
+    "level": "unknown",
+    "score": null,
+    "top_items": []
+  },
+  "artifacts": {
+    "feasibility": null,
+    "ambiguity-report": null,
+    "lean-track-check": null,
+    "design": null,
+    "design-review": null,
+    "design-feedback": null,
+    "design-panel-review": null,
+    "verification-results": null,
+    "test-stubs": null,
+    "test-results": null,
+    "implementation": null,
+    "self-review": null,
+    "reflection-log": null,
+    "review-feedback": null,
+    "review-pass": null,
+    "permissions-changes": null,
+    "validation-results": null,
+    "cicd": null,
+    "pr-link": null,
+    "approval-feedback": null,
+    "improvement-proposal": null,
+    "improvement-evaluation": null
+  },
+  "validation": {
+    "structural_passed": false,
+    "quality_passed": false,
+    "last_checked_at": null,
+    "notes": []
+  },
+  "git": {
+    "base_branch": null,
+    "working_branch": null,
+    "remote": "origin",
+    "pr_url": null,
+    "merge_sha": null,
+    "merge_strategy": null
+  },
+  "pipeline": {
+    "track": "rigorous",
+    "complexity_score": null,
+    "lean_track_eligible": false,
+    "lean_track_decision": null,
+    "design_review_status": null,
+    "review_status": null,
+    "verification_status": null,
+    "permissions_status": null,
+    "validation_status": null,
+    "self_review_status": null,
+    "pr_status": null,
+    "subagent_auto_select": true,
+    "subagent_mode": null,
+    "subagent_selections": [],
+    "tdd_mode": false,
+    "worktree_path": null,
+    "pair_mode": false,
+    "track_recommendation": null,
+    "jev_track": null
+  },
+  "improvement": {
+    "proposal_id": null,
+    "baseline_ref": null,
+    "status": "draft",
+    "draft_pr_only": true,
+    "merge_authorized": false,
+    "deploy_authorized": false,
+    "independent_review_required": true
+  },
+  "linked_repos": [],
+  "convergence": {
+    "last_failure_category": null,
+    "consecutive_same_category": 0
+  },
+  "history": []
+}

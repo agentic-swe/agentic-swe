@@ -5,15 +5,27 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const FLOOR = 22;
+/** Root pack floor for unflagged node:sqlite (ADR-004b / PD-48 C1). */
+const ROOT_ENGINES_NODE = '>=22.13';
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 test('node floor — package manifests and lockfiles declare >=22', () => {
-  for (const rel of ['package.json', 'agents/plugin-runtime/brainstorm-server/package.json']) {
-    assert.strictEqual(JSON.parse(read(rel)).engines.node, `>=${FLOOR}`, rel);
-  }
-  for (const rel of ['package-lock.json', 'agents/plugin-runtime/brainstorm-server/package-lock.json']) {
-    assert.strictEqual(JSON.parse(read(rel)).packages[''].engines.node, `>=${FLOOR}`, rel);
-  }
+  assert.strictEqual(JSON.parse(read('package.json')).engines.node, ROOT_ENGINES_NODE, 'package.json');
+  assert.strictEqual(
+    JSON.parse(read('agents/plugin-runtime/brainstorm-server/package.json')).engines.node,
+    `>=${FLOOR}`,
+    'agents/plugin-runtime/brainstorm-server/package.json'
+  );
+  assert.strictEqual(
+    JSON.parse(read('package-lock.json')).packages[''].engines.node,
+    ROOT_ENGINES_NODE,
+    'package-lock.json'
+  );
+  assert.strictEqual(
+    JSON.parse(read('agents/plugin-runtime/brainstorm-server/package-lock.json')).packages[''].engines.node,
+    `>=${FLOOR}`,
+    'agents/plugin-runtime/brainstorm-server/package-lock.json'
+  );
 });
 
 test('node floor — CI matrix tests only supported lines, starting at the floor', () => {

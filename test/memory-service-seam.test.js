@@ -18,7 +18,7 @@ const {
   MEMORY_SCOPES,
 } = require('../scripts/lib/memory/memory-service.cjs');
 const { personalRoot } = require('../scripts/lib/memory/scopes.cjs');
-const { createSqlJsMemoryStore } = require('../scripts/lib/memory/adapters/sqljs-memory-store.cjs');
+const { createNodeSqliteMemoryStore } = require('../scripts/lib/memory/adapters/node-sqlite-memory-store.cjs');
 
 const pluginRoot = path.resolve(__dirname, '..');
 
@@ -117,7 +117,7 @@ describe('AE-030b MemoryService seam + scope router', () => {
       // Must not create personal rows on the project sqlite.
       const projectDb = path.join(tmp, '.agentic-swe', 'memory.sqlite');
       if (fs.existsSync(projectDb)) {
-        const projectStore = createSqlJsMemoryStore({ sqlitePath: projectDb });
+        const projectStore = createNodeSqliteMemoryStore({ sqlitePath: projectDb });
         await projectStore.open();
         const rows = await projectStore.listChunks({ limit: 500 });
         await projectStore.close();
@@ -141,7 +141,7 @@ describe('AE-030b MemoryService seam + scope router', () => {
   it('legacy work_id=team git-history rows read as repository (no in-place rewrite)', async () => {
     const projectDb = path.join(tmp, '.agentic-swe', 'memory.sqlite');
     fs.mkdirSync(path.dirname(projectDb), { recursive: true });
-    const store = createSqlJsMemoryStore({ sqlitePath: projectDb });
+    const store = createNodeSqliteMemoryStore({ sqlitePath: projectDb });
     await store.open();
     // Simulate historical git-history ingest stamp (work_id=team, no scope column).
     await store.upsertChunk({
@@ -205,7 +205,7 @@ describe('AE-030b MemoryService seam + scope router', () => {
       assert.equal(orgSync.records[0].scope, 'organizational');
 
       // Historical bytes unchanged: work_id still 'team' on disk.
-      const verify = createSqlJsMemoryStore({ sqlitePath: projectDb });
+      const verify = createNodeSqliteMemoryStore({ sqlitePath: projectDb });
       await verify.open();
       const rows = await verify.listChunks({ limit: 50 });
       await verify.close();
@@ -323,17 +323,22 @@ describe('AE-030b layering + verify (acceptance)', () => {
     );
     assert.equal(layers.status, 0, layers.stdout + layers.stderr);
 
-    // Adapter stays under scripts/lib/memory (service); no sql.js require outside adapter+graph-store.
+    // Adapter stays under scripts/lib/memory (service); no sql.js require anywhere.
     const adapterSrc = fs.readFileSync(
-      path.join(pluginRoot, 'scripts/lib/memory/adapters/sqljs-memory-store.cjs'),
+      path.join(pluginRoot, 'scripts/lib/memory/adapters/node-sqlite-memory-store.cjs'),
       'utf8'
     );
     assert.match(adapterSrc, /graph-store\.cjs/);
+    assert.doesNotMatch(adapterSrc, /require\(['"]sql\.js['"]\)/);
     const serviceSrc = fs.readFileSync(
       path.join(pluginRoot, 'scripts/lib/memory/memory-service.cjs'),
       'utf8'
     );
     assert.doesNotMatch(serviceSrc, /require\(['"]sql\.js['"]\)/);
-    assert.match(serviceSrc, /adapters\/sqljs-memory-store/);
+    assert.match(serviceSrc, /adapters\/node-sqlite-memory-store/);
+    assert.ok(
+      !fs.existsSync(path.join(pluginRoot, 'scripts/lib/memory/adapters/sqljs-memory-store.cjs')),
+      'sqljs adapter must be removed'
+    );
   });
 });
