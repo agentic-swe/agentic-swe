@@ -1,0 +1,1 @@
+{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"path":"package.json"}},{"type":"tool_use","name":"Shell","input":{"command":"pnpm run lint"}}]}}

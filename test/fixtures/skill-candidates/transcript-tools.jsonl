@@ -1,0 +1,2 @@
+{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"path":"package.json"}},{"type":"tool_use","name":"Shell","input":{"command":"npm run check"}}]}}
+{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"path":"test/ok-ritual.test.js"}},{"type":"tool_use","name":"Shell","input":{"command":"node --test test/ok-ritual.test.js"}}]}}
