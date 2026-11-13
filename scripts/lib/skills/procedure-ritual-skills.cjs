@@ -3,10 +3,24 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const NPM_RUN_SKILL_RE = /\bnpm run ([a-z][a-z0-9-]*)\b/i;
+const NPM_RUN_SKILL_RE = /\b(?:npm|pnpm|yarn)\s+run\s+([a-z][a-z0-9-]*)\b/i;
+const NODE_TEST_RE = /\bnode\s+(?:--test\s+)?((?:test|tests)\/[a-zA-Z0-9_./-]+\.(?:js|cjs|mjs))\b/;
 
 /**
- * Extract skill name from a verify command when it is `npm run <skill>`.
+ * Sanitize a path basename into a skill-name-safe slug.
+ * @param {string} rel
+ * @returns {string|null}
+ */
+function skillSlugFromTestPath(rel) {
+  const base = path.basename(String(rel || ''), path.extname(rel || ''));
+  const stripped = base.replace(/\.(test|spec)$/i, '').toLowerCase();
+  const slug = stripped.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!slug || !/^[a-z][a-z0-9-]{0,63}$/.test(slug)) return null;
+  return slug;
+}
+
+/**
+ * Extract skill name from a verify command when it is `npm|pnpm|yarn run <skill>`.
  * @param {string} command
  * @returns {string|null}
  */
@@ -16,7 +30,33 @@ function parseNpmRunSkill(command) {
 }
 
 /**
- * Aggregate evaluated/unevaluated procedure counts per `npm run` skill ritual.
+ * General ritual pattern parser (beyond `npm run`).
+ * @param {string} command
+ * @returns {{ kind: 'npm_run'|'node_test', skill: string, command: string, test_path?: string }|null}
+ */
+function parseRitualPattern(command) {
+  const cmd = String(command || '').replace(/\s+/g, ' ').trim();
+  if (!cmd) return null;
+
+  const npmSkill = parseNpmRunSkill(cmd);
+  if (npmSkill) {
+    return { kind: 'npm_run', skill: npmSkill, command: cmd };
+  }
+
+  const nodeM = cmd.match(NODE_TEST_RE);
+  if (nodeM) {
+    const testPath = nodeM[1].split(path.sep).join('/');
+    const skill = skillSlugFromTestPath(testPath);
+    if (!skill) return null;
+    return { kind: 'node_test', skill, command: cmd, test_path: testPath };
+  }
+
+  return null;
+}
+
+/**
+ * Aggregate evaluated/unevaluated procedure counts per ritual skill pattern.
+ * Includes `npm|pnpm|yarn run` and isolated `node --test` / `node test/…` verifies.
  * @param {string} storeRoot project or plugin root containing `.agentic-swe/procedures.json`
  */
 function collectProcedureRitualSkills(storeRoot) {
@@ -26,24 +66,37 @@ function collectProcedureRitualSkills(storeRoot) {
 
   for (const p of data.procedures || []) {
     const cmd = p.procedure?.verify?.[0]?.command || '';
-    const skill = parseNpmRunSkill(cmd);
-    if (!skill) continue;
+    const pattern = parseRitualPattern(cmd);
+    if (!pattern) continue;
+    const skill = pattern.skill;
     if (!bySkill.has(skill)) {
-      bySkill.set(skill, { skill, evaluated: 0, unevaluated: 0, sources: new Set() });
+      bySkill.set(skill, {
+        skill,
+        kind: pattern.kind,
+        evaluated: 0,
+        unevaluated: 0,
+        sources: new Set(),
+        commands: new Set(),
+      });
     }
     const row = bySkill.get(skill);
     if (p.eval_status === 'evaluated') row.evaluated++;
     else row.unevaluated++;
-    const src = p.procedure?._meta?.source;
+    const src = p.procedure?._meta?.source || p.source;
     if (src) row.sources.add(src);
+    row.commands.add(cmd);
+    // Prefer npm_run kind when both appear under the same skill slug.
+    if (pattern.kind === 'npm_run') row.kind = 'npm_run';
   }
 
   return [...bySkill.values()]
     .map((r) => ({
       skill: r.skill,
+      kind: r.kind,
       evaluated: r.evaluated,
       unevaluated: r.unevaluated,
       sources: [...r.sources].sort(),
+      commands: [...r.commands].sort(),
     }))
     .sort((a, b) => a.skill.localeCompare(b.skill));
 }
@@ -60,7 +113,7 @@ function resolveProcedureStoreRoot(opts) {
 }
 
 /**
- * Evaluated `npm run` ritual skill names (for routing / doctor / fleet status).
+ * Evaluated ritual skill names (for routing / doctor / fleet status).
  * @param {{ projectRoot: string, pluginRoot: string, limit?: number }} opts
  */
 function listEvaluatedRitualSkillNames(opts) {
@@ -99,7 +152,10 @@ function summarizeProcedures(opts) {
 
 module.exports = {
   NPM_RUN_SKILL_RE,
+  NODE_TEST_RE,
   parseNpmRunSkill,
+  parseRitualPattern,
+  skillSlugFromTestPath,
   collectProcedureRitualSkills,
   resolveProcedureStoreRoot,
   listEvaluatedRitualSkillNames,
