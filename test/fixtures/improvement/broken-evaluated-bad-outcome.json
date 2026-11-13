@@ -1,0 +1,6 @@
+{
+  "proposal_id": "imp-001",
+  "baseline_ref": "bench/results/baseline-scorecard.json",
+  "outcome": "maybe",
+  "regression": false
+}

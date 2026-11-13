@@ -102,6 +102,50 @@
         { "required": ["n"] },
         { "required": ["note"] }
       ]
+    },
+    "improvementProposedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal_id", "summary", "baseline_ref", "actor"],
+      "properties": {
+        "proposal_id": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "baseline_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Known baseline identifier (commit SHA, scorecard path, or manifest digest)."
+        },
+        "actor": { "type": "string", "minLength": 1 },
+        "scope": {
+          "type": "string",
+          "enum": ["platform", "skill", "policy", "other"]
+        },
+        "target_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "improvementEvaluatedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal_id", "baseline_ref", "outcome", "regression"],
+      "properties": {
+        "proposal_id": { "type": "string", "minLength": 1 },
+        "baseline_ref": { "type": "string", "minLength": 1 },
+        "outcome": {
+          "type": "string",
+          "enum": ["pass", "fail", "regress", "inconclusive"]
+        },
+        "regression": { "type": "boolean" },
+        "scorecard_ref": { "type": "string", "minLength": 1 },
+        "compare_digest": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string" }
+      }
     }
   }
 }

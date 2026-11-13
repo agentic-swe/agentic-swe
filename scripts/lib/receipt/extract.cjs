@@ -85,6 +85,9 @@ function journalData(workDir, state) {
     policyDecisions: side('policy.decided'),
     usage: side('usage.recorded'),
     tests: side('test.side'),
+    // AE-035a: governed self-improvement events (ADR-011 fold).
+    improvementsProposed: side('improvement.proposed'),
+    improvementsEvaluated: side('improvement.evaluated'),
     reviews,
     approvals,
     artifacts,
@@ -210,6 +213,8 @@ function extractReceipt(workDir) {
     toolResults: journalOk ? chainData.toolResults : [],
     policyDecisions: journalOk ? chainData.policyDecisions : [],
     tests: journalOk ? chainData.tests : [],
+    improvementsProposed: journalOk ? chainData.improvementsProposed : [],
+    improvementsEvaluated: journalOk ? chainData.improvementsEvaluated : [],
     reviews: journalOk ? chainData.reviews : [],
     approvals: journalOk ? chainData.approvals : [],
     usage,
