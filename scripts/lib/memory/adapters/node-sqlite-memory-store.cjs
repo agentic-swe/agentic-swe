@@ -1,54 +1,23 @@
 'use strict';
 
 /**
- * AE-030e — node:sqlite MemoryStore adapter (replaces sql.js adapter from AE-030b).
+ * AE-030e/h1 — node:sqlite MemoryStore adapter (replaces sql.js adapter from AE-030b).
  * All MemoryService open/persist goes through here → graph-store (native).
+ * AE-030h1: upsertChunk fails closed without provenance (ADR-012 A4).
  * Refs ADR-004b A1–A6, ADR-012, ADR-016; PD-48 C2 (no sql.js fallback).
  */
 
-const crypto = require('node:crypto');
 const path = require('node:path');
 const {
   openOrCreateDatabase,
   persistDatabase,
   closeDatabase,
   ensureChunksSchema,
+  ensureRecordColumns,
+  upsertChunkRow,
 } = require('../graph-store.cjs');
-const { makeChunkId } = require('../chunk-split.cjs');
 
 const ADAPTER_ID = 'node-sqlite';
-
-/**
- * @param {*} db
- */
-function ensureRecordColumns(db) {
-  ensureChunksSchema(db);
-  const info = db.exec('PRAGMA table_info(chunks)');
-  const cols = new Set();
-  if (info[0]) {
-    for (const row of info[0].values) {
-      cols.add(String(row[1]));
-    }
-  }
-  if (!cols.has('scope')) {
-    db.run('ALTER TABLE chunks ADD COLUMN scope TEXT');
-  }
-  if (!cols.has('record_json')) {
-    db.run('ALTER TABLE chunks ADD COLUMN record_json TEXT');
-  }
-  db.run(`
-CREATE TABLE IF NOT EXISTS memory_tombstones (
-  id TEXT PRIMARY KEY,
-  selector_json TEXT NOT NULL,
-  deleted_at TEXT NOT NULL,
-  scope TEXT,
-  path TEXT,
-  chunk_id TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_tombstones_scope ON memory_tombstones(scope);
-CREATE INDEX IF NOT EXISTS idx_tombstones_path ON memory_tombstones(path);
-`);
-}
 
 /**
  * @param {{ sqlitePath: string }} opts
@@ -68,6 +37,19 @@ function createNodeSqliteMemoryStore(opts = {}) {
     if (state.open && state.db) return state.db;
     const { db } = await openOrCreateDatabase(sqlitePath);
     ensureRecordColumns(db);
+    // Tombstones table (AE-030d) lives on the adapter side of the seam.
+    db.run(`
+CREATE TABLE IF NOT EXISTS memory_tombstones (
+  id TEXT PRIMARY KEY,
+  selector_json TEXT NOT NULL,
+  deleted_at TEXT NOT NULL,
+  scope TEXT,
+  path TEXT,
+  chunk_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_tombstones_scope ON memory_tombstones(scope);
+CREATE INDEX IF NOT EXISTS idx_tombstones_path ON memory_tombstones(path);
+`);
     state = { db, open: true };
     return db;
   }
@@ -102,41 +84,13 @@ function createNodeSqliteMemoryStore(opts = {}) {
      *   startLine?: number,
      *   endLine?: number,
      *   contentSha256?: string,
-     *   recordJson?: string|null,
+     *   recordJson: string,
      * }} row
      */
     async upsertChunk(row) {
       const db = await ensureOpen();
-      const body = String(row.body ?? '');
-      const start = Number(row.startLine) || 1;
-      const end = Number(row.endLine) || start;
-      const sha =
-        row.contentSha256 ||
-        crypto.createHash('sha256').update(body).digest('hex');
-      const chunkId =
-        row.chunkId || makeChunkId(row.path, start, end, body);
-      const workId = row.workId == null || row.workId === '' ? null : String(row.workId);
-      const recordJson =
-        row.recordJson == null ? null : String(row.recordJson);
-
-      const stmt = db.prepare(
-        `INSERT OR REPLACE INTO chunks
-          (chunk_id, path, work_id, start_line, end_line, content_sha256, body, scope, record_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      );
-      stmt.run([
-        chunkId,
-        String(row.path),
-        workId,
-        start,
-        end,
-        sha,
-        body,
-        String(row.scope),
-        recordJson,
-      ]);
-      stmt.free();
-      return { chunkId, contentSha256: sha };
+      // Fail closed at the lowest common write (graph-store upsertChunkRow).
+      return upsertChunkRow(db, row);
     },
 
     /**
@@ -253,4 +207,5 @@ module.exports = {
   ADAPTER_ID,
   createNodeSqliteMemoryStore,
   ensureRecordColumns,
+  ensureChunksSchema,
 };

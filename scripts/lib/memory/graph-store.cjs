@@ -8,6 +8,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const {
   BUSY_TIMEOUT_MS,
   STORE_ENGINE,
@@ -16,6 +17,8 @@ const {
   loadNodeSqlite,
 } = require('./node-sqlite-load.cjs');
 const { wrapDatabase } = require('./sqljs-compat.cjs');
+const { requireProvenanceFromRecordJson } = require('./provenance.cjs');
+const { makeChunkId } = require('./chunk-split.cjs');
 
 const SCHEMA_VERSION = '1';
 const CHUNKS_SCHEMA_VERSION = '1';
@@ -145,6 +148,76 @@ function ensureChunksSchema(db) {
   }
   db.run(CHUNKS_DDL);
   writeMeta(db, 'chunks_schema_version', CHUNKS_SCHEMA_VERSION);
+}
+
+/**
+ * AE-030h1 — scope + record_json columns required for provenance-carrying writes.
+ * @param {*} db
+ */
+function ensureRecordColumns(db) {
+  ensureChunksSchema(db);
+  const info = db.exec('PRAGMA table_info(chunks)');
+  const cols = new Set();
+  if (info[0]) {
+    for (const row of info[0].values) {
+      cols.add(String(row[1]));
+    }
+  }
+  if (!cols.has('scope')) {
+    db.run('ALTER TABLE chunks ADD COLUMN scope TEXT');
+  }
+  if (!cols.has('record_json')) {
+    db.run('ALTER TABLE chunks ADD COLUMN record_json TEXT');
+  }
+}
+
+/**
+ * Lowest common chunk write: fails closed without provenance in recordJson.
+ * Used by the node-sqlite adapter and legacy ingest paths (chunk/session/incremental).
+ * @param {*} db
+ * @param {{
+ *   chunkId?: string,
+ *   path: string,
+ *   workId?: string|null,
+ *   scope: string,
+ *   body: string,
+ *   startLine?: number,
+ *   endLine?: number,
+ *   contentSha256?: string,
+ *   recordJson: string,
+ * }} row
+ */
+function upsertChunkRow(db, row) {
+  ensureRecordColumns(db);
+  const { provenance } = requireProvenanceFromRecordJson(row.recordJson);
+  const body = String(row.body ?? '');
+  const start = Number(row.startLine) || 1;
+  const end = Number(row.endLine) || start;
+  const sha =
+    row.contentSha256 ||
+    crypto.createHash('sha256').update(body).digest('hex');
+  const chunkId = row.chunkId || makeChunkId(row.path, start, end, body);
+  const workId = row.workId == null || row.workId === '' ? null : String(row.workId);
+  const recordJson = String(row.recordJson);
+
+  const stmt = db.prepare(
+    `INSERT OR REPLACE INTO chunks
+      (chunk_id, path, work_id, start_line, end_line, content_sha256, body, scope, record_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  stmt.run([
+    chunkId,
+    String(row.path),
+    workId,
+    start,
+    end,
+    sha,
+    body,
+    String(row.scope),
+    recordJson,
+  ]);
+  stmt.free();
+  return { chunkId, contentSha256: sha, provenance };
 }
 
 /**
@@ -436,6 +509,8 @@ function readPragmaState(db) {
 module.exports = {
   initSchema,
   ensureChunksSchema,
+  ensureRecordColumns,
+  upsertChunkRow,
   ensureEmbeddingsSchema,
   clearGraphTables,
   clearChunkTables,

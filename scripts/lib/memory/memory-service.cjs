@@ -28,6 +28,7 @@ const {
   resolveTenantLabel,
   evaluateExpiry,
 } = require('./memory-retention.cjs');
+const { requireProvenance } = require('./provenance.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
 const TRUST_VALUES = new Set(['untrusted', 'reviewed', 'human_approved']);
@@ -143,37 +144,6 @@ function sqlitePathForMemoryScope(scope, roots) {
   const projectRoot = path.resolve(roots.projectRoot);
   const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
   return sqlitePathForProject(merged, projectRoot);
-}
-
-/**
- * AE-030c / ADR-012 A4 — write without provenance fails closed (no silent defaults).
- * @param {unknown} input
- * @returns {object}
- */
-function requireProvenance(input) {
-  if (
-    !input ||
-    typeof input !== 'object' ||
-    Array.isArray(input) ||
-    input.provenance == null ||
-    typeof input.provenance !== 'object' ||
-    Array.isArray(input.provenance)
-  ) {
-    const err = new Error('provenance is required on memory write');
-    err.code = 'MISSING_PROVENANCE';
-    err.path = 'provenance';
-    throw err;
-  }
-  const provenance = { ...input.provenance };
-  for (const key of ['origin', 'actor', 'source_hash', 'ingested_at']) {
-    if (provenance[key] == null || String(provenance[key]).trim() === '') {
-      const err = new Error(`missing provenance.${key}`);
-      err.code = 'MISSING_PROVENANCE_FIELD';
-      err.path = `provenance.${key}`;
-      throw err;
-    }
-  }
-  return provenance;
 }
 
 /**
