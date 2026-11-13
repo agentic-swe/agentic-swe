@@ -16,11 +16,6 @@ function annotateTrust(record, now) {
   };
 }
 
-function decayConfidence(record, now, windowMs) {
-  const elapsed = Math.floor((Date.parse(now) - Date.parse(record.last_confirmed)) / windowMs);
-  return { ...record, confidence: Math.max(0, Number((record.confidence - (0.1 * Math.max(0, elapsed))).toFixed(1))) };
-}
-
 function canReplay(record) {
   return !record.external || record.promoted === true;
 }
@@ -31,4 +26,4 @@ function promoteTrust(record, { confirmations, humanApproved }) {
   return { ...record, promoted: false };
 }
 
-module.exports = { annotateTrust, canReplay, decayConfidence, isJevEvidence, promoteTrust };
+module.exports = { annotateTrust, canReplay, isJevEvidence, promoteTrust };
