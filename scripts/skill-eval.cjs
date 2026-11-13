@@ -77,7 +77,7 @@ function main() {
     if (args.json) console.log(JSON.stringify(r, null, 2));
     else {
       console.log(
-        `skill-eval promote-rituals: ${r.promoted}/${r.total} promoted${args.dryRun ? ' (dry-run)' : ''}`
+        `skill-eval promote-rituals: ${r.promoted}/${r.total} version-candidates${args.dryRun ? ' (dry-run)' : ''} (no frontmatter promote)`
       );
       for (const row of r.results.filter((x) => !x.ok)) {
         console.error(`  FAIL ${row.skill}: ${row.error || 'golden eval failed'}`);

@@ -28,6 +28,7 @@ const {
 const { scanInstallPackage } = require('./install-scan.cjs');
 const { requirePublishReview } = require('./skill-publish-review.cjs');
 const { assertPublishCompareGate } = require('./skill-version-compare.cjs');
+const { assertPublishPermissionsGate } = require('./skill-permissions-diff.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
@@ -725,6 +726,21 @@ function publishSkill(opts) {
         (r) => `[${r.id}] ${r.kind}: ${r.message}`
       ),
       regressions: compareGate.regressions,
+    };
+  }
+
+  // AE-033b / PD-45: any permission expansion vs prior published version → fail closed.
+  const permissionsGate = assertPublishPermissionsGate({
+    ...opts,
+    compareSkill: opts.compareSkill || (identity && identity.name),
+  });
+  if (!permissionsGate.ok) {
+    return {
+      ok: false,
+      code: permissionsGate.code || 'PERMISSIONS_EXPANDED',
+      errors: permissionsGate.errors || ['permission expansion rejected'],
+      expanded: permissionsGate.expanded,
+      diff: permissionsGate.diff,
     };
   }
 

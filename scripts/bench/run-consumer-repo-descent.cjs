@@ -134,8 +134,22 @@ async function main() {
     )
   );
   const promoted = promoteRitualSkillCandidates({ projectRoot: consumerRoot, pluginRoot });
-  const projectSkillEvaluated =
-    projectSkillScaffolded && /eval_status: "evaluated"/.test(fs.readFileSync(teamVerifySkill, 'utf8'));
+  // AE-033b: promote-rituals creates a version candidate + evidence; does not patch eval_status.
+  const candidateEvidence = path.join(
+    consumerRoot,
+    '.agentic-swe',
+    'skills',
+    'candidates',
+    'team-verify',
+    'evidence.json'
+  );
+  const projectSkillVersionCandidate =
+    projectSkillScaffolded &&
+    promoted.ok === true &&
+    promoted.promoted >= 1 &&
+    promoted.frontmatter_promote === false &&
+    fs.existsSync(candidateEvidence) &&
+    /eval_status: "unevaluated"/.test(fs.readFileSync(teamVerifySkill, 'utf8'));
   const merged = loadMergedMemoryConfig(pluginRoot, consumerRoot);
   const memorySqlite = sqlitePathForProject(merged, consumerRoot);
   const consumerProcedures = path.join(consumerRoot, '.agentic-swe', 'procedures.json');
@@ -177,7 +191,7 @@ async function main() {
       fleetOnboard.consumer_mode === true &&
       evolve.ok === true &&
       projectSkillScaffolded &&
-      projectSkillEvaluated &&
+      projectSkillVersionCandidate &&
       fs.existsSync(memorySqlite) &&
       fs.existsSync(consumerProcedures) &&
       r.skip_llm_exploration === true &&
@@ -202,8 +216,14 @@ async function main() {
       scaffold_created: evolve.ritual_skill_scaffold?.created || 0,
     },
     project_skill_scaffolded: projectSkillScaffolded,
-    project_skill_evaluated: projectSkillEvaluated,
-    ritual_promote: { promoted: promoted.promoted, total: promoted.total, ok: promoted.ok },
+    project_skill_version_candidate: projectSkillVersionCandidate,
+    ritual_promote: {
+      promoted: promoted.promoted,
+      total: promoted.total,
+      ok: promoted.ok,
+      mode: promoted.mode,
+      frontmatter_promote: promoted.frontmatter_promote,
+    },
     memory_sqlite: fs.existsSync(memorySqlite),
     consumer_procedures: fs.existsSync(consumerProcedures),
     skip_llm_exploration: r.skip_llm_exploration === true,
@@ -218,7 +238,7 @@ async function main() {
       r.skip_llm_exploration === true &&
       r.overlap_source === 'organic-worklog' &&
       projectSkillScaffolded &&
-      projectSkillEvaluated &&
+      projectSkillVersionCandidate &&
       multiplier <= TARGET &&
       fs.existsSync(memorySqlite),
   };
