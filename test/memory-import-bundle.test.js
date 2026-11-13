@@ -45,7 +45,7 @@ describe('memory-import bundle', () => {
     try {
       const n = db.exec("SELECT COUNT(*) AS c FROM nodes WHERE id LIKE 'custom:%'");
       assert.ok(n[0].values[0][0] >= 2);
-      const e = db.exec('SELECT COUNT(*) AS c FROM edges WHERE kind = "relates_to"');
+      const e = db.exec("SELECT COUNT(*) AS c FROM edges WHERE kind = 'relates_to'");
       assert.ok(Number(e[0].values[0][0]) >= 1);
     } finally {
       closeDatabase(db);

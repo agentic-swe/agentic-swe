@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * AE-030b — MemoryService write/read seam + six-scope router.
- * Store-agnostic: callers depend on this API; sql.js is the only adapter for now.
- * Do not add sql.js call sites here — go through adapters/sqljs-memory-store.cjs.
+ * AE-030b/AE-030e — MemoryService write/read seam + six-scope router.
+ * Store-agnostic: callers depend on this API; default adapter is node:sqlite (ADR-004b).
+ * Do not add store call sites here — go through adapters/node-sqlite-memory-store.cjs.
  * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47 field threading only (no TTL/envelope).
  */
 
@@ -18,7 +18,7 @@ const {
 } = require('./taxonomy.cjs');
 const { personalRoot } = require('./scopes.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
-const { createSqlJsMemoryStore } = require('./adapters/sqljs-memory-store.cjs');
+const { createNodeSqliteMemoryStore } = require('./adapters/node-sqlite-memory-store.cjs');
 const { redactSecrets } = require('../shared/redact.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
@@ -295,9 +295,9 @@ function rowToMemoryRecord(row) {
 function createMemoryService(opts) {
   const pluginRoot = path.resolve(opts.pluginRoot);
   const projectRoot = path.resolve(opts.projectRoot);
-  const createStore = opts.createStore || createSqlJsMemoryStore;
+  const createStore = opts.createStore || createNodeSqliteMemoryStore;
 
-  /** @type {Map<string, ReturnType<typeof createSqlJsMemoryStore>>} */
+  /** @type {Map<string, ReturnType<typeof createNodeSqliteMemoryStore>>} */
   const stores = new Map();
 
   function storeForPath(sqlitePath) {
