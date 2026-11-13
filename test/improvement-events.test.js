@@ -186,13 +186,13 @@ describe('AE-035a no merge/deploy entry point in new code', () => {
   it('improvement lib source has no merge/deploy/publish entry-point definitions', () => {
     const files = fs.readdirSync(IMPROVEMENT_DIR).filter((f) => f.endsWith('.cjs') || f.endsWith('.js'));
     assert.ok(files.length >= 1);
+    // AE-035b may name deny-catalog tool paths (e.g. github.merge) but must not
+    // define success-path entry points named merge/deploy/publish/selfMerge.
     const banned = [
       /\bfunction\s+(merge|deploy|publish|selfMerge)\b/,
       /\b(merge|deploy|publish|selfMerge)\s*[:=]\s*(async\s*)?function\b/,
       /\b(merge|deploy|publish|selfMerge)\s*[:=]\s*\(/,
       /\b(mergePullRequest|npmPublish|bypassReview)\s*[:=]/,
-      /github\.merge/,
-      /actions\/deploy/i,
     ];
     for (const file of files) {
       const src = fs.readFileSync(path.join(IMPROVEMENT_DIR, file), 'utf8');
@@ -200,6 +200,9 @@ describe('AE-035a no merge/deploy entry point in new code', () => {
         assert.equal(re.test(src), false, `${file} matched banned pattern ${re}`);
       }
     }
+    assert.equal(typeof improvement.mergeImprovementPullRequest, 'function');
+    assert.equal(improvement.mergeImprovementPullRequest({}).ok, false);
+    assert.equal(improvement.mergeImprovementPullRequest({}).code, 'SELF_MERGE_DENIED');
   });
 
   it('direct appendEvent of unregistered merge type stays EVENT_INVALID', () => {

@@ -5,6 +5,9 @@
  * Usage:
  *   node scripts/dco-check.cjs <base>..<head>
  *   node scripts/dco-check.cjs --json <base>..<head>
+ *   node scripts/dco-check.cjs --require-commits <base>..<head>
+ *     (--require-commits: fail closed when the range checks 0 non-merge commits;
+ *      used for pull_request CI so empty ranges cannot vacuous-PASS)
  *
  * Inspects only commits reachable from head that are not on base
  * (`git rev-list --no-merges` is NOT used — merges are skipped in the
@@ -132,8 +135,10 @@ function loadCommitsForRange(cwd, base, head) {
 function main() {
   const argv = process.argv.slice(2);
   const json = argv.includes('--json');
+  const requireNonEmpty = argv.includes('--require-commits');
   const skip = new Set();
   if (json) skip.add(argv.indexOf('--json'));
+  if (requireNonEmpty) skip.add(argv.indexOf('--require-commits'));
   const rootFlag = argv.indexOf('--plugin-root');
   if (rootFlag !== -1) {
     skip.add(rootFlag);
@@ -143,7 +148,9 @@ function main() {
   const rangeRaw = positional[0];
 
   if (!rangeRaw) {
-    console.error('usage: node scripts/dco-check.cjs [--json] <base>..<head>');
+    console.error(
+      'usage: node scripts/dco-check.cjs [--json] [--require-commits] <base>..<head>'
+    );
     process.exit(2);
   }
 
@@ -160,7 +167,7 @@ function main() {
     process.exit(1);
   }
 
-  const outcome = checkCommitsDco(loaded.commits);
+  const outcome = checkCommitsDco(loaded.commits, { requireNonEmpty });
   if (json) {
     console.log(
       JSON.stringify(
