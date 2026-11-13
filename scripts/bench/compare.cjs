@@ -2,13 +2,15 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createHash } = require('crypto');
 
 /**
  * Compare two bench scorecard JSON files. Exit non-zero on regression.
+ * AE-033a / PD-45: ANY regression is a hard fail (code REGRESSION).
  * @param {string} baselinePath
  * @param {string} currentPath
  * @param {object} [opts]
- * @returns {{ ok: boolean, regressions: object[] }}
+ * @returns {{ ok: boolean, code?: string, regressions: object[], compare_digest?: string, baseline?: object, current?: object }}
  */
 function compareScorecards(baselinePath, currentPath, opts = {}) {
   const minPassRate = opts.minPassRate ?? null;
@@ -63,7 +65,30 @@ function compareScorecards(baselinePath, currentPath, opts = {}) {
     }
   }
 
-  return { ok: regressions.length === 0, regressions, baseline, current };
+  if (regressions.length) {
+    return { ok: false, code: 'REGRESSION', regressions, baseline, current };
+  }
+
+  // Improvement or parity — attach a stable compare_digest for evidence (AE-033a).
+  const digestPayload = {
+    baseline_pass_rate: baseline.summary?.pass_rate ?? null,
+    current_pass_rate: current.summary?.pass_rate ?? null,
+    baseline_tasks: (baseline.tasks || []).map((t) => ({
+      id: t.id,
+      delivered: t.delivered === true,
+      total: t.scores?.total ?? null,
+    })),
+    current_tasks: (current.tasks || []).map((t) => ({
+      id: t.id,
+      delivered: t.delivered === true,
+      total: t.scores?.total ?? null,
+    })),
+  };
+  const compare_digest = createHash('sha256')
+    .update(JSON.stringify(digestPayload))
+    .digest('hex');
+
+  return { ok: true, regressions, baseline, current, compare_digest };
 }
 
 if (require.main === module) {
@@ -77,8 +102,12 @@ if (require.main === module) {
   const result = compareScorecards(args[baselineIdx + 1], args[currentIdx + 1]);
   if (result.ok) {
     console.log('No regressions detected.');
+    if (result.compare_digest) {
+      console.log(`compare_digest: ${result.compare_digest}`);
+    }
     process.exit(0);
   }
+  console.error(`REGRESSION (${result.code || 'REGRESSION'})`);
   console.error('Regressions:');
   for (const r of result.regressions) {
     console.error(`  [${r.id}] ${r.kind}: ${r.message}`);

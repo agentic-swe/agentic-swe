@@ -27,6 +27,7 @@ const {
 } = require('./skill-integrity.cjs');
 const { scanInstallPackage } = require('./install-scan.cjs');
 const { requirePublishReview } = require('./skill-publish-review.cjs');
+const { assertPublishCompareGate } = require('./skill-version-compare.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
@@ -158,6 +159,7 @@ function appendRegistryLog(registryRoot, event) {
     approval_ref: event.approval_ref != null ? String(event.approval_ref) : undefined,
     reviewer: event.reviewer != null ? String(event.reviewer) : undefined,
     review_verdict: event.review_verdict != null ? String(event.review_verdict) : undefined,
+    compare_digest: event.compare_digest != null ? String(event.compare_digest) : undefined,
   });
   const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -709,6 +711,23 @@ function publishSkill(opts) {
     };
   }
 
+  // AE-033a / PD-45: when scorecards are supplied, ANY regression blocks publish.
+  const compareGate = assertPublishCompareGate({
+    ...opts,
+    compareSkill: opts.compareSkill || (identity && identity.name),
+    compareToVersion: opts.compareToVersion || (identity && identity.version),
+  });
+  if (!compareGate.ok) {
+    return {
+      ok: false,
+      code: compareGate.code || 'REGRESSION',
+      errors: compareGate.errors || (compareGate.regressions || []).map(
+        (r) => `[${r.id}] ${r.kind}: ${r.message}`
+      ),
+      regressions: compareGate.regressions,
+    };
+  }
+
   const result = installSkill(opts);
   if (!result.ok) return result;
 
@@ -750,6 +769,7 @@ function publishSkill(opts) {
       approval_ref: approvalRef,
       reviewer: postReview.review.reviewer,
       review_verdict: postReview.review.verdict,
+      compare_digest: compareGate.compare_digest,
     });
   } catch (err) {
     return registryLogFailure(err, () => {
@@ -766,6 +786,7 @@ function publishSkill(opts) {
     actor,
     approvalRef,
     review: postReview.review,
+    compare_digest: compareGate.compare_digest,
   };
 }
 
