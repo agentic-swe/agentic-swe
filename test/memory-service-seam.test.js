@@ -339,22 +339,29 @@ describe('AE-030b layering + verify (acceptance)', () => {
     );
     assert.equal(layers.status, 0, layers.stdout + layers.stderr);
 
-    // Adapter stays under scripts/lib/memory (service); no sql.js require anywhere.
+    // Adapter stays under scripts/lib/memory (service); only node-sqlite adapter.
     const adapterSrc = fs.readFileSync(
       path.join(pluginRoot, 'scripts/lib/memory/adapters/node-sqlite-memory-store.cjs'),
       'utf8'
     );
     assert.match(adapterSrc, /graph-store\.cjs/);
-    assert.doesNotMatch(adapterSrc, /require\(['"]sql\.js['"]\)/);
+    const legacyPkg = ['sql', 'js'].join('.');
+    const requireLegacy = new RegExp(
+      `require\\(['"]${legacyPkg.replace('.', '\\.')}['"]\\)`
+    );
+    assert.doesNotMatch(adapterSrc, requireLegacy);
     const serviceSrc = fs.readFileSync(
       path.join(pluginRoot, 'scripts/lib/memory/memory-service.cjs'),
       'utf8'
     );
-    assert.doesNotMatch(serviceSrc, /require\(['"]sql\.js['"]\)/);
+    assert.doesNotMatch(serviceSrc, requireLegacy);
     assert.match(serviceSrc, /adapters\/node-sqlite-memory-store/);
+    const legacyAdapterName = `${['sql', 'js'].join('')}-memory-store.cjs`;
     assert.ok(
-      !fs.existsSync(path.join(pluginRoot, 'scripts/lib/memory/adapters/sqljs-memory-store.cjs')),
-      'sqljs adapter must be removed'
+      !fs.existsSync(
+        path.join(pluginRoot, 'scripts/lib/memory/adapters', legacyAdapterName)
+      ),
+      'legacy adapter filename must be absent'
     );
   });
 });

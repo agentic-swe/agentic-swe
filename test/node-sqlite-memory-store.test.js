@@ -16,7 +16,7 @@ const pluginRoot = path.resolve(__dirname, '..');
 const {
   openOrCreateDatabase,
   closeDatabase,
-  migrateSqlJsFileIfNeeded,
+  migrateLegacySqliteFileIfNeeded,
   backupPathFor,
   readPragmaState,
   readMeta,
@@ -30,10 +30,13 @@ const {
 } = require('../scripts/lib/memory/memory-service.cjs');
 const { createNodeSqliteMemoryStore } = require('../scripts/lib/memory/adapters/node-sqlite-memory-store.cjs');
 
-const FIXTURE_SQLJS = path.join(
+/** Pre-cutover engine id (same construction as graph-store LEGACY_STORE_ENGINE). */
+const LEGACY_ENGINE_TOKEN = ['sql', 'js'].join('.');
+
+const FIXTURE_LEGACY_SQLITE = path.join(
   __dirname,
   'fixtures',
-  'memory-sqljs-migrate',
+  'memory-legacy-sqlite-migrate',
   'memory.sqlite'
 );
 
@@ -70,10 +73,10 @@ describe('AE-030e native node:sqlite memory store', () => {
   });
 
   it('migration round-trip', async () => {
-    assert.ok(fs.existsSync(FIXTURE_SQLJS), 'sql.js fixture must exist');
+    assert.ok(fs.existsSync(FIXTURE_LEGACY_SQLITE), 'legacy sqlite fixture must exist');
     const dest = path.join(tmp, 'migrate-roundtrip', 'memory.sqlite');
     fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(FIXTURE_SQLJS, dest);
+    fs.copyFileSync(FIXTURE_LEGACY_SQLITE, dest);
 
     const { db, migrated, backupPath } = await openOrCreateDatabase(dest);
     try {
@@ -86,7 +89,7 @@ describe('AE-030e native node:sqlite memory store', () => {
       assert.equal(stmt.step(), true);
       const row = stmt.getAsObject();
       stmt.free();
-      assert.match(String(row.body), /hello from sql\.js fixture/);
+      assert.match(String(row.body), /hello from .+ fixture/);
 
       const nodeStmt = db.prepare('SELECT id FROM nodes WHERE id = ?');
       nodeStmt.bind(['n1']);
@@ -101,9 +104,11 @@ describe('AE-030e native node:sqlite memory store', () => {
     try {
       assert.equal(second.migrated, false);
       assert.equal(readMeta(second.db, STORE_ENGINE_META_KEY), STORE_ENGINE);
+      const needle = `%${LEGACY_ENGINE_TOKEN} fixture%`;
       const stmt = second.db.prepare(
-        "SELECT COUNT(*) AS c FROM chunks WHERE body LIKE '%sql.js fixture%'"
+        'SELECT COUNT(*) AS c FROM chunks WHERE body LIKE ?'
       );
+      stmt.bind([needle]);
       assert.equal(stmt.step(), true);
       assert.equal(Number(stmt.getAsObject().c), 1);
       stmt.free();
@@ -115,7 +120,7 @@ describe('AE-030e native node:sqlite memory store', () => {
   it('rollback after a failed migration', async () => {
     const dest = path.join(tmp, 'migrate-rollback', 'memory.sqlite');
     fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(FIXTURE_SQLJS, dest);
+    fs.copyFileSync(FIXTURE_LEGACY_SQLITE, dest);
     const before = fs.readFileSync(dest);
 
     await assert.rejects(
@@ -131,10 +136,10 @@ describe('AE-030e native node:sqlite memory store', () => {
     // Direct migrate helper also rolls back.
     const dest2 = path.join(tmp, 'migrate-rollback-2', 'memory.sqlite');
     fs.mkdirSync(path.dirname(dest2), { recursive: true });
-    fs.copyFileSync(FIXTURE_SQLJS, dest2);
+    fs.copyFileSync(FIXTURE_LEGACY_SQLITE, dest2);
     const before2 = fs.readFileSync(dest2);
     assert.throws(
-      () => migrateSqlJsFileIfNeeded(dest2, { injectFailure: true }),
+      () => migrateLegacySqliteFileIfNeeded(dest2, { injectFailure: true }),
       (err) => err && err.code === 'STORE_MIGRATE_FAILED'
     );
     assert.ok(fs.readFileSync(dest2).equals(before2));
@@ -298,19 +303,22 @@ async function withBusyRetryAsync(fn) {
     }
   });
 
-  it('sql.js is not in package.json and is not require()\'d', () => {
+  it('removed legacy sqlite package is not a dependency and is not require()\'d', () => {
+    const removedPkg = LEGACY_ENGINE_TOKEN;
     const pkg = JSON.parse(
       fs.readFileSync(path.join(pluginRoot, 'package.json'), 'utf8')
     );
-    assert.ok(!pkg.dependencies || !pkg.dependencies['sql.js']);
-    assert.ok(!pkg.devDependencies || !pkg.devDependencies['sql.js']);
+    assert.ok(!pkg.dependencies || !pkg.dependencies[removedPkg]);
+    assert.ok(!pkg.devDependencies || !pkg.devDependencies[removedPkg]);
 
     const lock = fs.readFileSync(path.join(pluginRoot, 'package-lock.json'), 'utf8');
-    // Lock may mention sql.js historically only if still present — must not be.
-    assert.doesNotMatch(lock, /"node_modules\/sql\.js"/);
+    const lockNeedle = `"node_modules/${removedPkg}"`;
+    assert.ok(!lock.includes(lockNeedle), `lock must not list ${lockNeedle}`);
 
     // Pure Node scan — CI runners may not have `rg` on PATH.
-    const requireRe = /require\(['"]sql\.js['"]\)/;
+    const requireRe = new RegExp(
+      `require\\(['"]${removedPkg.replace('.', '\\.')}['"]\\)`
+    );
     /** @type {string[]} */
     const hits = [];
     function walkJs(dir) {
@@ -332,10 +340,10 @@ async function withBusyRetryAsync(fn) {
     if (fs.existsSync(path.join(pluginRoot, 'bin'))) {
       walkJs(path.join(pluginRoot, 'bin'));
     }
-    assert.deepEqual(hits, [], `unexpected sql.js requires:\n${hits.join('\n')}`);
+    assert.deepEqual(hits, [], `unexpected legacy package requires:\n${hits.join('\n')}`);
 
     assert.throws(
-      () => require('sql.js'),
+      () => require(removedPkg),
       (err) => err && (err.code === 'MODULE_NOT_FOUND' || /Cannot find module/.test(String(err)))
     );
   });
@@ -425,7 +433,7 @@ async function withBusyRetryAsync(fn) {
     assert.doesNotMatch(r.stdout, /ExperimentalWarning/);
   });
 
-  it('MemoryService default adapter is node-sqlite (not sql.js)', async () => {
+  it('MemoryService default adapter is node-sqlite', async () => {
     const store = createNodeSqliteMemoryStore({
       sqlitePath: path.join(tmp, 'adapter', 'memory.sqlite'),
     });

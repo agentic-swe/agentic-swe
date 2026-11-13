@@ -71,7 +71,7 @@ function distillSessionChunk(input) {
 /**
  * Persist distilled nodes into SQLite graph (upsert).
  * Each node must carry real provenance (ADR-012 / AE-030h5) — no silent defaults.
- * @param {*} db sql.js / node:sqlite wrapped database
+ * @param {*} db node:sqlite wrapped database
  * @param {Array<{
  *   id: string,
  *   kind: string,

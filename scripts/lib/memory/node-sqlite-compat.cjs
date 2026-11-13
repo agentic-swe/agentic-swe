@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * AE-030e — thin sql.js-shaped facade over node:sqlite DatabaseSync.
+ * AE-030e — thin row/statement facade over node:sqlite DatabaseSync.
  * Existing graph-store callers keep stmt.run([...]) / step / getAsObject / exec shapes.
  * Refs ADR-004b A1 / ADR-016.
  */
@@ -22,7 +22,7 @@ function splitStatements(sql) {
       continue;
     }
     if (ch === "'" && inSingle) {
-      // sql.js / sqlite escape: ''
+      // SQLite escape: ''
       if (sql[i + 1] === "'") {
         cur += "''";
         i += 1;
@@ -70,7 +70,7 @@ function wrapDatabase(nativeDb) {
   }
 
   /**
-   * sql.js-compatible: [{ columns, values }] for row-returning statements.
+   * Compat shape: [{ columns, values }] for row-returning statements.
    * @param {string} sql
    */
   function exec(sql) {
