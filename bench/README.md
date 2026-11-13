@@ -75,6 +75,21 @@ See **`bench/tasks/TEMPLATE.md`** for the task format. Tasks should be:
 - Deterministically scorable
 - Representative of real engineering work
 
+## Frozen eval manifests (ADR-013)
+
+Suites used for isolated / holdout claims are **frozen eval manifests**: a pinned
+task list by content SHA, pool (`dev` | `public` | `private`), manifest digest,
+`cold_run_required` for E8-cited runs, retained negatives, and model/provider
+provenance. Local Ollama/llama.cpp may appear as `observed` evidence but must
+set `sole_e8_proof: false`. The field `default_score` is forbidden.
+
+- Schema: **`schemas/eval-manifest.schema.json`**
+- Committed smoke manifest: **`bench/manifests/dev-smoke.json`**
+- Validate: `node scripts/bench/run.cjs validate --manifest <path>` (also covered by `npm run bench:validate` / `validate --all`)
+- Decision record: **`docs/adr/0013-isolated-eval-harness.md`** (Accepted)
+
+Holdout packaging and the agent runner are separate work (AE-034b/c).
+
 ## References
 
 | Topic | Location |
@@ -83,3 +98,5 @@ See **`bench/tasks/TEMPLATE.md`** for the task format. Tasks should be:
 | Conformance runner | **`scripts/owai-conformance.cjs`** |
 | Capability tiers (#1 Moves) | **`docs/capabilities-overview.md`** |
 | Bench entrypoint | **`scripts/bench/run.cjs`** |
+| Frozen eval manifest schema | **`schemas/eval-manifest.schema.json`** |
+| ADR-013 isolated eval harness | **`docs/adr/0013-isolated-eval-harness.md`** |

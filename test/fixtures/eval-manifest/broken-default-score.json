@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "broken-default-score",
+  "description": "AE-034a fixture: pinned starter tasks (dev pool)",
+  "pool": "dev",
+  "cold_run_required": true,
+  "retain_negatives": true,
+  "pack_commit": "c0b83fa",
+  "tasks": [
+    {
+      "id": "01-off-by-one",
+      "content_sha256": "4831548f001f4409d6a9530d4ea125bbf9d5d4ed0aec3fb8c65d67b725c4a301",
+      "path": "bench/tasks/01-off-by-one"
+    },
+    {
+      "id": "02-add-retry",
+      "content_sha256": "dfb54ed40d6f9222e382f8b2c229ca1d08f2b9d3b2855a145f4faac30d400b46",
+      "path": "bench/tasks/02-add-retry"
+    },
+    {
+      "id": "03-rate-limiter",
+      "content_sha256": "c7c4378ce6c917d255e42cf04894ff38c1976dec5a4604527297f6dfff994a75",
+      "path": "bench/tasks/03-rate-limiter"
+    }
+  ],
+  "model_provenance": {
+    "provider": "fixture",
+    "model": "deterministic-fixture",
+    "label": "measured",
+    "sole_e8_proof": false
+  },
+  "manifest_digest": "cf8e1e5665fbe97dd040e2a4f18d1db5958ec36abb3c7df58df3fc0cfe085c31",
+  "default_score": 1
+}
