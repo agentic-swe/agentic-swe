@@ -159,15 +159,24 @@ describe('project skill promote', () => {
     const { promoteRitualSkillCandidates } = require('../scripts/lib/skills/skill-eval-suggestions.cjs');
     const r = promoteRitualSkillCandidates({ projectRoot: tmpProj, pluginRoot });
     assert.equal(r.promoted, 1);
+    assert.equal(r.frontmatter_promote, false);
+    assert.equal(r.mode, 'version_candidate');
     const raw = fs.readFileSync(path.join(tmpProj, '.agentic-swe', 'skills', 'team-verify', 'SKILL.md'), 'utf8');
-    assert.match(raw, /eval_status: "evaluated"/);
+    assert.match(raw, /eval_status: "unevaluated"/);
+    const candDir = path.join(tmpProj, '.agentic-swe', 'skills', 'candidates', 'team-verify');
+    assert.ok(fs.existsSync(path.join(candDir, 'manifest.json')));
+    assert.ok(fs.existsSync(path.join(candDir, 'evidence.json')));
+    const evidence = JSON.parse(fs.readFileSync(path.join(candDir, 'evidence.json'), 'utf8'));
+    assert.equal(evidence.kind, 'ritual_golden_eval');
+    assert.ok(evidence.eval_ref);
+    // Frontmatter-only promote removed: autonomous gate stays closed until human publish path.
     const gate = checkSkillEvalGate({
       pluginRoot,
       projectRoot: tmpProj,
       skillName: 'team-verify',
       autonomous: true,
     });
-    assert.equal(gate.allowed, true);
+    assert.equal(gate.allowed, false);
     fs.rmSync(tmpProj, { recursive: true, force: true });
   });
 
@@ -213,7 +222,14 @@ describe('skill evolution pipeline', () => {
     const pipe = await runSkillEvolutionPipeline({ projectRoot: tmpProj, pluginRoot });
     assert.equal(pipe.scaffold?.created, 1);
     assert.equal(pipe.promote?.promoted, 1);
+    assert.equal(pipe.promote?.frontmatter_promote, false);
     assert.equal(pipe.after.promote_candidates.length, 0);
+    assert.ok(pipe.after.version_candidate_ready.includes('team-verify'));
+    assert.ok(
+      fs.existsSync(
+        path.join(tmpProj, '.agentic-swe', 'skills', 'candidates', 'team-verify', 'evidence.json')
+      )
+    );
     fs.rmSync(tmpProj, { recursive: true, force: true });
   });
 });
