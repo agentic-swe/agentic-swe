@@ -24,6 +24,7 @@
     "hooks": "service",
     "host-parity": "clients",
     "hosted-runtime": "runtime",
+    "improvement": "service",
     "install-state": "storage",
     "jev": "service",
     "memory": "service",
