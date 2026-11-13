@@ -29,7 +29,9 @@ function isVerifyCommand(cmd) {
   const t = String(cmd || '').trim();
   if (!t || t.length > 160 || isDangerousCommand(t)) return false;
   if (/[;&|]/.test(t)) return false;
-  if (/^(npm|pnpm|yarn)\s+(test|run\s+(test|verify|ci|test:smoke))\b/.test(t)) return true;
+  // Generalized beyond hard-coded test/verify/ci scripts (AE-032a).
+  if (/^(npm|pnpm|yarn)\s+test\b/.test(t)) return true;
+  if (/^(npm|pnpm|yarn)\s+run\s+[a-z][a-z0-9:_-]*\b/i.test(t)) return true;
   if (/^node\s+test\//.test(t)) return true;
   if (/^node\s+--test\s+test\//.test(t)) return true;
   return false;

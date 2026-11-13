@@ -36,6 +36,18 @@ function ensureRecordColumns(db) {
   if (!cols.has('record_json')) {
     db.run('ALTER TABLE chunks ADD COLUMN record_json TEXT');
   }
+  db.run(`
+CREATE TABLE IF NOT EXISTS memory_tombstones (
+  id TEXT PRIMARY KEY,
+  selector_json TEXT NOT NULL,
+  deleted_at TEXT NOT NULL,
+  scope TEXT,
+  path TEXT,
+  chunk_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_tombstones_scope ON memory_tombstones(scope);
+CREATE INDEX IF NOT EXISTS idx_tombstones_path ON memory_tombstones(path);
+`);
 }
 
 /**
@@ -144,6 +156,93 @@ function createNodeSqliteMemoryStore(opts = {}) {
       while (stmt.step()) {
         rows.push(stmt.getAsObject());
       }
+      stmt.free();
+      return rows;
+    },
+
+    /**
+     * Soft-delete: remove matching chunks and write tombstones.
+     * @param {{
+     *   ids?: string[],
+     *   path?: string,
+     *   scope?: string,
+     *   deletedAt?: string,
+     *   selector?: object,
+     * }} sel
+     */
+    async deleteChunks(sel = {}) {
+      const db = await ensureOpen();
+      const deletedAt = sel.deletedAt || new Date().toISOString();
+      const selectorJson = JSON.stringify(sel.selector || sel);
+      /** @type {Array<{chunk_id:string,path:string,scope:string|null}>} */
+      const matched = [];
+
+      if (Array.isArray(sel.ids) && sel.ids.length) {
+        for (const id of sel.ids) {
+          const stmt = db.prepare(
+            'SELECT chunk_id, path, scope FROM chunks WHERE chunk_id = ?'
+          );
+          stmt.bind([String(id)]);
+          if (stmt.step()) matched.push(stmt.getAsObject());
+          stmt.free();
+        }
+      } else if (sel.path) {
+        const stmt = db.prepare(
+          'SELECT chunk_id, path, scope FROM chunks WHERE path = ?'
+        );
+        stmt.bind([String(sel.path)]);
+        while (stmt.step()) matched.push(stmt.getAsObject());
+        stmt.free();
+      } else if (sel.scope) {
+        const stmt = db.prepare(
+          'SELECT chunk_id, path, scope FROM chunks WHERE scope = ?'
+        );
+        stmt.bind([String(sel.scope)]);
+        while (stmt.step()) matched.push(stmt.getAsObject());
+        stmt.free();
+      }
+
+      const del = db.prepare('DELETE FROM chunks WHERE chunk_id = ?');
+      const tomb = db.prepare(
+        `INSERT OR REPLACE INTO memory_tombstones
+          (id, selector_json, deleted_at, scope, path, chunk_id)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      );
+      for (const row of matched) {
+        del.run([row.chunk_id]);
+        const tombId = `tomb:${row.chunk_id}`;
+        tomb.run([
+          tombId,
+          selectorJson,
+          deletedAt,
+          row.scope != null ? String(row.scope) : null,
+          row.path != null ? String(row.path) : null,
+          String(row.chunk_id),
+        ]);
+      }
+      del.free();
+      tomb.free();
+      return {
+        deleted: matched.map((r) => String(r.chunk_id)),
+        count: matched.length,
+      };
+    },
+
+    /**
+     * @param {{ limit?: number }} [opts]
+     */
+    async listTombstones(opts = {}) {
+      const db = await ensureOpen();
+      const lim = Math.min(5000, Math.max(1, Number(opts.limit) || 500));
+      const stmt = db.prepare(
+        `SELECT id, selector_json, deleted_at, scope, path, chunk_id
+         FROM memory_tombstones
+         ORDER BY deleted_at DESC
+         LIMIT ?`
+      );
+      stmt.bind([lim]);
+      const rows = [];
+      while (stmt.step()) rows.push(stmt.getAsObject());
       stmt.free();
       return rows;
     },

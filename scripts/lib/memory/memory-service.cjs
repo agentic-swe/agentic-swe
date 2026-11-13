@@ -1,9 +1,10 @@
 'use strict';
 
 /**
- * AE-030b/e/c — MemoryService write/read seam + six-scope router.
+ * AE-030b/e/c/d — MemoryService write/read/delete seam + six-scope router.
  * Store-agnostic: callers depend on this API; default adapter is node:sqlite (ADR-004b).
  * AE-030c: provenance required on write; retrieve returns untrusted envelopes (ADR-012 / SEC-005).
+ * AE-030d: delete+tombstone, TTL dry-run, PD-46 visibility/tenant defaults.
  * Do not add store call sites here — go through adapters/node-sqlite-memory-store.cjs.
  * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47/PD-48 C3 (regex redact.cjs only).
  */
@@ -21,6 +22,12 @@ const { personalRoot } = require('./scopes.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
 const { createNodeSqliteMemoryStore } = require('./adapters/node-sqlite-memory-store.cjs');
 const { redactSecrets } = require('../shared/redact.cjs');
+const {
+  ttlDryRun,
+  defaultVisibilityForScope,
+  resolveTenantLabel,
+  evaluateExpiry,
+} = require('./memory-retention.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
 const TRUST_VALUES = new Set(['untrusted', 'reviewed', 'human_approved']);
@@ -273,11 +280,19 @@ function normalizeWriteRecord(input) {
     redaction.hits = redacted.hits;
   }
 
-  const visibility =
-    input.visibility != null ? String(input.visibility) : 'private';
+  const visibility = defaultVisibilityForScope(scope, input.visibility);
   if (!VISIBILITY_VALUES.has(visibility)) {
     const err = new Error(`unknown visibility: ${visibility}`);
     err.code = 'UNKNOWN_VISIBILITY';
+    err.path = 'visibility';
+    throw err;
+  }
+  // PD-46: org stays private/local; public without governed path is forbidden later at publish.
+  if (scope === 'organizational' && visibility === 'public') {
+    const err = new Error(
+      'organizational memory cannot be written as public without AE-036/governed path'
+    );
+    err.code = 'ORG_MEMORY_PUBLIC_FORBIDDEN';
     err.path = 'visibility';
     throw err;
   }
@@ -289,10 +304,7 @@ function normalizeWriteRecord(input) {
 
   return {
     id,
-    tenant_id:
-      input.tenant_id != null && String(input.tenant_id).trim() !== ''
-        ? String(input.tenant_id)
-        : DEFAULT_TENANT_ID,
+    tenant_id: resolveTenantLabel(scope, input.tenant_id, DEFAULT_TENANT_ID),
     scope,
     body: redacted.redacted,
     provenance: {
@@ -469,6 +481,12 @@ function createMemoryService(opts) {
     const store = storeForPath(sqlitePath);
     await store.open();
     const rows = await store.listChunks({ limit: 5000 });
+    const tombs = typeof store.listTombstones === 'function'
+      ? await store.listTombstones({ limit: 5000 })
+      : [];
+    const tombIds = new Set(
+      tombs.map((t) => String(t.chunk_id || '')).filter(Boolean)
+    );
     const tokens = String(query.query || '')
       .toLowerCase()
       .split(/\s+/)
@@ -477,6 +495,7 @@ function createMemoryService(opts) {
 
     const out = [];
     for (const row of rows) {
+      if (tombIds.has(String(row.chunk_id || ''))) continue;
       const resolved = resolveScopeAtSeam(row);
       if (resolved !== scope) continue;
       if (tokens.length) {
@@ -495,6 +514,72 @@ function createMemoryService(opts) {
     };
   }
 
+  /**
+   * AE-030d — soft-delete by selector; writes tombstones; subsequent prime/read miss ids.
+   * @param {{
+   *   id?: string,
+   *   ids?: string[],
+   *   path?: string,
+   *   scope?: string,
+   * }} selector
+   */
+  async function deleteRecords(selector = {}) {
+    const ids = [];
+    if (selector.id) ids.push(String(selector.id));
+    if (Array.isArray(selector.ids)) {
+      for (const id of selector.ids) ids.push(String(id));
+    }
+    if (!ids.length && !selector.path && !selector.scope) {
+      const err = new Error('delete selector requires id, ids, path, or scope');
+      err.code = 'DELETE_SELECTOR_REQUIRED';
+      err.path = 'selector';
+      throw err;
+    }
+
+    let scopeHint = selector.scope;
+    if (!scopeHint && ids.length) {
+      // Default to organizational for id-only deletes unless caller sets scope.
+      scopeHint = 'organizational';
+    }
+    if (scopeHint) assertKnownScope(scopeHint);
+
+    const scopesToTouch = scopeHint
+      ? [scopeHint]
+      : [...MEMORY_SCOPES];
+
+    const deleted = [];
+    for (const scope of scopesToTouch) {
+      const sqlitePath = sqlitePathForMemoryScope(scope, { pluginRoot, projectRoot });
+      const store = storeForPath(sqlitePath);
+      if (typeof store.deleteChunks !== 'function') continue;
+      const result = await store.deleteChunks({
+        ids: ids.length ? ids : undefined,
+        path: selector.path,
+        scope: ids.length || selector.path ? undefined : scope,
+        selector,
+      });
+      deleted.push(...(result.deleted || []));
+      await store.persist();
+      if (ids.length && deleted.length >= ids.length) break;
+      if (selector.path && result.count > 0) break;
+    }
+    return { deleted: [...new Set(deleted)], count: new Set(deleted).size };
+  }
+
+  /**
+   * TTL dry-run for a scope (or provided records). No network.
+   * @param {{ scope?: string, records?: object[], now?: string|number|Date }} opts
+   */
+  async function retentionDryRun(opts = {}) {
+    let records = opts.records;
+    if (!records) {
+      const scope = assertKnownScope(opts.scope || 'organizational');
+      const result = await read({ scope, limit: 5000 });
+      records = result.records;
+    }
+    return ttlDryRun(records, { now: opts.now });
+  }
+
   async function close() {
     for (const store of stores.values()) {
       await store.close();
@@ -505,6 +590,8 @@ function createMemoryService(opts) {
   return {
     write,
     read,
+    delete: deleteRecords,
+    retentionDryRun,
     close,
     sqlitePathForMemoryScope: (scope) =>
       sqlitePathForMemoryScope(scope, { pluginRoot, projectRoot }),
@@ -523,6 +610,10 @@ module.exports = {
   toUntrustedEnvelope,
   refuseTrustedInstructionConcatenation,
   normalizeWriteRecord,
+  ttlDryRun,
+  evaluateExpiry,
+  defaultVisibilityForScope,
+  resolveTenantLabel,
   GIT_HISTORY_PATH_PREFIX,
   MEMORY_SCOPES,
 };

@@ -208,6 +208,7 @@ function scaffoldMissingRitualSkills(opts) {
   const rituals = collectProcedureRitualSkills(storeRoot);
   const known = new Set(listSkills(pluginRoot, projectRoot).map((s) => s.name));
   const data = loadStore(storeRoot);
+  const { parseRitualPattern } = require('./procedure-ritual-skills.cjs');
 
   const results = [];
   for (const r of rituals) {
@@ -216,12 +217,16 @@ function scaffoldMissingRitualSkills(opts) {
       results.push({ skill: r.skill, ok: false, skipped: true, reason: 'no evaluated procedure ritual' });
       continue;
     }
-    const proc = (data.procedures || []).find(
-      (p) =>
-        p.eval_status === 'evaluated' &&
-        new RegExp(`\\bnpm run ${r.skill}\\b`, 'i').test(p.procedure?.verify?.[0]?.command || '')
-    );
-    const verifyCommand = proc?.procedure?.verify?.[0]?.command || `npm run ${r.skill}`;
+    const proc = (data.procedures || []).find((p) => {
+      if (p.eval_status !== 'evaluated') return false;
+      const cmd = p.procedure?.verify?.[0]?.command || '';
+      const pattern = parseRitualPattern(cmd);
+      return pattern && pattern.skill === r.skill;
+    });
+    const verifyCommand =
+      proc?.procedure?.verify?.[0]?.command ||
+      (Array.isArray(r.commands) && r.commands[0]) ||
+      `npm run ${r.skill}`;
     const source = proc?.procedure?._meta?.source || 'procedure-ritual';
     if (opts.dryRun) {
       results.push({ skill: r.skill, ok: true, dry_run: true, verify_command: verifyCommand });
