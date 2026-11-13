@@ -58,7 +58,9 @@ describe('objective-evidence bench units', () => {
     assert.equal(p.target_met, true);
     assert.ok(p.multiplier <= p.target_multiplier);
     assert.equal(p.project_skill_scaffolded, true);
-    assert.equal(p.project_skill_evaluated, true);
+    // AE-033b: ritual promote writes version candidate + evidence (no frontmatter eval_status patch).
+    assert.equal(p.project_skill_version_candidate, true);
+    assert.equal(p.ritual_promote.frontmatter_promote, false);
   });
 
   it('consumer fleet readiness gate passes with 3 organic work items in tmp repo', () => {

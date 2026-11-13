@@ -74,9 +74,9 @@ function renderSkillMd(candidate) {
     `name: ${name}`,
     `description: "Candidate skill stub for ritual ${yamlQuote(cmd || name)} (unevaluated)."`,
     'metadata:',
-    '  version: "0.0.0-candidate"',
+    `  version: "${yamlQuote(candidate.version || '0.0.0-candidate')}"`,
     '  eval_status: "unevaluated"',
-    '  eval_ref: ""',
+    `  eval_ref: "${yamlQuote(candidate.eval_ref || '')}"`,
     '  status: "candidate"',
     '  autonomous_selection: "false"',
     '---',
@@ -158,15 +158,17 @@ test('${name} candidate contract: package files present', () => {
 function buildManifest(candidate, digest) {
   const name = String(candidate.skill || '').trim();
   const cmd = String(candidate.verify_command || '').trim();
+  const version = String(candidate.version || '0.0.0-candidate').trim() || '0.0.0-candidate';
+  const permissions = Array.isArray(candidate.permissions) ? [...candidate.permissions] : [];
   return {
     name,
-    version: '0.0.0-candidate',
+    version,
     description: `Candidate skill stub for ritual ${cmd || name} (unevaluated).`,
     kind: 'prompt',
     inputs: [{ name: 'project_root', type: 'string', required: true }],
     outputs: [{ name: 'verify_result', type: 'string' }],
     dependencies: [],
-    permissions: [],
+    permissions,
     runtime: { node: '>=22.0.0' },
     compatibility: { pack: '^3.0.0' },
     validation: { rules: ['schema', 'digest'] },
@@ -243,6 +245,7 @@ function writeCandidatePackage(opts) {
     candidate_id: candidate.candidate_id || null,
     skill,
     kind: candidate.kind || null,
+    version: manifest.version,
     status: 'candidate',
     eval_status: 'unevaluated',
     autonomous_selection: false,
@@ -250,6 +253,7 @@ function writeCandidatePackage(opts) {
     quarantined: candidate.quarantined === true,
     quarantine_reason: candidate.quarantined ? candidate.quarantine_reason || 'external_source' : null,
     source_evidence: Array.isArray(candidate.source_evidence) ? candidate.source_evidence : [],
+    ritual_promote: candidate.ritual_promote === true,
     packaged_at: new Date().toISOString(),
     generator: 'candidate-package.cjs',
     generator_mode: 'templates-only',
@@ -260,6 +264,13 @@ function writeCandidatePackage(opts) {
   fs.writeFileSync(path.join(dest, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   fs.writeFileSync(path.join(dest, 'contract.test.js'), contractTest);
   fs.writeFileSync(path.join(dest, 'candidate-meta.json'), `${JSON.stringify(meta, null, 2)}\n`);
+
+  if (candidate.evidence && typeof candidate.evidence === 'object') {
+    fs.writeFileSync(
+      path.join(dest, 'evidence.json'),
+      `${JSON.stringify(candidate.evidence, null, 2)}\n`
+    );
+  }
 
   const result = {
     ok: true,

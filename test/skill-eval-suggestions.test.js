@@ -124,9 +124,66 @@ describe('skill-eval suggestions', () => {
     assert.equal(r.total, 1);
     assert.equal(r.promoted, 1);
     assert.equal(r.results[0].dry_run, true);
+    assert.equal(r.results[0].mode, 'version_candidate');
+    assert.equal(r.frontmatter_promote, false);
     const raw = fs.readFileSync(path.join(tmpPlugin, 'skills', 'check', 'SKILL.md'), 'utf8');
     assert.match(raw, /eval_status: "unevaluated"/);
     fs.rmSync(tmpPlugin, { recursive: true, force: true });
+    fs.rmSync(tmpProj, { recursive: true, force: true });
+  });
+
+  it('promote-rituals creates version candidate + evidence without frontmatter patch', () => {
+    // Use real pack pluginRoot so golden-eval corpus resolves; project-local unevaluated skill.
+    const tmpProj = fs.mkdtempSync(path.join(os.tmpdir(), 'cand-prj-'));
+    const skillDir = path.join(tmpProj, '.agentic-swe', 'skills', 'team-verify');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(skillDir, 'SKILL.md'),
+      `---
+name: team-verify
+description: "Project ritual fixture"
+metadata:
+  version: "0.0.1"
+  eval_status: "unevaluated"
+  eval_ref: ""
+---
+# team-verify
+`
+    );
+    fs.mkdirSync(path.join(tmpProj, '.agentic-swe'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpProj, '.agentic-swe', 'skill-golden-eval.json'),
+      JSON.stringify({ version: 1, skills: { 'team-verify': 'bench/corpus/oracle-verify-sanity' } }, null, 2)
+    );
+    promoteOrDemote({
+      projectRoot: tmpProj,
+      fingerprint: buildFingerprint({ files: ['package.json'], verifyCommand: 'npm run team-verify' }),
+      procedure: {
+        actions: [],
+        verify: [{ type: 'RUN', command: 'npm run team-verify' }],
+        _meta: { source: 'repo-ritual' },
+      },
+      evalPassed: true,
+      humanApproved: true,
+    });
+    const r = promoteRitualSkillCandidates({ projectRoot: tmpProj, pluginRoot });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.promoted, 1);
+    assert.equal(r.frontmatter_promote, false);
+    const raw = fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf8');
+    assert.match(raw, /eval_status: "unevaluated"/);
+    const evidencePath = path.join(
+      tmpProj,
+      '.agentic-swe',
+      'skills',
+      'candidates',
+      'team-verify',
+      'evidence.json'
+    );
+    assert.ok(fs.existsSync(evidencePath));
+    const again = suggestSkillEvalFromProcedures({ projectRoot: tmpProj, pluginRoot });
+    assert.ok(!again.promote_candidates.includes('team-verify'));
+    assert.ok(again.version_candidate_ready.includes('team-verify'));
     fs.rmSync(tmpProj, { recursive: true, force: true });
   });
 });
