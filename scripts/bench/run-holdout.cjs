@@ -9,7 +9,6 @@
  * Results: bench/results/holdout-* (gitignored; never commit).
  */
 
-const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { runHoldoutSuite } = require('../lib/bench/holdout-runner.cjs');
