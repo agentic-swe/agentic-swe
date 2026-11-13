@@ -104,6 +104,12 @@ async function ingestFleetSubmissionMemory(opts) {
         kind: 'fleet-submission',
         label: `fleet ${submission.fleet_evidence_class || 'independent'}: ${path.basename(submission.project_root || 'consumer')}`,
         body,
+        provenance: buildIngestProvenance({
+          source: 'fleet-ingest',
+          originPathOrEvent: archiveRel,
+          actor: 'system:fleet-ingest',
+          sourceHash: sha,
+        }),
       },
     ]);
     persistDatabase(db, sqlitePath);

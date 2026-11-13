@@ -1,19 +1,22 @@
 'use strict';
 
 /**
- * AE-035a — governed self-improvement work template + journal events.
+ * AE-035a/b — governed self-improvement work template, journal events,
+ * promotion gates, draft-PR-only tooling, and merge/deploy deny without
+ * human authority (M4.6 / FD-B / §15 / PD-45).
  *
- * Auditable propose / evaluate path only. Merge, deploy, ruleset, Actions,
- * and npm-publish entry points are intentionally absent (M4.6 / FD-B / §15).
- * Promotion gates and draft-PR tooling land in AE-035b.
+ * Merge/deploy/self-merge entry points remain denied in this module surface.
+ * Policy/PDP baseline is unchanged (tooling-layer enforcement).
  *
- * Refs ADR-011 (receipts fold journal events).
+ * Refs ADR-011, ADR-013; PD-42, PD-45.
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
 const { appendEvent } = require('../shared/journal.cjs');
 const { validateEvent } = require('../shared/journal-registry.cjs');
+const promotionGates = require('./promotion-gates.cjs');
+const draftPr = require('./draft-pr.cjs');
 
 const PLUGIN_ROOT = path.join(__dirname, '..', '..', '..');
 const STATE_TEMPLATE_PATH = path.join(PLUGIN_ROOT, 'templates', 'self-improvement-state.json');
@@ -89,6 +92,7 @@ function buildSelfImprovementWorkItem(opts) {
   state.improvement.draft_pr_only = true;
   state.improvement.merge_authorized = false;
   state.improvement.deploy_authorized = false;
+  state.improvement.independent_review_required = true;
   return state;
 }
 
@@ -148,7 +152,7 @@ function evaluateImprovement(workDir, payload, opts = {}) {
 }
 
 /**
- * Public surface for AE-035a. Intentionally excludes merge/deploy.
+ * Public surface for AE-035a/b. Intentionally excludes merge/deploy success paths.
  */
 module.exports = {
   MODE,
@@ -162,4 +166,16 @@ module.exports = {
   loadImprovementProposalTemplate,
   proposeImprovement,
   evaluateImprovement,
+  // AE-035b promotion gates + draft PR / authority
+  REQUIRED_FD_B: promotionGates.REQUIRED_FD_B,
+  buildApprovedImprovementReview: promotionGates.buildApprovedImprovementReview,
+  assertIndependentReview: promotionGates.assertIndependentReview,
+  evaluatePromotionGates: promotionGates.evaluatePromotionGates,
+  promoteSelfImprovement: promotionGates.promoteSelfImprovement,
+  MERGE_DEPLOY_TOOL_PATHS: draftPr.MERGE_DEPLOY_TOOL_PATHS,
+  isMergeOrDeployToolPath: draftPr.isMergeOrDeployToolPath,
+  assertMergeDeployAllowed: draftPr.assertMergeDeployAllowed,
+  openImprovementDraftPr: draftPr.openImprovementDraftPr,
+  mergeImprovementPullRequest: draftPr.mergeImprovementPullRequest,
+  deployImprovementRelease: draftPr.deployImprovementRelease,
 };

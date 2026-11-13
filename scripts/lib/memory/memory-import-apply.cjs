@@ -2,9 +2,63 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const Ajv = require('ajv/dist/2020').default;
-const { openOrCreateDatabase, persistDatabase, closeDatabase } = require('./graph-store.cjs');
+const {
+  openOrCreateDatabase,
+  persistDatabase,
+  closeDatabase,
+  upsertNodeRow,
+  upsertEdgeRow,
+} = require('./graph-store.cjs');
+const { requireProvenance, buildIngestProvenance } = require('./provenance.cjs');
 const { redactSecrets, redactDeep } = require('./session-capture.cjs');
+
+/**
+ * Resolve provenance for one imported node/edge.
+ * Per-entry provenance wins; otherwise explicit legacy_import marks untrusted.
+ * @param {object} entry
+ * @param {object} bundle
+ * @param {string} entryKind 'node'|'edge'
+ * @param {string} entryKey stable id for hashing
+ */
+function resolveImportEntryProvenance(entry, bundle, entryKind, entryKey) {
+  if (entry && entry.provenance != null) {
+    return requireProvenance(entry);
+  }
+  const legacyFlag =
+    bundle.legacy_import === true ||
+    (bundle.provenance && bundle.provenance.legacy_import === true);
+  if (!legacyFlag) {
+    const err = new Error(
+      `import ${entryKind} missing provenance (set per-entry provenance or legacy_import=true)`
+    );
+    err.code = 'MISSING_PROVENANCE';
+    err.path = `${entryKind}.provenance`;
+    throw err;
+  }
+  const source =
+    bundle.provenance && bundle.provenance.source != null
+      ? String(bundle.provenance.source).trim()
+      : '';
+  if (!source) {
+    const err = new Error('legacy import requires bundle.provenance.source');
+    err.code = 'MISSING_PROVENANCE';
+    err.path = 'provenance.source';
+    throw err;
+  }
+  const importedAt =
+    (bundle.provenance && bundle.provenance.imported_at) || new Date().toISOString();
+  const sourceHash = crypto.createHash('sha256').update(String(entryKey)).digest('hex');
+  const provenance = buildIngestProvenance({
+    source: 'memory-import:legacy',
+    originPathOrEvent: `${source}:${entryKey}`,
+    actor: 'system:memory-import:legacy',
+    sourceHash,
+    ingestedAt: importedAt,
+  });
+  return { ...provenance, legacy: true };
+}
 
 /**
  * @param {object} bundle validated memory import bundle
@@ -20,35 +74,55 @@ function applyImportBundleToDb(db, bundle, caps) {
     throw new Error(`import exceeds max_edges: ${edges.length} > ${caps.maxEdges}`);
   }
 
-  const insN = db.prepare(
-    `INSERT OR REPLACE INTO nodes (id, kind, path, label, meta_json) VALUES (?, ?, ?, ?, ?)`
-  );
   for (const n of nodes) {
+    const provenance = resolveImportEntryProvenance(n, bundle, 'node', String(n.id));
     const meta = n.meta && typeof n.meta === 'object' ? JSON.stringify(redactDeep(n.meta)) : null;
-    insN.run([
-      n.id,
-      n.kind,
-      n.path != null ? redactSecrets(String(n.path)).redacted : null,
-      n.label != null ? redactSecrets(String(n.label)).redacted : null,
-      meta,
-    ]);
+    upsertNodeRow(db, {
+      id: n.id,
+      kind: n.kind,
+      path: n.path != null ? redactSecrets(String(n.path)).redacted : null,
+      label: n.label != null ? redactSecrets(String(n.label)).redacted : null,
+      metaJson: meta,
+      recordJson: JSON.stringify({
+        id: n.id,
+        kind: n.kind,
+        provenance,
+        trust: 'untrusted',
+        ...(provenance.legacy ? { legacy: true } : {}),
+        redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+      }),
+    });
   }
-  insN.free();
 
-  const insE = db.prepare(
-    `INSERT OR REPLACE INTO edges (src_id, dst_id, kind, meta_json) VALUES (?, ?, ?, ?)`
-  );
   for (const e of edges) {
+    const edgeKey = `${e.src_id}->${e.dst_id}:${e.kind}`;
+    const provenance = resolveImportEntryProvenance(e, bundle, 'edge', edgeKey);
     const meta = e.meta && typeof e.meta === 'object' ? JSON.stringify(redactDeep(e.meta)) : null;
-    insE.run([e.src_id, e.dst_id, e.kind, meta]);
+    upsertEdgeRow(db, {
+      srcId: e.src_id,
+      dstId: e.dst_id,
+      kind: e.kind,
+      metaJson: meta,
+      recordJson: JSON.stringify({
+        src_id: e.src_id,
+        dst_id: e.dst_id,
+        kind: e.kind,
+        provenance,
+        trust: 'untrusted',
+        ...(provenance.legacy ? { legacy: true } : {}),
+        redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+      }),
+    });
   }
-  insE.free();
 
   const prov = bundle.provenance || {};
   const metaRow = {
     last_import_source: prov.source,
     last_import_at: prov.imported_at || new Date().toISOString(),
     ...(prov.note ? { last_import_note: redactSecrets(String(prov.note)).redacted } : {}),
+    ...(bundle.legacy_import === true || prov.legacy_import === true
+      ? { legacy_import: true }
+      : {}),
   };
   const m = db.prepare('INSERT OR REPLACE INTO memory_meta (key, value) VALUES (?, ?)');
   m.run(['last_graph_import', JSON.stringify(metaRow)]);
@@ -98,6 +172,16 @@ async function runMemoryImport(opts) {
         edges: opts.bundle.edges.length,
       },
     };
+  } catch (err) {
+    if (err && (err.code === 'MISSING_PROVENANCE' || err.code === 'MISSING_PROVENANCE_FIELD')) {
+      return {
+        ok: false,
+        code: err.code,
+        message: err.message,
+        path: err.path,
+      };
+    }
+    throw err;
   } finally {
     closeDatabase(db);
   }
@@ -106,4 +190,5 @@ async function runMemoryImport(opts) {
 module.exports = {
   applyImportBundleToDb,
   runMemoryImport,
+  resolveImportEntryProvenance,
 };

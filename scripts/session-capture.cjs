@@ -11,9 +11,11 @@ const os = require('node:os');
 const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { discoverActiveWorkDir } = require('./lib/work-engine/discover-workdir.cjs');
+const crypto = require('node:crypto');
 const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('./lib/memory/graph-store.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./lib/memory/config.cjs');
 const { distillSessionChunk, upsertTypedNodes, redactSecrets } = require('./lib/memory/session-capture.cjs');
+const { buildIngestProvenance } = require('./lib/memory/provenance.cjs');
 const {
   parseTranscriptFile,
   insertSessionChunk,
@@ -145,7 +147,20 @@ async function main() {
       chunkStats = ingestTranscriptTailChunks(db, transcriptPath);
     }
     if (distilled.nodes.length) {
-      upsertTypedNodes(db, distilled.nodes);
+      const originRef = transcriptPath || `session:${workId || 'anonymous'}`;
+      const nodesWithProv = distilled.nodes.map((n) => ({
+        ...n,
+        provenance: buildIngestProvenance({
+          source: 'session-capture',
+          originPathOrEvent: `${originRef}#${n.id}`,
+          actor: 'system:session-capture',
+          sourceHash: crypto
+            .createHash('sha256')
+            .update(String(n.body || n.id))
+            .digest('hex'),
+        }),
+      }));
+      upsertTypedNodes(db, nodesWithProv);
     }
     persistDatabase(db, sqlitePath);
   } finally {

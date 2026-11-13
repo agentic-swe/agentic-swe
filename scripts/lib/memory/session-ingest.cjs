@@ -225,15 +225,36 @@ async function ingestTranscripts(opts) {
           source: file,
         });
         if (!distilled.blocked && distilled.nodes.length) {
-          upsertTypedNodes(db, distilled.nodes);
+          const distilledWithProv = distilled.nodes.map((n) => ({
+            ...n,
+            provenance: buildIngestProvenance({
+              source: 'session-ingest',
+              originPathOrEvent: `${file}#turn:${i + 1}#${n.id}`,
+              actor: 'system:session-ingest',
+              sourceHash: crypto
+                .createHash('sha256')
+                .update(String(n.body || n.id))
+                .digest('hex'),
+              ingestedAt,
+            }),
+          }));
+          upsertTypedNodes(db, distilledWithProv);
           nodes += distilled.nodes.length;
         }
       }
+      const sessionBody = `Ingested ${turns.length} turns from ${file}`;
       const sessionNode = {
         id: `session:${sessionId}`,
         kind: 'session',
         label: path.basename(file),
-        body: `Ingested ${turns.length} turns from ${file}`,
+        body: sessionBody,
+        provenance: buildIngestProvenance({
+          source: 'session-ingest',
+          originPathOrEvent: file,
+          actor: 'system:session-ingest',
+          sourceHash: crypto.createHash('sha256').update(sessionBody).digest('hex'),
+          ingestedAt,
+        }),
       };
       upsertTypedNodes(db, [sessionNode]);
       nodes++;
