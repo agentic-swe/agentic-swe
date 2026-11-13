@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * AE-030b — sql.js MemoryStore adapter (only concrete adapter until AE-030e).
- * All sql.js / graph-store open+persist for MemoryService goes through here.
- * Refs ADR-004b (seam stays store-agnostic), ADR-012, ADR-016.
+ * AE-030e — node:sqlite MemoryStore adapter (replaces sql.js adapter from AE-030b).
+ * All MemoryService open/persist goes through here → graph-store (native).
+ * Refs ADR-004b A1–A6, ADR-012, ADR-016; PD-48 C2 (no sql.js fallback).
  */
 
 const crypto = require('node:crypto');
@@ -16,7 +16,7 @@ const {
 } = require('../graph-store.cjs');
 const { makeChunkId } = require('../chunk-split.cjs');
 
-const ADAPTER_ID = 'sqljs';
+const ADAPTER_ID = 'node-sqlite';
 
 /**
  * @param {*} db
@@ -41,10 +41,10 @@ function ensureRecordColumns(db) {
 /**
  * @param {{ sqlitePath: string }} opts
  */
-function createSqlJsMemoryStore(opts = {}) {
+function createNodeSqliteMemoryStore(opts = {}) {
   const sqlitePath = opts.sqlitePath ? path.resolve(opts.sqlitePath) : null;
   if (!sqlitePath) {
-    const err = new Error('sqljs adapter requires sqlitePath');
+    const err = new Error('node-sqlite adapter requires sqlitePath');
     err.code = 'MISSING_SQLITE_PATH';
     throw err;
   }
@@ -152,6 +152,6 @@ function createSqlJsMemoryStore(opts = {}) {
 
 module.exports = {
   ADAPTER_ID,
-  createSqlJsMemoryStore,
+  createNodeSqliteMemoryStore,
   ensureRecordColumns,
 };
