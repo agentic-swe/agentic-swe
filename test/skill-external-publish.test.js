@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const {
   publishExternalContribution,
+  ALLOWED_EXTERNAL_ORIGINS,
   PRIVATE_ORG_ORIGINS,
   normalizeApprovalRef,
   normalizePublishActor,
@@ -94,9 +95,11 @@ describe('AE-028b governed external publication', () => {
     assert.equal(missingApproval.code, 'APPROVAL_REQUIRED');
   });
 
-  it('refuses private/org provenance.origin (§16)', () => {
+  it('refuses private/org provenance.origin via allowlist (M3-F7)', () => {
+    assert.deepEqual([...ALLOWED_EXTERNAL_ORIGINS], ['third-party']);
     for (const origin of PRIVATE_ORG_ORIGINS) {
       assert.ok(typeof origin === 'string' && origin.length > 0);
+      assert.equal(ALLOWED_EXTERNAL_ORIGINS.has(origin), false);
     }
     const registry = path.join(tmpRoot, 'reg-private');
     const refused = publishExternalContribution({
@@ -106,7 +109,28 @@ describe('AE-028b governed external publication', () => {
       approvalRef: 'PR#99',
     });
     assert.equal(refused.ok, false);
-    assert.equal(refused.code, 'PRIVATE_PROVENANCE_FORBIDDEN');
+    assert.equal(refused.code, 'ORIGIN_NOT_ALLOWED');
+    assert.equal(fs.existsSync(path.join(registry, 'skills')), false);
+  });
+
+  it('refuses unknown provenance.origin not on the allowlist (M3-F7)', () => {
+    const registry = path.join(tmpRoot, 'reg-unknown-origin');
+    const source = path.join(tmpRoot, 'contrib-unknown-origin');
+    fs.cpSync(goodDir, source, { recursive: true });
+    const manifestPath = path.join(source, 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest.provenance = { ...(manifest.provenance || {}), origin: 'not-a-schema-origin' };
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const refused = publishExternalContribution({
+      registryRoot: registry,
+      sourceDir: source,
+      actor: 'maintainer:test',
+      approvalRef: 'PR#unknown',
+    });
+    assert.equal(refused.ok, false);
+    assert.equal(refused.code, 'ORIGIN_NOT_ALLOWED');
+    assert.equal(refused.origin, 'not-a-schema-origin');
     assert.equal(fs.existsSync(path.join(registry, 'skills')), false);
   });
 

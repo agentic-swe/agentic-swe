@@ -5,10 +5,11 @@
  * Layer: skills (service). No tools/ require.
  *
  * Requires an explicit human approval record (actor + approval reference such as
- * a merged PR number) before publishSkill is allowed. Refuses provenance.origin
- * values that mark private/org knowledge (§16 — no silent private→public).
- * Version metadata uses existing immutable versions + digest + git tag
- * `skill/<name>/v<semver>` (PD-30).
+ * a merged PR number) before publishSkill is allowed. Fail-closed origin
+ * allowlist: only `third-party` may publish on the external path (M3-F7).
+ * Schema enum also lists first-party/generated/unknown; those stay installable
+ * via other paths but are refused here. Version metadata uses existing
+ * immutable versions + digest + git tag `skill/<name>/v<semver>` (PD-30).
  */
 
 const fs = require('node:fs');
@@ -16,9 +17,12 @@ const path = require('node:path');
 const { publishSkill, gitTagRef } = require('./skill-registry.cjs');
 
 /**
- * Origin values that mark private or org-internal knowledge.
- * Public publication of these is refused (fail closed).
+ * Origins allowed for governed external publication (fail closed otherwise).
+ * Matches the public-safe external contribution intent (third-party only).
  */
+const ALLOWED_EXTERNAL_ORIGINS = new Set(['third-party']);
+
+/** @deprecated Prefer ALLOWED_EXTERNAL_ORIGINS; kept for older test imports. */
 const PRIVATE_ORG_ORIGINS = new Set([
   'private',
   'org',
@@ -100,7 +104,7 @@ function readContributionIdentity(sourceDir) {
  * Fail closed on:
  * - missing/blank actor → ACTOR_REQUIRED
  * - missing/blank approvalRef → APPROVAL_REQUIRED
- * - private/org provenance.origin → PRIVATE_PROVENANCE_FORBIDDEN
+ * - provenance.origin not in ALLOWED_EXTERNAL_ORIGINS → ORIGIN_NOT_ALLOWED
  * - expectedDigest provided but blank → DIGEST_EXPECTED_BLANK
  * - expectedDigest mismatches package digest → DIGEST_MISMATCH
  * - blank package digest → DIGEST_MISSING
@@ -130,12 +134,12 @@ function publishExternalContribution(opts) {
   const identity = readContributionIdentity(options.sourceDir);
   if (!identity.ok) return identity;
 
-  if (PRIVATE_ORG_ORIGINS.has(identity.origin)) {
+  if (!ALLOWED_EXTERNAL_ORIGINS.has(identity.origin)) {
     return {
       ok: false,
-      code: 'PRIVATE_PROVENANCE_FORBIDDEN',
+      code: 'ORIGIN_NOT_ALLOWED',
       errors: [
-        `provenance.origin ${JSON.stringify(identity.origin)} marks private/org knowledge; refusing public publication (§16)`,
+        `provenance.origin ${JSON.stringify(identity.origin)} is not on the external-publish allowlist (${[...ALLOWED_EXTERNAL_ORIGINS].join(', ')}); refusing publication`,
       ],
       origin: identity.origin,
     };
@@ -192,6 +196,7 @@ function publishExternalContribution(opts) {
 }
 
 module.exports = {
+  ALLOWED_EXTERNAL_ORIGINS,
   PRIVATE_ORG_ORIGINS,
   normalizeApprovalRef,
   normalizePublishActor,
