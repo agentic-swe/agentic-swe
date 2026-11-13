@@ -128,6 +128,7 @@ describe('AE-034a frozen eval manifest schema (ADR-013)', () => {
     const result = runValidate(['--all']);
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.match(result.stdout, /\[PASS\] eval-manifest dev-smoke\.json/);
+    assert.match(result.stdout, /\[PASS\] eval-manifest public-holdout\.json/);
     assert.match(result.stdout, /All passed/);
   });
 

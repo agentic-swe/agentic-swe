@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "public-holdout",
+  "description": "AE-034b repo-native public holdout (cold-only for E8)",
+  "pool": "public",
+  "cold_run_required": true,
+  "retain_negatives": true,
+  "pack_commit": "245eb68",
+  "tasks": [
+    {
+      "id": "01-off-by-one",
+      "content_sha256": "2b71030e4609b299f8c5fc159316dd0570935c880c95566d2be2c9f66834c84c",
+      "path": "bench/tasks/01-off-by-one"
+    },
+    {
+      "id": "02-add-retry",
+      "content_sha256": "0f08c3918fd2baabb58169a4923225959c18471784c0f37586f46ce66c600c4f",
+      "path": "bench/tasks/02-add-retry"
+    },
+    {
+      "id": "03-rate-limiter",
+      "content_sha256": "6e70f3ef84b2e48bab1996b59c8a87590ba98511b4df7c7dd5759de9218ddebb",
+      "path": "bench/tasks/03-rate-limiter"
+    }
+  ],
+  "model_provenance": {
+    "provider": "fixture",
+    "model": "deterministic-fixture",
+    "label": "measured",
+    "sole_e8_proof": false
+  },
+  "manifest_digest": "96ae3011ed3b963bb30f1eaf12417f8961f758673bbeae7b8caf15fb65b22657"
+}
