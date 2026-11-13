@@ -143,6 +143,7 @@ function main() {
         toolInput: normalized.toolInput,
         state: currentState,
         track,
+        mode: state && state.mode ? state.mode : null,
         workDir,
         roles: loadedRoles.roles,
         actor,

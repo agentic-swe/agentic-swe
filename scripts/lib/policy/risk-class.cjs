@@ -16,7 +16,7 @@
  */
 function classifyRisk(p = {}) {
   if (p.restrictedOpId) {
-    if (/security_policy|credential|destructive|public_disclosure|paid_commitment|ai_org/.test(p.restrictedOpId)) {
+    if (/security_policy|credential|destructive|public_disclosure|paid_commitment|ai_org|self_improvement_merge_deploy/.test(p.restrictedOpId)) {
       return 'critical';
     }
     return 'high';
