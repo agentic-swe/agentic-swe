@@ -10,6 +10,7 @@ const { sha256File } = require('./lib/install-state/hash.cjs');
 const { checkMuscleMemoryReadiness } = require('./lib/doctor/muscle-memory-doctor.cjs');
 const { verifyCriticalPackFiles } = require('./lib/doctor/verify-pack.cjs');
 const { summarizeRedactionHits } = require('./lib/hooks/redaction-summary.cjs');
+const { meetsNodeFloor, NODE_FLOOR_LABEL } = require('./lib/shared/node-version.cjs');
 
 function jevReadiness(env) {
   if (env.AGENTIC_SWE_JEV === '0') return { state: 'disabled' };
@@ -47,7 +48,11 @@ function inspect(options = {}, context = {}) {
   const checks = [];
   const add = (name, ok, detail, level = 'required') => checks.push({ name, ok, detail, level });
 
-  add('Node.js', Number(process.versions.node.split('.')[0]) >= 22, process.version);
+  add(
+    'Node.js',
+    meetsNodeFloor(process.versions.node),
+    `${process.version} (requires >=${NODE_FLOOR_LABEL})`
+  );
   add('Pack root', fs.existsSync(path.join(packRoot, 'CLAUDE.md')), packRoot);
   add('State machine', fs.existsSync(path.join(packRoot, 'state-machine.json')), path.join(packRoot, 'state-machine.json'));
   add('Target repository', fs.existsSync(target) && fs.statSync(target).isDirectory(), target);
