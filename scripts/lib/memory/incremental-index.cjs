@@ -76,8 +76,12 @@ async function runIncrementalIndex(opts) {
   candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
   const batch = candidates.slice(0, limit);
 
-  if (!batch.length) {
-    return { ok: true, updated: 0, pending: 0, sqlitePath };
+  // AE-030d: paths present in the watermark but missing on disk → drop watermark + chunks.
+  const present = new Set(all);
+  const deletedRels = Object.keys(watermark.files || {}).filter((rel) => !present.has(rel));
+
+  if (!batch.length && !deletedRels.length) {
+    return { ok: true, updated: 0, pending: 0, deleted: 0, sqlitePath };
   }
 
   const { db } = await openOrCreateDatabase(sqlitePath);
@@ -89,6 +93,12 @@ async function runIncrementalIndex(opts) {
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     );
     let chunks = 0;
+    let deleted = 0;
+    for (const rel of deletedRels) {
+      del.run([rel]);
+      delete watermark.files[rel];
+      deleted += 1;
+    }
     for (const file of batch) {
       del.run([file.rel]);
       let text = '';
@@ -115,6 +125,8 @@ async function runIncrementalIndex(opts) {
       ok: true,
       updated: batch.length,
       pending: Math.max(0, candidates.length - batch.length),
+      deleted,
+      deletedPaths: deletedRels,
       chunks,
       sqlitePath,
     };
