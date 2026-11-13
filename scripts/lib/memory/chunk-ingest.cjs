@@ -6,6 +6,9 @@ const crypto = require('node:crypto');
 const { chunkMarkdown, makeChunkId, workIdFromPath } = require('./chunk-split.cjs');
 const { redactSecrets } = require('./session-capture.cjs');
 const { isPathIncluded } = require('./glob-match.cjs');
+const { upsertChunkRow, ensureRecordColumns } = require('./graph-store.cjs');
+const { buildIngestProvenance } = require('./provenance.cjs');
+const { mapLegacyWorkId } = require('./taxonomy.cjs');
 
 function shouldSkipDir(name) {
   return (
@@ -66,14 +69,11 @@ function ingestChunksIntoDb(merged, projectRoot, db) {
   const include = (merged.ingest && merged.ingest.include_globs) || [];
   const exclude = (merged.ingest && merged.ingest.exclude_globs) || [];
   const exts = defaultChunkExtensions(merged);
+  const ingestedAt = new Date().toISOString();
 
   const all = [];
   walkAllFiles(projectRoot, projectRoot, all);
-
-  const insChunk = db.prepare(
-    `INSERT OR REPLACE INTO chunks (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  );
+  ensureRecordColumns(db);
 
   let n = 0;
   for (const rel of all) {
@@ -97,18 +97,40 @@ function ingestChunksIntoDb(merged, projectRoot, db) {
     }
 
     const workId = workIdFromPath(rel);
+    const scope = mapLegacyWorkId(workId);
     const pieces = chunkMarkdown(text, maxChars);
 
     for (const p of pieces) {
       const body = redactSecrets(p.body).redacted;
       const cid = makeChunkId(rel, p.startLine, p.endLine, body);
       const sha = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
-      insChunk.run([cid, rel, workId, p.startLine, p.endLine, sha, body]);
+      const provenance = buildIngestProvenance({
+        source: 'chunk-ingest',
+        originPathOrEvent: rel,
+        actor: 'system:chunk-ingest',
+        sourceHash: sha,
+        ingestedAt,
+      });
+      upsertChunkRow(db, {
+        chunkId: cid,
+        path: rel,
+        workId,
+        scope,
+        body,
+        startLine: p.startLine,
+        endLine: p.endLine,
+        contentSha256: sha,
+        recordJson: JSON.stringify({
+          id: cid,
+          scope,
+          provenance,
+          trust: 'untrusted',
+          redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+        }),
+      });
       n++;
     }
   }
-
-  insChunk.free();
 
   return { chunks: n };
 }

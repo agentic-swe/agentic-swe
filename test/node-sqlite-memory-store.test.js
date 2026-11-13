@@ -436,6 +436,11 @@ async function withBusyRetryAsync(fn) {
       workId: 'team',
       scope: 'organizational',
       body: 'adapter smoke',
+      recordJson: JSON.stringify({
+        id: 'adapter-smoke',
+        scope: 'organizational',
+        provenance: makeProvenance('adapter-smoke'),
+      }),
     });
     await store.persist();
     const rows = await store.listChunks();
