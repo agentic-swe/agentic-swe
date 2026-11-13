@@ -6,6 +6,10 @@ const { scoreWorklog } = require('../lib/bench/score-worklog.cjs');
 const { discoverTasks } = require('../lib/bench/discover.cjs');
 const { runTaskAcceptance, runBenchSuite } = require('../lib/bench/run-task.cjs');
 const { VALID_TRACKS } = require('../lib/bench/score-dimension.cjs');
+const {
+  validateEvalManifestFile,
+  discoverEvalManifests,
+} = require('../lib/bench/eval-manifest.cjs');
 
 const REQUIRED_TASK_FILES = [
   'task.json',
@@ -174,49 +178,110 @@ if (require.main === module) {
 
   if (subcommand === 'validate') {
     const taskIdIdx = args.indexOf('--task');
+    const manifestIdx = args.indexOf('--manifest');
     const allFlag = args.includes('--all');
     const corpusFlag = args.includes('--corpus');
     const tasksRootIdx = args.indexOf('--tasks-root');
+    const manifestsRootIdx = args.indexOf('--manifests-root');
+    const defaultManifestsRoot = path.resolve(__dirname, '../../bench/manifests');
     const tasksRoot = tasksRootIdx !== -1
       ? path.resolve(args[tasksRootIdx + 1])
       : (corpusFlag ? defaultCorpusRoot : defaultTasksRoot);
+    const manifestsRoot = manifestsRootIdx !== -1
+      ? path.resolve(args[manifestsRootIdx + 1])
+      : defaultManifestsRoot;
+
+    // Manifest-only mode: validate one frozen eval manifest (ADR-013 / AE-034a).
+    if (manifestIdx !== -1) {
+      const manifestPath = args[manifestIdx + 1];
+      if (!manifestPath) {
+        console.error('Usage: node run.cjs validate --manifest <path>');
+        process.exit(1);
+      }
+      const result = validateEvalManifestFile(manifestPath);
+      const label = path.basename(manifestPath);
+      if (result.ok) {
+        console.log(`[PASS] eval-manifest ${label} digest=${result.digest}`);
+        process.exit(0);
+      }
+      console.log(`[FAIL] eval-manifest ${label}`);
+      for (const err of result.errors) console.log(`       ERROR: ${err}`);
+      process.exit(1);
+    }
 
     let taskDirs = [];
     if (taskIdIdx !== -1) {
       taskDirs = [path.join(tasksRoot, args[taskIdIdx + 1])];
-    } else {
+    } else if (allFlag || corpusFlag || tasksRootIdx !== -1 || args.length === 1) {
       taskDirs = discoverTasks(tasksRoot);
     }
 
-    if (taskDirs.length === 0) {
-      console.error(`No tasks found under: ${tasksRoot}`);
+    let allOk = true;
+    let taskCount = 0;
+    let manifestCount = 0;
+
+    if (taskDirs.length > 0 || taskIdIdx !== -1) {
+      if (taskDirs.length === 0) {
+        console.error(`No tasks found under: ${tasksRoot}`);
+        process.exit(1);
+      }
+      for (const taskDir of taskDirs) {
+        const taskId = path.basename(taskDir);
+        const result = validateTask(taskDir);
+        taskCount += 1;
+        if (result.ok) console.log(`[PASS] ${taskId}`);
+        else {
+          console.log(`[FAIL] ${taskId}`);
+          allOk = false;
+        }
+        for (const err of result.errors) console.log(`       ERROR: ${err}`);
+        for (const warn of result.warnings) console.log(`       WARN:  ${warn}`);
+      }
+    }
+
+    // With --all (or explicit --manifests-root), also lint frozen eval manifests.
+    const shouldValidateManifests = allFlag || manifestsRootIdx !== -1;
+    if (shouldValidateManifests) {
+      const manifestPaths = discoverEvalManifests(manifestsRoot);
+      for (const manifestPath of manifestPaths) {
+        const label = path.basename(manifestPath);
+        const result = validateEvalManifestFile(manifestPath);
+        manifestCount += 1;
+        if (result.ok) console.log(`[PASS] eval-manifest ${label}`);
+        else {
+          console.log(`[FAIL] eval-manifest ${label}`);
+          allOk = false;
+          for (const err of result.errors) console.log(`       ERROR: ${err}`);
+        }
+      }
+    }
+
+    if (taskCount === 0 && manifestCount === 0) {
+      console.error('Nothing to validate. Use --all, --task, --manifest, or --manifests-root.');
       process.exit(1);
     }
 
-    let allOk = true;
-    for (const taskDir of taskDirs) {
-      const taskId = path.basename(taskDir);
-      const result = validateTask(taskDir);
-      if (result.ok) console.log(`[PASS] ${taskId}`);
-      else {
-        console.log(`[FAIL] ${taskId}`);
-        allOk = false;
-      }
-      for (const err of result.errors) console.log(`       ERROR: ${err}`);
-      for (const warn of result.warnings) console.log(`       WARN:  ${warn}`);
-    }
-
     console.log('');
-    console.log(`Validated ${taskDirs.length} task(s). ${allOk ? 'All passed.' : 'Some failed.'}`);
+    const parts = [];
+    if (taskCount) parts.push(`${taskCount} task(s)`);
+    if (manifestCount) parts.push(`${manifestCount} eval manifest(s)`);
+    console.log(`Validated ${parts.join(' + ')}. ${allOk ? 'All passed.' : 'Some failed.'}`);
     process.exit(allOk ? 0 : 1);
   }
 
   console.error('Usage:');
   console.error('  node run.cjs validate [--task <id>] [--all] [--corpus] [--tasks-root <path>]');
+  console.error('                     [--manifest <path>] [--manifests-root <path>]');
   console.error('  node run.cjs run [--corpus] [--tasks-root <path>] [--out <file>]');
   console.error('  node run.cjs acceptance <task-dir>');
   console.error('  node run.cjs score <work-dir> [task-dir]');
   process.exit(1);
 }
 
-module.exports = { scoreWorklog, validateTask, discoverTasks };
+module.exports = {
+  scoreWorklog,
+  validateTask,
+  discoverTasks,
+  validateEvalManifestFile,
+  discoverEvalManifests,
+};

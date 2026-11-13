@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentic-swe.github.io/schemas/eval-manifest.schema.json",
+  "title": "Frozen Eval Manifest (ADR-013)",
+  "description": "Pinned task suite for isolated evaluation. Pools: dev | public | private. No default_score. Local Ollama/llama.cpp may appear in model_provenance but cannot be sole E8 proof (PD-41). E8-cited runs require cold_run_required=true (PD-48 C4).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "pool",
+    "manifest_digest",
+    "cold_run_required",
+    "retain_negatives",
+    "tasks",
+    "model_provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "pool": {
+      "type": "string",
+      "enum": ["dev", "public", "private"]
+    },
+    "manifest_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hex of the canonical digest payload (see computeManifestDigest)."
+    },
+    "cold_run_required": {
+      "type": "boolean",
+      "description": "When true, procedures and memory must be wiped before the run (required for E8-cited arms)."
+    },
+    "retain_negatives": {
+      "type": "boolean",
+      "const": true,
+      "description": "Failed and negative results must be retained (PD-47)."
+    },
+    "pack_commit": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]+$"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/pinnedTask" }
+    },
+    "model_provenance": { "$ref": "#/definitions/modelProvenance" },
+    "default_score": false
+  },
+  "definitions": {
+    "pinnedTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "content_sha256"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Content SHA-256 pin; floating refs (branch/tag/latest) are forbidden."
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "default_score": false
+      }
+    },
+    "modelProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "label", "sole_e8_proof"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["fixture", "ollama", "llama.cpp", "none"]
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "label": {
+          "type": "string",
+          "enum": ["measured", "observed", "estimated"],
+          "description": "Local Ollama/llama.cpp runs must use observed (PD-41)."
+        },
+        "sole_e8_proof": {
+          "type": "boolean",
+          "description": "Must be false when provider is ollama or llama.cpp (not sole E8 proof)."
+        }
+      }
+    }
+  }
+}
