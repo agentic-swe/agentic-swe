@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "kind": "skill-publish-review",
+  "skill": "contrib-external-example",
+  "version": "1.0.0",
+  "digest": "0d69560f6ca730eaf221c03099c577511af7e063ca56bb8834bd58178fb86203",
+  "verdict": "approved",
+  "reviewer": "external-independent-reviewer",
+  "reviewed_at": "2026-11-13T10:42:01.726Z",
+  "fd_b": {
+    "human_merge_required": true,
+    "auto_merge": false,
+    "pack_main_via_human_pr": true,
+    "bypass_actors_empty": true,
+    "ruleset_unchanged": true
+  },
+  "notes": "AE-032c independent review (fixture)"
+}

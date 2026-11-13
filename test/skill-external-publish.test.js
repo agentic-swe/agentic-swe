@@ -3,6 +3,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const {
   publishExternalContribution,
@@ -26,7 +27,9 @@ const fixtures = path.join(root, 'test', 'fixtures', 'skill-external-contributio
 const goodDir = path.join(fixtures, 'good', 'contrib-external-example');
 const privateDir = path.join(fixtures, 'private-origin', 'contrib-private-example');
 const msgDir = path.join(fixtures, 'dco-messages');
-const tmpRoot = path.join(__dirname, '_tmp-skill-external-publish');
+/** Must never land under test/ — use OS temp so worktrees stay clean. */
+const strayInRepo = path.join(__dirname, '_tmp-skill-external-publish');
+let tmpRoot;
 
 function loadMsg(name) {
   return fs.readFileSync(path.join(msgDir, name), 'utf8');
@@ -39,11 +42,22 @@ function readDigest(dir) {
 
 describe('AE-028b governed external publication', () => {
   before(() => {
-    fs.rmSync(tmpRoot, { recursive: true, force: true });
-    fs.mkdirSync(tmpRoot, { recursive: true });
+    fs.rmSync(strayInRepo, { recursive: true, force: true });
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-external-publish-'));
   });
   after(() => {
-    fs.rmSync(tmpRoot, { recursive: true, force: true });
+    if (tmpRoot) fs.rmSync(tmpRoot, { recursive: true, force: true });
+    fs.rmSync(strayInRepo, { recursive: true, force: true });
+  });
+
+  it('does not leave test/_tmp-skill-external-publish in the worktree', () => {
+    assert.equal(
+      fs.existsSync(strayInRepo),
+      false,
+      'in-repo test/_tmp-skill-external-publish must not exist'
+    );
+    assert.ok(tmpRoot && tmpRoot.startsWith(os.tmpdir()), 'scratch dir must be under os.tmpdir()');
+    assert.ok(fs.existsSync(tmpRoot), 'OS temp scratch must exist during the suite');
   });
 
   it('refuses blank actor and blank approval (fail closed)', () => {

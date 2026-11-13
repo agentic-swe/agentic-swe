@@ -108,6 +108,7 @@
     "bench:corpus:regenerate": "node scripts/bench/build-corpus.cjs --regenerate && node scripts/bench/run.cjs validate --corpus",
     "bench:run": "node scripts/bench/run.cjs run --all && node scripts/bench/run.cjs run --corpus --out bench/results/baseline-$(date +%Y-%m-%d).json",
     "bench:compare": "node scripts/bench/compare.cjs",
+    "bench:holdout": "node scripts/bench/run-holdout.cjs",
     "bench:token-scorecard": "node scripts/bench/token-scorecard.cjs",
     "bench:warm-cold": "node scripts/bench/warm-cold.cjs",
     "bench:descent-holdout": "node scripts/bench/run-descent-holdout.cjs",

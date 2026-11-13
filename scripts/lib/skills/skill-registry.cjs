@@ -26,6 +26,8 @@ const {
   LOCKFILE_NAME,
 } = require('./skill-integrity.cjs');
 const { scanInstallPackage } = require('./install-scan.cjs');
+const { requirePublishReview } = require('./skill-publish-review.cjs');
+const { assertPublishCompareGate } = require('./skill-version-compare.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
@@ -155,6 +157,9 @@ function appendRegistryLog(registryRoot, event) {
     tag: event.tag != null ? String(event.tag) : undefined,
     code: event.code != null ? String(event.code) : undefined,
     approval_ref: event.approval_ref != null ? String(event.approval_ref) : undefined,
+    reviewer: event.reviewer != null ? String(event.reviewer) : undefined,
+    review_verdict: event.review_verdict != null ? String(event.review_verdict) : undefined,
+    compare_digest: event.compare_digest != null ? String(event.compare_digest) : undefined,
   });
   const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -631,6 +636,27 @@ function assertMemorySourcePublishAllowed(opts) {
   }
 }
 
+/**
+ * Resolve AE-032c review input: explicit artifact/path, else sourceDir/publish-review.json.
+ * Explicit `reviewArtifact: null` (own property) means missing — fail closed.
+ * @param {object} opts
+ * @param {string} sourceDir
+ */
+function resolvePublishReviewInput(opts, sourceDir) {
+  // Explicit null (not undefined) means "no review" — fail closed without sidecar fallback.
+  if (Object.prototype.hasOwnProperty.call(opts, 'reviewArtifact') && opts.reviewArtifact === null) {
+    return null;
+  }
+  if (opts.reviewArtifact != null) return opts.reviewArtifact;
+  if (opts.reviewPath != null && String(opts.reviewPath).trim()) {
+    return opts.reviewPath;
+  }
+  if (!sourceDir) return null;
+  const sidecar = path.join(path.resolve(sourceDir), 'publish-review.json');
+  if (fs.existsSync(sidecar)) return sidecar;
+  return null;
+}
+
 function publishSkill(opts) {
   let actor;
   try {
@@ -655,8 +681,77 @@ function publishSkill(opts) {
     ? snapshotPublishState(registryRoot, identity.name, identity.version)
     : null;
 
+  // AE-032c: machine-checkable independent review required before install/publish.
+  // When identity is known, bind skill/version; digest checked against installed result below
+  // and against package digest when present in the review.
+  let packageDigest = null;
+  if (opts.sourceDir) {
+    try {
+      const mPath = path.join(path.resolve(opts.sourceDir), 'manifest.json');
+      if (fs.existsSync(mPath)) {
+        const parsed = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+        packageDigest = parsed && parsed.digest != null ? String(parsed.digest).trim().toLowerCase() : null;
+      }
+    } catch {
+      packageDigest = null;
+    }
+  }
+  const reviewInput = resolvePublishReviewInput(opts, opts.sourceDir);
+  const reviewGate = requirePublishReview({
+    reviewArtifact: reviewInput,
+    skill: identity ? identity.name : undefined,
+    version: identity ? identity.version : undefined,
+    digest: packageDigest || undefined,
+  });
+  if (!reviewGate.ok) {
+    return {
+      ok: false,
+      code: reviewGate.code || 'REVIEW_REQUIRED',
+      errors: reviewGate.errors || ['review artifact required before publishSkill'],
+    };
+  }
+
+  // AE-033a / PD-45: when scorecards are supplied, ANY regression blocks publish.
+  const compareGate = assertPublishCompareGate({
+    ...opts,
+    compareSkill: opts.compareSkill || (identity && identity.name),
+    compareToVersion: opts.compareToVersion || (identity && identity.version),
+  });
+  if (!compareGate.ok) {
+    return {
+      ok: false,
+      code: compareGate.code || 'REGRESSION',
+      errors: compareGate.errors || (compareGate.regressions || []).map(
+        (r) => `[${r.id}] ${r.kind}: ${r.message}`
+      ),
+      regressions: compareGate.regressions,
+    };
+  }
+
   const result = installSkill(opts);
   if (!result.ok) return result;
+
+  // Re-check digest against installed package (fail closed on review/package drift).
+  const postReview = requirePublishReview({
+    reviewArtifact: reviewGate.review,
+    skill: result.manifest.name,
+    version: result.manifest.version,
+    digest: result.digest,
+  });
+  if (!postReview.ok) {
+    if (snap) {
+      try {
+        compensatePublishInstall(snap);
+      } catch {
+        /* best-effort */
+      }
+    }
+    return {
+      ok: false,
+      code: postReview.code || 'REVIEW_INVALID',
+      errors: postReview.errors || ['review digest mismatch after install'],
+    };
+  }
 
   const tag = gitTagRef(result.manifest.name, result.manifest.version);
   const approvalRef =
@@ -672,6 +767,9 @@ function publishSkill(opts) {
       digest: result.digest,
       tag,
       approval_ref: approvalRef,
+      reviewer: postReview.review.reviewer,
+      review_verdict: postReview.review.verdict,
+      compare_digest: compareGate.compare_digest,
     });
   } catch (err) {
     return registryLogFailure(err, () => {
@@ -682,7 +780,14 @@ function publishSkill(opts) {
     });
   }
 
-  return { ...result, tag, actor, approvalRef };
+  return {
+    ...result,
+    tag,
+    actor,
+    approvalRef,
+    review: postReview.review,
+    compare_digest: compareGate.compare_digest,
+  };
 }
 
 /**

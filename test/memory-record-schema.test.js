@@ -154,7 +154,7 @@ describe('AE-030a legacy scope / work_id map', () => {
   });
 
   it('defaultRetentionClassForScope covers PD-47 rows', () => {
-    assert.equal(defaultRetentionClassForScope('execution'), 'session');
+    assert.equal(defaultRetentionClassForScope('execution'), 'execution_procedures');
     assert.equal(defaultRetentionClassForScope('organizational'), 'organizational');
     assert.equal(
       defaultRetentionClassForScope('evaluation', { negativeEval: true }),

@@ -1,0 +1,7 @@
+{
+  "tasks": [
+    { "id": "t1", "delivered": false, "scores": { "total": 0.2 } },
+    { "id": "t2", "delivered": true, "scores": { "total": 0.8 } }
+  ],
+  "summary": { "total": 2, "delivered": 1, "pass_rate": 0.5 }
+}
