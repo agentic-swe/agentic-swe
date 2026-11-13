@@ -1,11 +1,20 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * MCP memory tools — AE-030c returns untrusted envelopes for prime/search (ADR-012 / SEC-005).
+ */
+
 const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
 const { runMaintenance } = require('./lib/hooks/lifecycle.cjs');
-const { buildPrimeMarkdown } = require('./lib/memory/memory-prime.cjs');
+const { buildPrimeEnvelope } = require('./lib/memory/memory-prime.cjs');
+const {
+  createMemoryService,
+  toUntrustedEnvelope,
+  MEMORY_SCOPES,
+} = require('./lib/memory/memory-service.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./lib/memory/config.cjs');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { readRecentReceipts } = require('./lib/hooks/hook-receipt.cjs');
@@ -34,13 +43,48 @@ async function callTool(name, args) {
     return content(JSON.stringify(result, null, 2));
   }
   if (name === 'agentic_swe_memory_prime') {
-    const markdown = await buildPrimeMarkdown({
+    const envelope = await buildPrimeEnvelope({
       projectRoot,
       pluginRoot,
       query: args?.query || '',
       workId: args?.workId || null,
     });
-    return content(markdown);
+    // Typed untrusted envelope — never raw instruction concatenation.
+    return content(JSON.stringify(envelope, null, 2));
+  }
+  if (name === 'agentic_swe_memory_search') {
+    const scope = args?.scope || 'organizational';
+    if (!MEMORY_SCOPES.includes(String(scope))) {
+      throw Object.assign(new Error(`unknown memory scope: ${scope}`), { code: -32602 });
+    }
+    const svc = createMemoryService({ pluginRoot, projectRoot });
+    try {
+      const result = await svc.read({
+        scope: String(scope),
+        query: args?.query || '',
+        limit: args?.limit,
+      });
+      const envelopes = (result.envelopes || result.records.map((r) => toUntrustedEnvelope(r)));
+      return content(
+        JSON.stringify(
+          {
+            trust: 'untrusted',
+            body: envelopes.map((e) => e.body).join('\n---\n'),
+            citation: {
+              kind: 'memory-search',
+              scope: result.scope,
+              sqlitePath: result.sqlitePath,
+              count: envelopes.length,
+            },
+            results: envelopes,
+          },
+          null,
+          2
+        )
+      );
+    } finally {
+      await svc.close();
+    }
   }
   if (name === 'agentic_swe_memory_status') {
     const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
@@ -70,13 +114,32 @@ const tools = [
   },
   {
     name: 'agentic_swe_memory_prime',
-    description: 'Retrieve a bounded Agentic SWE memory digest for the current task.',
+    description:
+      'Retrieve a bounded Agentic SWE memory digest as an untrusted envelope {trust,body,citation} (SEC-005).',
     inputSchema: {
       type: 'object',
       properties: {
         projectRoot: { type: 'string' },
         query: { type: 'string' },
         workId: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'agentic_swe_memory_search',
+    description:
+      'Lexical search over a memory scope; returns untrusted envelopes (never trusted instructions).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectRoot: { type: 'string' },
+        scope: {
+          type: 'string',
+          enum: [...MEMORY_SCOPES],
+        },
+        query: { type: 'string' },
+        limit: { type: 'number' },
       },
       additionalProperties: false,
     },
