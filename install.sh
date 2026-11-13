@@ -19,13 +19,14 @@ else
 fi
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "error: Agentic SWE requires Node.js 22 or newer: https://nodejs.org/" >&2
+  echo "error: Agentic SWE requires Node.js 22.13 or newer: https://nodejs.org/" >&2
   exit 1
 fi
 
-NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-if (( NODE_MAJOR < 22 )); then
-  echo "error: Agentic SWE requires Node.js 22 or newer (found $(node --version))" >&2
+# PD-48 C1 / package.json engines.node >=22.13 — compare major.minor (no pack lib yet).
+NODE_FLOOR_OK="$(node -p 'const[a,b]=process.versions.node.split(".").map(Number);a>22||(a===22&&b>=13)')"
+if [[ "$NODE_FLOOR_OK" != "true" ]]; then
+  echo "error: Agentic SWE requires Node.js 22.13 or newer (found $(node --version))" >&2
   exit 1
 fi
 
