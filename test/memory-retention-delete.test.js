@@ -19,7 +19,11 @@ const {
   defaultVisibilityForScope,
   resolveTenantLabel,
 } = require('../scripts/lib/memory/memory-service.cjs');
-const { RETENTION_CLASS_DEFAULTS } = require('../scripts/lib/memory/taxonomy.cjs');
+const {
+  RETENTION_CLASS_DEFAULTS,
+  defaultRetentionClassForScope,
+} = require('../scripts/lib/memory/taxonomy.cjs');
+const { ttlDaysForRetentionClass } = require('../scripts/lib/memory/memory-retention.cjs');
 const { runIncrementalIndex } = require('../scripts/lib/memory/incremental-index.cjs');
 const { openOrCreateDatabase, closeDatabase } = require('../scripts/lib/memory/graph-store.cjs');
 const {
@@ -64,6 +68,37 @@ describe('AE-030d retention / delete / visibility', () => {
     assert.equal(RETENTION_CLASS_DEFAULTS.execution_procedures.ttl_days, 180);
     assert.equal(RETENTION_CLASS_DEFAULTS.organizational.ttl_days, 365);
     assert.equal(RETENTION_CLASS_DEFAULTS.evaluation_negative.ttl_days, null);
+  });
+
+  it('execution scope defaults to 180d execution_procedures class (PD-47)', () => {
+    assert.equal(defaultRetentionClassForScope('execution'), 'execution_procedures');
+    assert.equal(ttlDaysForRetentionClass(defaultRetentionClassForScope('execution')), 180);
+    const rec = {
+      id: 'mem:exec:default-ttl',
+      scope: 'execution',
+      retention_class: defaultRetentionClassForScope('execution'),
+      provenance: makeProvenance('t', '2026-01-01T00:00:00.000Z'),
+      body: 'procedure',
+    };
+    const mid = evaluateExpiry(rec, Date.parse('2026-04-01T00:00:00.000Z')); // ~90d later
+    assert.equal(mid.expired, false);
+    assert.equal(mid.ttlDays, 180);
+    const late = evaluateExpiry(rec, Date.parse('2026-08-01T00:00:00.000Z')); // ~212d later
+    assert.equal(late.expired, true);
+  });
+
+  it('session retention class stays at 90d when callers set it explicitly', () => {
+    assert.equal(ttlDaysForRetentionClass('session'), 90);
+    const rec = {
+      id: 'mem:session:explicit',
+      scope: 'execution',
+      retention_class: 'session',
+      provenance: makeProvenance('t', '2026-01-01T00:00:00.000Z'),
+      body: 'session note',
+    };
+    const at91d = evaluateExpiry(rec, Date.parse('2026-04-02T00:00:00.000Z'));
+    assert.equal(at91d.ttlDays, 90);
+    assert.equal(at91d.expired, true);
   });
 
   it('TTL dry-run reports expired ids without network', () => {
