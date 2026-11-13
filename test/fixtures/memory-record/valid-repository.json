@@ -1,0 +1,15 @@
+{
+  "id": "mem:repository:fixture-1",
+  "tenant_id": "personal",
+  "scope": "repository",
+  "body": "README.md chunk: durable memory overview.",
+  "provenance": {
+    "origin": "chunk-ingest",
+    "actor": "system",
+    "source_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "ingested_at": "2026-11-13T00:00:00.000Z"
+  },
+  "trust": "untrusted",
+  "retention_class": "session",
+  "redaction": { "applied": true, "ruleset": "redact.cjs", "hits": 0 }
+}

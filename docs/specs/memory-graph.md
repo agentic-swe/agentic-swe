@@ -23,6 +23,7 @@ This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAU
 - Default directory: **`.agentic-swe/`** under the target project root.
 - Default DB file: **`memory.sqlite`** (gitignored; see root `.gitignore`).
 - Schema for **config** (not the SQLite DB): [`schemas/memory-config.schema.json`](../../schemas/memory-config.schema.json).
+- Schema for **MemoryRecord** (ADR-012 / AE-030a taxonomy; not yet wired to writers): [`schemas/memory-record.schema.json`](../../schemas/memory-record.schema.json).
 
 ## Loader API
 
@@ -88,6 +89,23 @@ This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAU
 - **Organic worklogs:** non-dogfood `.worklogs/<id>` items that reached implementation/validation/PR/completed are distilled into project chunks (`ingestOrganicWorklogs`), including replay artifacts when present.
 - **CLI:** `npm run ingest-memory-scopes` (repo → personal → sessions → team events → git history → organic worklogs → muscle replay). `npm run memory-search -- --scope session|personal|team`.
 - **Implementation:** [`scripts/lib/memory/scopes.cjs`](../../scripts/lib/memory/scopes.cjs), [`scripts/lib/memory/ingest-scopes.cjs`](../../scripts/lib/memory/ingest-scopes.cjs).
+
+## S8a — MemoryRecord six-type taxonomy (AE-030a)
+
+Runtime writers still stamp `work_id` and the three CLI scopes above. The Accepted ADR-012 taxonomy uses six `MemoryRecord.scope` values. Mapping helpers live in [`scripts/lib/memory/taxonomy.cjs`](../../scripts/lib/memory/taxonomy.cjs) (re-exported from `scopes.cjs`); AE-030b wires the router.
+
+| Legacy CLI `--scope` | Legacy `work_id` | New `scope` | Default `retention_class` (PD-47 fields only) | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| `session` | `session`, `session:<id>`, `work:<id>` | `execution` | `session` (90d) | Transcript / session distill. Procedure rows use `execution_procedures` (180d) when classified as such later. |
+| `personal` | `personal` | `skill` | `session` (conservative) | Personal style / muscle store; **`tenant_id` default `personal`** (PD-46). |
+| `team` | `team` | `organizational` | `organizational` (1y) | Sync events / fleet; **local/private** until M5/AE-036 (PD-46). |
+| — | `null` / empty (repo index chunks) | `repository` | `session` (conservative) | Graph + markdown index rows. |
+| — | worklog id (organic / muscle `.worklogs/<id>`) | `project` | `session` (conservative) | Project work-item distill. |
+| — | (eval harness artifacts) | `evaluation` | `evaluation_negative` when failed (indefinite) | Cooperates with ADR-013; no train contamination. |
+
+**Schema defaults (not enforced on write yet):** `tenant_id` → `personal`; `trust` → `untrusted`; `visibility` → `private`. Provenance requires `origin`, `actor`, `source_hash`, `ingested_at` (`source_uri` optional). Redaction metadata `{ applied, ruleset, hits }` is required on the stored record shape.
+
+**Residual:** git-history ingest today uses `work_id=team` but semantically belongs under `repository`; callers that know the source should override until AE-030b remaps that path.
 
 ## Session lifecycle
 

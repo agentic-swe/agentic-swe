@@ -1,0 +1,15 @@
+{
+  "id": "mem:project:fixture-1",
+  "tenant_id": "personal",
+  "scope": "project",
+  "body": "work_id=ae-030a state=implementation task=MemoryRecord schema",
+  "provenance": {
+    "origin": "ingest-organic-worklogs",
+    "actor": "system",
+    "source_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "ingested_at": "2026-11-13T00:00:00.000Z"
+  },
+  "trust": "untrusted",
+  "retention_class": "session",
+  "redaction": { "applied": true, "ruleset": "redact.cjs", "hits": 0 }
+}

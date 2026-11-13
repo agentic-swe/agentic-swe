@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-swe.local/schemas/memory-record.schema.json",
+  "title": "agentic-swe MemoryRecord",
+  "description": "Stored memory record (ADR-012 / AE-030a). Schema only — write-path enforcement lands in later AE-030* items.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "tenant_id",
+    "scope",
+    "body",
+    "provenance",
+    "trust",
+    "retention_class",
+    "redaction"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "default": "personal",
+      "description": "PD-46: personal memory carries an explicit tenant label; org memory stays local/private until M5/AE-036."
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "execution",
+        "repository",
+        "project",
+        "skill",
+        "organizational",
+        "evaluation"
+      ],
+      "description": "Six-type taxonomy (ADR-012 A1)."
+    },
+    "body": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "actor", "source_hash", "ingested_at"],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "description": "Where the record came from (ingest path, miner, import, etc.)."
+        },
+        "actor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Actor attestation (e.g. user:<id>, agent:<id>, system)."
+        },
+        "source_uri": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "source_hash": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Content or source digest (typically sha256 hex)."
+        },
+        "ingested_at": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ISO-8601 timestamp when the record was ingested."
+        }
+      }
+    },
+    "trust": {
+      "type": "string",
+      "enum": ["untrusted", "reviewed", "human_approved"],
+      "default": "untrusted",
+      "description": "Default untrusted (SEC-005 / ADR-012). Elevation requires evidence + policy elsewhere."
+    },
+    "retention_class": {
+      "type": "string",
+      "enum": [
+        "session",
+        "execution_procedures",
+        "organizational",
+        "evaluation_negative"
+      ],
+      "description": "PD-47 field only: session 90d; execution_procedures 180d; organizational 1y; evaluation_negative indefinite. TTL enforcement is AE-030d."
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "ruleset", "hits"],
+      "properties": {
+        "applied": { "type": "boolean" },
+        "ruleset": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "hits": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "expires_at": {
+      "type": ["string", "null"],
+      "description": "Optional ISO-8601 absolute expiry; null/omitted means follow retention_class (indefinite for evaluation_negative)."
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["private", "local", "public"],
+      "default": "private",
+      "description": "PD-46: org/fleet default local/private; public requires human-gated promotion (not enforced here)."
+    }
+  }
+}

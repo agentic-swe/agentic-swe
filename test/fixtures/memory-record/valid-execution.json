@@ -1,0 +1,17 @@
+{
+  "id": "mem:execution:fixture-1",
+  "tenant_id": "personal",
+  "scope": "execution",
+  "body": "Decision: run npm test after session ingest.",
+  "provenance": {
+    "origin": "session-ingest",
+    "actor": "system",
+    "source_uri": "file://.agentic-swe/sessions/fixture.jsonl",
+    "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ingested_at": "2026-11-13T00:00:00.000Z"
+  },
+  "trust": "untrusted",
+  "retention_class": "session",
+  "redaction": { "applied": true, "ruleset": "redact.cjs", "hits": 0 },
+  "visibility": "private"
+}

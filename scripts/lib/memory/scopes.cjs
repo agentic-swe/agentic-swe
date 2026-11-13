@@ -3,6 +3,7 @@
 const os = require('node:os');
 const path = require('node:path');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
+const taxonomy = require('./taxonomy.cjs');
 
 /**
  * Personal muscle-memory root (~/.agentic-swe). Override with AGENTIC_SWE_PERSONAL_ROOT.
@@ -28,4 +29,17 @@ function sqlitePathForScope(scope, opts) {
   return sqlitePathForProject(merged, projectRoot);
 }
 
-module.exports = { personalRoot, sqlitePathForScope };
+module.exports = {
+  personalRoot,
+  sqlitePathForScope,
+  // AE-030a taxonomy (additive; does not change sqlite write paths)
+  MEMORY_SCOPES: taxonomy.MEMORY_SCOPES,
+  LEGACY_CLI_SCOPES: taxonomy.LEGACY_CLI_SCOPES,
+  LEGACY_CLI_SCOPE_TO_MEMORY_SCOPE: taxonomy.LEGACY_CLI_SCOPE_TO_MEMORY_SCOPE,
+  RETENTION_CLASS_DEFAULTS: taxonomy.RETENTION_CLASS_DEFAULTS,
+  DEFAULT_TENANT_ID: taxonomy.DEFAULT_TENANT_ID,
+  DEFAULT_TRUST: taxonomy.DEFAULT_TRUST,
+  mapLegacyCliScope: taxonomy.mapLegacyCliScope,
+  mapLegacyWorkId: taxonomy.mapLegacyWorkId,
+  defaultRetentionClassForScope: taxonomy.defaultRetentionClassForScope,
+};
