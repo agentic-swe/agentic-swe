@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-swe.local/schemas/learning-record.schema.json",
+  "title": "agentic-swe LearningRecord",
+  "description": "Execution learning record sourced from the work journal (ADR-011 / ADR-012 / AE-031a). Separate from MemoryRecord and from the SQLite memory store.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "work_id",
+    "source_seq",
+    "event_hash",
+    "evidence_refs",
+    "trust",
+    "body",
+    "ingested_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["tool.completed", "transition", "usage.recorded"],
+      "description": "Journal event kinds that feed execution learning (AE-031a)."
+    },
+    "work_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "source_seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Journal seq of the source event (ADR-011)."
+    },
+    "event_hash": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Journal event hash of the source event."
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_seq", "event_hash"],
+        "properties": {
+          "source_seq": { "type": "integer", "minimum": 1 },
+          "event_hash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "description": "Evidence chain; trusted learning requires at least one ref (AE-031a/b)."
+    },
+    "trust": {
+      "type": "string",
+      "enum": ["untrusted", "reviewed", "human_approved"],
+      "default": "untrusted",
+      "description": "Default untrusted; elevation is AE-031b (human approval or attested eval digest)."
+    },
+    "body": {
+      "type": "string",
+      "description": "Deterministic summary of the journal event for learning."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Optional structured summary (tool_id, to_state, usage, etc.)."
+    },
+    "ingested_at": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ISO-8601 timestamp when the learning record was written."
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "ruleset", "hits"],
+      "properties": {
+        "applied": { "type": "boolean" },
+        "ruleset": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "hits": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
