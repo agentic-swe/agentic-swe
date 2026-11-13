@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { annotateTrust, canReplay, decayConfidence, isJevEvidence, promoteTrust } = require('../scripts/lib/memory/trust.cjs');
+const { annotateTrust, canReplay, isJevEvidence, promoteTrust } = require('../scripts/lib/memory/trust.cjs');
 const { importExternalProcedure, promoteRecordTrust, saveStore, loadStore } = require('../scripts/lib/descent/promotion.cjs');
 const { replayProcedureWithTelemetry } = require('../scripts/lib/descent/replay.cjs');
 
@@ -22,10 +22,11 @@ test('external memory cannot replay before promotion', () => {
   assert.equal(canReplay(promoteTrust(record, { confirmations: 0, humanApproved: true })), true);
 });
 
-test('confidence decays by one tenth per window', () => {
-  const record = annotateTrust({ id: 'memory-2', confidence: 0.9 }, '2026-09-26T00:00:00Z');
-  const decayed = decayConfidence(record, '2026-09-28T00:00:00Z', 24 * 60 * 60 * 1000);
-  assert.equal(decayed.confidence, 0.7);
+test('decayConfidence is not part of the trust API (ADR-012 uses discrete trust + TTL)', () => {
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(require('../scripts/lib/memory/trust.cjs'), 'decayConfidence'),
+    false
+  );
 });
 
 test('Jev advisory evidence cannot become a procedure', () => {
