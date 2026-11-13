@@ -18,7 +18,7 @@ const { makeChunkId } = require('./chunk-split.cjs');
 const { parseGitLogNameOnly } = require('./git-log-parse.cjs');
 const { EVENTS_DIR } = require('../sync/git-sync.cjs');
 const { buildStyleProfile, writeStyleProfile } = require('./style-profile.cjs');
-const { buildIngestProvenance, requireProvenance } = require('./provenance.cjs');
+const { buildIngestProvenance, requireProvenance, attachNodeProvenance } = require('./provenance.cjs');
 const { mapLegacyWorkId } = require('./taxonomy.cjs');
 
 /**
@@ -124,7 +124,16 @@ async function ingestTeamEvents(opts) {
       });
       events++;
     }
-    if (nodes.length) upsertTypedNodes(db, nodes);
+    if (nodes.length) {
+      upsertTypedNodes(
+        db,
+        attachNodeProvenance(nodes, {
+          source: 'ingest-scopes:team-events',
+          actor: 'system:ingest-scopes',
+          originForNode: (n) => `.agentic-swe/sync/events#${n.id}`,
+        })
+      );
+    }
     persistDatabase(db, sqlitePath);
   } finally {
     closeDatabase(db);
@@ -156,14 +165,24 @@ async function ingestPersonalProfile(opts) {
       originPathOrEvent: 'personal/style-profile.md',
       actor: 'system:ingest-scopes',
     });
-    upsertTypedNodes(db, [
-      {
-        id: 'personal:style-profile',
-        kind: 'personal',
-        label: 'style profile',
-        body,
-      },
-    ]);
+    upsertTypedNodes(
+      db,
+      attachNodeProvenance(
+        [
+          {
+            id: 'personal:style-profile',
+            kind: 'personal',
+            label: 'style profile',
+            body,
+          },
+        ],
+        {
+          source: 'ingest-scopes:personal-profile',
+          actor: 'system:ingest-scopes',
+          originForNode: () => 'personal/style-profile.md',
+        }
+      )
+    );
     persistDatabase(db, sqlitePath);
   } finally {
     closeDatabase(db);
@@ -235,7 +254,16 @@ async function ingestGitTeamHistory(opts) {
         body: body.slice(0, 2000),
       });
     }
-    if (nodes.length) upsertTypedNodes(db, nodes);
+    if (nodes.length) {
+      upsertTypedNodes(
+        db,
+        attachNodeProvenance(nodes, {
+          source: 'ingest-scopes:git-history',
+          actor: 'system:ingest-scopes',
+          originForNode: (n) => `git:${String(n.id || '').replace(/^git:/, '')}`,
+        })
+      );
+    }
     persistDatabase(db, sqlitePath);
   } finally {
     closeDatabase(db);
@@ -300,7 +328,16 @@ async function ingestMuscleReplayWorklogs(opts) {
         body: body.slice(0, 2000),
       });
     }
-    if (nodes.length) upsertTypedNodes(db, nodes);
+    if (nodes.length) {
+      upsertTypedNodes(
+        db,
+        attachNodeProvenance(nodes, {
+          source: 'ingest-scopes:muscle-replay',
+          actor: 'system:ingest-scopes',
+          originForNode: (n) => `.worklogs/${String(n.id || '').replace(/^muscle-replay:/, '')}/muscle-replay.md`,
+        })
+      );
+    }
     persistDatabase(db, sqlitePath);
   } finally {
     closeDatabase(db);
@@ -365,7 +402,16 @@ async function ingestOrganicWorklogs(opts) {
         body: body.slice(0, 2000),
       });
     }
-    if (nodes.length) upsertTypedNodes(db, nodes);
+    if (nodes.length) {
+      upsertTypedNodes(
+        db,
+        attachNodeProvenance(nodes, {
+          source: 'ingest-scopes:organic-worklogs',
+          actor: 'system:ingest-scopes',
+          originForNode: (n) => `.worklogs/${String(n.id || '').replace(/^worklog:/, '')}/organic-distill.md`,
+        })
+      );
+    }
     persistDatabase(db, sqlitePath);
   } finally {
     closeDatabase(db);

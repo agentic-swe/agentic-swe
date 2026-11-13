@@ -30,20 +30,28 @@ const { ingestProjectSkills } = require('../scripts/lib/skills/ingest-project-sk
 const { scaffoldProjectSkillFromRitual } = require('../scripts/lib/skills/project-skills.cjs');
 const { EVENTS_DIR } = require('../scripts/lib/sync/git-sync.cjs');
 
-/** Production modules that may own the only checked chunk INSERT. */
+/** Production modules that may own the only checked chunk/node/edge INSERT. */
 const ALLOWED_CHUNK_INSERT_FILES = new Set([
+  path.normalize('scripts/lib/memory/graph-store.cjs'),
+]);
+const ALLOWED_GRAPH_INSERT_FILES = new Set([
   path.normalize('scripts/lib/memory/graph-store.cjs'),
 ]);
 
 const SCAN_ROOTS = [
   path.join(pluginRoot, 'scripts', 'lib', 'memory'),
   path.join(pluginRoot, 'scripts', 'lib', 'fleet'),
+  path.join(pluginRoot, 'scripts', 'lib', 'skills'),
   path.join(pluginRoot, 'scripts'),
   path.join(pluginRoot, 'hooks'),
 ];
 
 const CHUNK_INSERT_RE =
   /INSERT\s+(?:OR\s+\w+\s+)?INTO\s+chunks\b|REPLACE\s+INTO\s+chunks\b/i;
+const NODE_INSERT_RE =
+  /INSERT\s+(?:OR\s+\w+\s+)?INTO\s+nodes\b|REPLACE\s+INTO\s+nodes\b/i;
+const EDGE_INSERT_RE =
+  /INSERT\s+(?:OR\s+\w+\s+)?INTO\s+edges\b|REPLACE\s+INTO\s+edges\b/i;
 
 function walkJsFiles(dir, out) {
   if (!fs.existsSync(dir)) return;
@@ -119,6 +127,26 @@ describe('AE-030h4 residual memory writers provenance', () => {
       offenders,
       [],
       `direct chunk INSERT outside checked helper:\n${offenders.join('\n')}`
+    );
+  });
+
+  it('guard: no direct INSERT into nodes/edges outside graph-store helpers', () => {
+    const files = [];
+    for (const root of SCAN_ROOTS) walkJsFiles(root, files);
+    const uniq = [...new Set(files)];
+    const offenders = [];
+    for (const abs of uniq) {
+      const rel = path.relative(pluginRoot, abs).split(path.sep).join('/');
+      if (ALLOWED_GRAPH_INSERT_FILES.has(path.normalize(rel))) continue;
+      const text = fs.readFileSync(abs, 'utf8');
+      if (NODE_INSERT_RE.test(text) || EDGE_INSERT_RE.test(text)) {
+        offenders.push(rel);
+      }
+    }
+    assert.deepEqual(
+      offenders,
+      [],
+      `direct nodes/edges INSERT outside checked helper:\n${offenders.join('\n')}`
     );
   });
 

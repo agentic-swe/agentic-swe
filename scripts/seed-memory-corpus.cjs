@@ -7,11 +7,13 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { openOrCreateDatabase, persistDatabase, closeDatabase } = require('./lib/memory/graph-store.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./lib/memory/config.cjs');
 const { upsertTypedNodes } = require('./lib/memory/session-capture.cjs');
+const { buildIngestProvenance } = require('./lib/memory/provenance.cjs');
 const { buildFingerprint } = require('./lib/descent/fingerprint.cjs');
 const { promoteOrDemote } = require('./lib/descent/promotion.cjs');
 
@@ -68,10 +70,22 @@ async function main() {
   const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
   const sqlitePath = sqlitePathForProject(merged, projectRoot);
 
-  const nodes = [
+  const rawNodes = [
     ...extractChangelogConventions(path.join(pluginRoot, 'CHANGELOG.md')),
     ...extractGitConventions(projectRoot),
   ];
+  const nodes = rawNodes.map((n) => ({
+    ...n,
+    provenance: buildIngestProvenance({
+      source: 'seed-memory-corpus',
+      originPathOrEvent: n.id,
+      actor: 'system:seed-memory-corpus',
+      sourceHash: crypto
+        .createHash('sha256')
+        .update(String(n.body || n.id))
+        .digest('hex'),
+    }),
+  }));
 
   const { db } = await openOrCreateDatabase(sqlitePath);
   try {
