@@ -13,7 +13,7 @@ const {
   assertLearningReadAllowed,
   assertNoContaminationInL0,
   runGuardedEval,
-} = require('../scripts/lib/memory/eval-learning-guard.cjs');
+} = require('../scripts/lib/shared/eval-learning-guard.cjs');
 const {
   appendLearningRecord,
   readLearningRecords,

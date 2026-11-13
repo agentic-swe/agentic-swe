@@ -9,7 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { validateLearningRecord } = require('./learning-record.cjs');
 const { prepareLearningWrite, contentFingerprint } = require('./learning-write.cjs');
-const { assertLearningWriteAllowed } = require('./eval-learning-guard.cjs');
+const { assertLearningWriteAllowed } = require('../shared/eval-learning-guard.cjs');
 
 const DEFAULT_STORE = '.agentic-swe/learning_records.jsonl';
 const QUARANTINE_STORE = '.agentic-swe/learning_records.quarantine.jsonl';
