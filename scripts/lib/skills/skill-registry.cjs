@@ -551,12 +551,50 @@ function compensatePublishInstall(snap) {
  * Re-publishing the same version with a different digest fails VERSION_IMMUTABLE.
  * Audit-append failure rolls back the just-installed version + index/lock (no partial state).
  */
+/**
+ * AE-030d / PD-46 / ADR-012 A6 — skill content sourced only from organizational
+ * or private memory must use a governed publish path (approval_ref / governedPublish).
+ * @param {object} opts
+ */
+function assertMemorySourcePublishAllowed(opts) {
+  const src = opts && opts.memorySource;
+  if (!src || typeof src !== 'object') return;
+  const scope = String(src.scope || '').trim();
+  const visibility = String(src.visibility || 'private').trim();
+  const fromPrivateOrg =
+    scope === 'organizational' ||
+    visibility === 'private' ||
+    visibility === 'local';
+  if (!fromPrivateOrg) return;
+  const governed =
+    opts.governedPublish === true ||
+    (opts.approvalRef != null && String(opts.approvalRef).trim() !== '');
+  if (!governed) {
+    const err = new Error(
+      'publishing skill content sourced from organizational/private memory requires a governed path (approval_ref or governedPublish)'
+    );
+    err.code = 'PRIVATE_MEMORY_PUBLISH_FORBIDDEN';
+    err.path = 'memorySource';
+    throw err;
+  }
+}
+
 function publishSkill(opts) {
   let actor;
   try {
     actor = normalizeActor(opts.actor);
   } catch (err) {
     return { ok: false, code: err.code || 'ACTOR_REQUIRED', errors: [err.message] };
+  }
+
+  try {
+    assertMemorySourcePublishAllowed(opts);
+  } catch (err) {
+    return {
+      ok: false,
+      code: err.code || 'PRIVATE_MEMORY_PUBLISH_FORBIDDEN',
+      errors: [err.message],
+    };
   }
 
   const registryRoot = path.resolve(opts.registryRoot);
@@ -803,6 +841,7 @@ module.exports = {
   validateDependencies,
   installSkill,
   publishSkill,
+  assertMemorySourcePublishAllowed,
   deprecateSkill,
   revokeSkill,
   resolveAndVerify,
