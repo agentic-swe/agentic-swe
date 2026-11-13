@@ -104,7 +104,7 @@ node scripts/skill-external-publish.cjs \
 | Blank package digest | `DIGEST_MISSING` |
 | `--expected-digest` blank | `DIGEST_EXPECTED_BLANK` |
 | Digest mismatch | `DIGEST_MISMATCH` |
-| Private/org `provenance.origin` | `PRIVATE_PROVENANCE_FORBIDDEN` |
+| Origin not on external allowlist (`third-party` only) | `ORIGIN_NOT_ALLOWED` |
 
 Success records the publish in the local registry audit log with `approval_ref`, immutable version + digest, and tag ref `skill/<name>/v<semver>` (PD-30). This CLI does **not** push remotes or create GitHub Releases.
 
