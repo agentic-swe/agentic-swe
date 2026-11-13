@@ -132,4 +132,35 @@ describe('AE-028b DCO check (pure commit metadata)', () => {
     assert.equal(emptyMsg.ok, false);
     assert.equal(emptyMsg.code, 'DCO_MISSING');
   });
+
+  it('pull_request empty range fails closed when requireNonEmpty (M3-F4)', () => {
+    const vacuous = checkCommitsDco([], { requireNonEmpty: true });
+    assert.equal(vacuous.ok, false);
+    assert.equal(vacuous.checked, 0);
+    assert.equal(vacuous.failures[0].code, 'DCO_EMPTY_RANGE');
+    assert.match(formatDcoResult(vacuous), /DCO_EMPTY_RANGE/);
+
+    const onlyMerges = checkCommitsDco(
+      [
+        {
+          hash: 'm1',
+          authorEmail: 'alice@example.com',
+          message: loadMsg('unsigned.txt'),
+          parentCount: 2,
+        },
+      ],
+      { requireNonEmpty: true }
+    );
+    assert.equal(onlyMerges.ok, false);
+    assert.equal(onlyMerges.checked, 0);
+    assert.equal(onlyMerges.skipped, 1);
+    assert.equal(onlyMerges.failures[0].code, 'DCO_EMPTY_RANGE');
+  });
+
+  it('empty range still passes without requireNonEmpty (push / local default)', () => {
+    const open = checkCommitsDco([]);
+    assert.equal(open.ok, true);
+    assert.equal(open.checked, 0);
+    assert.equal(open.failures.length, 0);
+  });
 });
