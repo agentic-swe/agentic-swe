@@ -28,10 +28,14 @@ async function ingestProjectSkills(opts) {
     const nodes = [];
     for (const s of projectOnly) {
       const body = `project skill ${s.name} [${s.eval_status}]: ${s.description}`;
+      const skillPath = `.agentic-swe/skills/${s.name}/SKILL.md`;
       insertScopedChunk(db, {
-        path: `.agentic-swe/skills/${s.name}/SKILL.md`,
+        path: skillPath,
         workId: 'team',
         body,
+        source: 'ingest-project-skills',
+        originPathOrEvent: skillPath,
+        actor: 'system:ingest-project-skills',
       });
       chunks++;
       nodes.push({
