@@ -70,7 +70,7 @@ function snippetFromBody(body, tokens, maxLen) {
 }
 
 /**
- * Lexical search on `chunks` (sql.js has no FTS5 module — LIKE-based).
+ * Lexical search on `chunks` (LIKE-based; FTS5 optional later).
  * @param {*} db
  * @param {string[]} tokens
  * @param {number} limit

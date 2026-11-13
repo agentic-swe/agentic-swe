@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * AE-030e/h1 — node:sqlite MemoryStore adapter (replaces sql.js adapter from AE-030b).
+ * AE-030e/h1 — node:sqlite MemoryStore adapter (AE-030b seam, AE-030e cutover).
  * All MemoryService open/persist goes through here → graph-store (native).
  * AE-030h1: upsertChunk fails closed without provenance (ADR-012 A4).
- * Refs ADR-004b A1–A6, ADR-012, ADR-016; PD-48 C2 (no sql.js fallback).
+ * Refs ADR-004b A1–A6, ADR-012, ADR-016; PD-48 C2 (fail closed, no legacy fallback).
  */
 
 const path = require('node:path');
