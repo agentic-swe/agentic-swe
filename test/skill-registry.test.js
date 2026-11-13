@@ -20,6 +20,7 @@ const {
   REGISTRY_LOG_NAME,
 } = require('../scripts/lib/skills/skill-registry.cjs');
 const { digestSkillBody, LOCKFILE_NAME } = require('../scripts/lib/skills/skill-integrity.cjs');
+const { buildApprovedPublishReview } = require('../scripts/lib/skills/skill-publish-review.cjs');
 
 const tmpRoot = path.join(__dirname, '_tmp-skill-registry');
 
@@ -47,6 +48,20 @@ ${body}`;
   const m = { ...manifest, digest };
   fs.writeFileSync(path.join(dir, 'SKILL.md'), skillMd);
   fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(m, null, 2));
+  // AE-032c: publishSkill requires a machine-checkable review sidecar (or explicit reviewArtifact).
+  fs.writeFileSync(
+    path.join(dir, 'publish-review.json'),
+    `${JSON.stringify(
+      buildApprovedPublishReview({
+        skill: m.name,
+        version: m.version,
+        digest: m.digest,
+        reviewer: 'test-independent-reviewer',
+      }),
+      null,
+      2
+    )}\n`
+  );
   return m;
 }
 
