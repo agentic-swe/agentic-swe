@@ -4,14 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
-const {
-  openOrCreateDatabase,
-  persistDatabase,
-  closeDatabase,
-  ensureChunksSchema,
-  ensureRecordColumns,
-  upsertChunkRow,
-} = require('./graph-store.cjs');
+const { createMemoryService, writeIngestChunkToDb } = require('./memory-service.cjs');
 const { chunkMarkdown, makeChunkId, workIdFromPath } = require('./chunk-split.cjs');
 const { isPathIncluded } = require('./glob-match.cjs');
 const { walkAllFiles, defaultChunkExtensions } = require('./chunk-ingest.cjs');
@@ -49,6 +42,7 @@ function chunkExtensions(merged) {
  * Index only markdown files that changed since the last watermark.
  * The first run indexes the newest files up to `limit` and leaves the rest pending.
  * A full rebuild remains `npm run memory-index`.
+ * Opens sqlite via MemoryService.withProjectDb (NB7); writes via writeIngestChunkToDb.
  * @param {{ projectRoot: string, pluginRoot: string, limit?: number }} opts
  */
 async function runIncrementalIndex(opts) {
@@ -56,7 +50,7 @@ async function runIncrementalIndex(opts) {
   const pluginRoot = path.resolve(opts.pluginRoot || projectRoot);
   const limit = Number(opts.limit || process.env.AGENTIC_SWE_INDEX_LIMIT || 24);
   const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = sqlitePathForProject(merged, projectRoot);
+  const sqlitePathExpected = sqlitePathForProject(merged, projectRoot);
   const watermark = readWatermark(projectRoot);
   const exts = chunkExtensions(merged);
   const include = (merged.ingest && merged.ingest.include_globs) || [];
@@ -91,77 +85,78 @@ async function runIncrementalIndex(opts) {
   const deletedRels = Object.keys(watermark.files || {}).filter((rel) => !present.has(rel));
 
   if (!batch.length && !deletedRels.length) {
-    return { ok: true, updated: 0, pending: 0, deleted: 0, sqlitePath };
+    return { ok: true, updated: 0, pending: 0, deleted: 0, sqlitePath: sqlitePathExpected };
   }
 
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  const svc = createMemoryService({ pluginRoot, projectRoot });
   try {
-    ensureChunksSchema(db);
-    ensureRecordColumns(db);
-    const del = db.prepare('DELETE FROM chunks WHERE path = ?');
-    let chunks = 0;
-    let deleted = 0;
-    for (const rel of deletedRels) {
-      del.run([rel]);
-      delete watermark.files[rel];
-      deleted += 1;
-    }
-    for (const file of batch) {
-      del.run([file.rel]);
-      let text = '';
-      try {
-        text = fs.readFileSync(file.abs, 'utf8');
-      } catch {
-        continue;
+    return await svc.withProjectDb(async (db, ctx) => {
+      const sqlitePath = ctx.sqlitePath;
+      const del = db.prepare('DELETE FROM chunks WHERE path = ?');
+      let chunks = 0;
+      let deleted = 0;
+      for (const rel of deletedRels) {
+        del.run([rel]);
+        delete watermark.files[rel];
+        deleted += 1;
       }
-      const workId = workIdFromPath(file.rel);
-      const scope = mapLegacyWorkId(workId);
-      for (const piece of chunkMarkdown(text, maxChars)) {
-        const body = redactSecrets(piece.body).redacted;
-        const cid = makeChunkId(file.rel, piece.startLine, piece.endLine, body);
-        const sha = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
-        const provenance = buildIngestProvenance({
-          source: 'incremental-index',
-          originPathOrEvent: file.rel,
-          actor: 'system:incremental-index',
-          sourceHash: sha,
-          ingestedAt,
-        });
-        upsertChunkRow(db, {
-          chunkId: cid,
-          path: file.rel,
-          workId,
-          scope,
-          body,
-          startLine: piece.startLine,
-          endLine: piece.endLine,
-          contentSha256: sha,
-          recordJson: JSON.stringify({
-            id: cid,
+      for (const file of batch) {
+        del.run([file.rel]);
+        let text = '';
+        try {
+          text = fs.readFileSync(file.abs, 'utf8');
+        } catch {
+          continue;
+        }
+        const workId = workIdFromPath(file.rel);
+        const scope = mapLegacyWorkId(workId);
+        for (const piece of chunkMarkdown(text, maxChars)) {
+          const body = redactSecrets(piece.body).redacted;
+          const cid = makeChunkId(file.rel, piece.startLine, piece.endLine, body);
+          const sha = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
+          const provenance = buildIngestProvenance({
+            source: 'incremental-index',
+            originPathOrEvent: file.rel,
+            actor: 'system:incremental-index',
+            sourceHash: sha,
+            ingestedAt,
+          });
+          writeIngestChunkToDb(db, {
+            chunkId: cid,
+            path: file.rel,
+            workId,
             scope,
-            provenance,
-            trust: 'untrusted',
-            redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
-          }),
-        });
-        chunks++;
+            body,
+            startLine: piece.startLine,
+            endLine: piece.endLine,
+            contentSha256: sha,
+            recordJson: JSON.stringify({
+              id: cid,
+              scope,
+              provenance,
+              trust: 'untrusted',
+              redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+            }),
+          });
+          chunks++;
+        }
+        watermark.files[file.rel] = file.mtimeMs;
       }
-      watermark.files[file.rel] = file.mtimeMs;
-    }
-    del.free();
-    persistDatabase(db, sqlitePath);
-    writeWatermark(projectRoot, watermark);
-    return {
-      ok: true,
-      updated: batch.length,
-      pending: Math.max(0, candidates.length - batch.length),
-      deleted,
-      deletedPaths: deletedRels,
-      chunks,
-      sqlitePath,
-    };
+      del.free();
+      await ctx.store.persist();
+      writeWatermark(projectRoot, watermark);
+      return {
+        ok: true,
+        updated: batch.length,
+        pending: Math.max(0, candidates.length - batch.length),
+        deleted,
+        deletedPaths: deletedRels,
+        chunks,
+        sqlitePath,
+      };
+    });
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
 }
 

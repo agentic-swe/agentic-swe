@@ -5,8 +5,9 @@
  * Store-agnostic: callers depend on this API; default adapter is node:sqlite (ADR-004b).
  * AE-030c: provenance required on write; retrieve returns untrusted envelopes (ADR-012 / SEC-005).
  * AE-030d: delete+tombstone, TTL dry-run, PD-46 visibility/tenant defaults.
- * Do not add store call sites here — go through adapters/node-sqlite-memory-store.cjs.
- * Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47/PD-48 C3 (regex redact.cjs only).
+ * NB7: ingest/prime enter through this seam (withProjectDb / writeIngestChunkToDb);
+ * provenance-checked graph-store helpers remain the only write primitives underneath
+ * the adapter. Refs ADR-004b, ADR-012, ADR-016; PD-46/PD-47/PD-48 C3 (regex redact.cjs only).
  */
 
 const crypto = require('node:crypto');
@@ -21,6 +22,7 @@ const {
 const { personalRoot } = require('./scopes.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
 const { createNodeSqliteMemoryStore } = require('./adapters/node-sqlite-memory-store.cjs');
+const { upsertChunkRow, ensureRecordColumns } = require('./graph-store.cjs');
 const { redactSecrets } = require('../shared/redact.cjs');
 const {
   ttlDryRun,
@@ -295,6 +297,30 @@ function normalizeWriteRecord(input) {
 }
 
 /**
+ * NB7 — ingest chunk write through the MemoryService seam.
+ * Fail-closed on unknown scope; provenance checked by upsertChunkRow underneath.
+ * Used by chunk/session/incremental ingest that already hold a project db handle
+ * (from withProjectDb / pipeline). Do not call upsertChunkRow from those modules.
+ * @param {*} db
+ * @param {{
+ *   chunkId: string,
+ *   path: string,
+ *   workId: string|null,
+ *   scope: string,
+ *   body: string,
+ *   startLine?: number,
+ *   endLine?: number,
+ *   contentSha256?: string,
+ *   recordJson: string,
+ * }} row
+ */
+function writeIngestChunkToDb(db, row) {
+  const scope = assertKnownScope(row && row.scope);
+  ensureRecordColumns(db);
+  return upsertChunkRow(db, { ...row, scope });
+}
+
+/**
  * @param {object} row adapter chunk row
  */
 function rowToMemoryRecord(row) {
@@ -550,6 +576,23 @@ function createMemoryService(opts) {
     return ttlDryRun(records, { now: opts.now });
   }
 
+  /**
+   * NB7 — open the project sqlite via the adapter and run `fn(db, ctx)`.
+   * Prefer this over requiring graph-store open/close from ingest/prime.
+   * @param {(db: *, ctx: { sqlitePath: string, store: object }) => (any|Promise<any>)} fn
+   */
+  async function withProjectDb(fn) {
+    const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
+    const sqlitePath = sqlitePathForProject(merged, projectRoot);
+    const store = storeForPath(sqlitePath);
+    if (typeof store.withDb !== 'function') {
+      const err = new Error('memory store adapter missing withDb');
+      err.code = 'ADAPTER_WITH_DB_REQUIRED';
+      throw err;
+    }
+    return store.withDb((db) => fn(db, { sqlitePath, store }));
+  }
+
   async function close() {
     for (const store of stores.values()) {
       await store.close();
@@ -562,6 +605,8 @@ function createMemoryService(opts) {
     read,
     delete: deleteRecords,
     retentionDryRun,
+    withProjectDb,
+    writeIngestChunkToDb,
     close,
     sqlitePathForMemoryScope: (scope) =>
       sqlitePathForMemoryScope(scope, { pluginRoot, projectRoot }),
@@ -575,6 +620,7 @@ module.exports = {
   resolveScopeAtSeam,
   workIdForScope,
   sqlitePathForMemoryScope,
+  writeIngestChunkToDb,
   isGitHistoryPath,
   requireProvenance,
   toUntrustedEnvelope,

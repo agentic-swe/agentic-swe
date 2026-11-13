@@ -2,8 +2,8 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
-const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
-const { openOrCreateDatabase, closeDatabase } = require('./graph-store.cjs');
+const { loadMergedMemoryConfig } = require('./config.cjs');
+const { createMemoryService } = require('./memory-service.cjs');
 const {
   queryGraphStatsDb,
   queryTopNodesByDegreeDb,
@@ -266,7 +266,7 @@ async function buildPrimeEnvelope(opts) {
   const projectRoot = path.resolve(opts.projectRoot);
   const pluginRoot = path.resolve(opts.pluginRoot);
   const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = opts.sqlitePath || sqlitePathForProject(merged, projectRoot);
+  const sqlitePathOverride = opts.sqlitePath || null;
 
   const maxOut = merged.prime && merged.prime.max_chars_out ? merged.prime.max_chars_out : 12000;
   const maxHits = merged.prime && merged.prime.max_fts_hits ? merged.prime.max_fts_hits : 12;
@@ -278,178 +278,195 @@ async function buildPrimeEnvelope(opts) {
       : 8000;
   const lexPool = Math.min(200, Math.max(maxHits, maxHits * 3));
 
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  // NB7: enter via MemoryService (not graph-store open/close).
+  const svc = createMemoryService({ pluginRoot, projectRoot });
+
   try {
-    const lines = [];
-    lines.push(UNTRUSTED_PRIME_BANNER.trimEnd());
-    lines.push('');
+    // When a test/caller pins sqlitePath, open that file through the adapter seam.
+    const run = async (db, sqlitePath) => {
+      const lines = [];
+      lines.push(UNTRUSTED_PRIME_BANNER.trimEnd());
+      lines.push('');
 
-    const gs = queryGraphStatsDb(db);
-    const chunkCount = queryChunkCountDb(db);
-    const embCount = queryEmbeddingCountDb(db);
-    lines.push('### Graph digest');
-    lines.push(
-      `- **Nodes:** ${gs.nodes}  **Edges:** ${gs.edges}  **Indexed chunks:** ${chunkCount}  **Embeddings rows:** ${embCount}`
-    );
-    if (gs.kinds && gs.kinds.nodes && Object.keys(gs.kinds.nodes).length) {
-      lines.push(`- **Node kinds:** ${JSON.stringify(gs.kinds.nodes)}`);
-    }
-    if (gs.kinds && gs.kinds.edges && Object.keys(gs.kinds.edges).length) {
-      lines.push(`- **Edge kinds:** ${JSON.stringify(gs.kinds.edges)}`);
-    }
-
-    const top = queryTopNodesByDegreeDb(db, 8);
-    if (top.length) {
-      lines.push('- **High-degree nodes:**');
-      for (const r of top) {
-        lines.push(`  - \`${r.id}\` (${r.kind}, deg ${r.deg}) ${r.label ? `— ${redactSecrets(String(r.label)).redacted}` : ''}`);
+      const gs = queryGraphStatsDb(db);
+      const chunkCount = queryChunkCountDb(db);
+      const embCount = queryEmbeddingCountDb(db);
+      lines.push('### Graph digest');
+      lines.push(
+        `- **Nodes:** ${gs.nodes}  **Edges:** ${gs.edges}  **Indexed chunks:** ${chunkCount}  **Embeddings rows:** ${embCount}`
+      );
+      if (gs.kinds && gs.kinds.nodes && Object.keys(gs.kinds.nodes).length) {
+        lines.push(`- **Node kinds:** ${JSON.stringify(gs.kinds.nodes)}`);
       }
-    }
-    lines.push('');
-
-    const teamChunks = queryWorkIdChunksDb(db, 'team', 5);
-    if (teamChunks.length) {
-      lines.push('### Team memory (git history + sync events)');
-      lines.push('');
-      lines.push('How this repo was actually changed. Advisory; `state.json` and files win.');
-      lines.push('');
-      for (const c of teamChunks) {
-        const snip = redactSecrets(String(c.body || '')).redacted
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 180);
-        lines.push(`- \`${c.path}\`: ${snip}`);
+      if (gs.kinds && gs.kinds.edges && Object.keys(gs.kinds.edges).length) {
+        lines.push(`- **Edge kinds:** ${JSON.stringify(gs.kinds.edges)}`);
       }
-      lines.push('');
-    }
 
-    const fleetChunks = queryFleetSubmissionChunksDb(db, 4);
-    if (fleetChunks.length) {
-      lines.push('### Fleet learnings (archived consumer submissions)');
-      lines.push('');
-      lines.push('Cross-repo muscle-memory signals from fleet-submit → ingest. Advisory only.');
-      lines.push('');
-      for (const c of fleetChunks) {
-        const snip = redactSecrets(String(c.body || '')).redacted
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 220);
-        lines.push(`- ${snip}`);
-      }
-      lines.push('');
-    }
-
-    appendAdvisoryDigests(lines, projectRoot);
-
-    const q = opts.query != null ? opts.query : null;
-    if (q && opts.querySource) {
-      lines.push(`- **Query source:** \`${opts.querySource}\``);
-      lines.push('');
-    }
-    const tokens = q ? extractSearchTokens(q) : [];
-    if (tokens.length) {
-      const rt = resolveEmbeddingRuntime(merged);
-      let requested = String(retrievalMode).toLowerCase();
-      if (
-        requested !== 'lexical' &&
-        requested !== 'semantic' &&
-        requested !== 'hybrid' &&
-        requested !== 'auto'
-      ) {
-        requested = 'auto';
-      }
-      let mode =
-        requested === 'auto'
-          ? embCount > 0 && rt
-            ? 'hybrid'
-            : 'lexical'
-          : requested;
-
-      if ((mode === 'semantic' || mode === 'hybrid') && (!rt || embCount === 0)) {
-        const explicitFail = requested === 'semantic' || requested === 'hybrid';
-        if (explicitFail) {
-          lines.push(
-            `_Retrieval mode \`${requested}\` needs embeddings enabled and indexed rows; falling back to lexical._`
-          );
-          lines.push('');
+      const top = queryTopNodesByDegreeDb(db, 8);
+      if (top.length) {
+        lines.push('- **High-degree nodes:**');
+        for (const r of top) {
+          lines.push(`  - \`${r.id}\` (${r.kind}, deg ${r.deg}) ${r.label ? `— ${redactSecrets(String(r.label)).redacted}` : ''}`);
         }
-        mode = 'lexical';
-      }
-
-      lines.push(`### Chunk search (${mode})`);
-      lines.push(`- **Query:** ${JSON.stringify(redactSecrets(String(q)).redacted)}`);
-      if (opts.workId) {
-        lines.push(`- **Work id filter:** \`${opts.workId}\``);
       }
       lines.push('');
 
-      try {
-        let display = [];
+      const teamChunks = queryWorkIdChunksDb(db, 'team', 5);
+      if (teamChunks.length) {
+        lines.push('### Team memory (git history + sync events)');
+        lines.push('');
+        lines.push('How this repo was actually changed. Advisory; `state.json` and files win.');
+        lines.push('');
+        for (const c of teamChunks) {
+          const snip = redactSecrets(String(c.body || '')).redacted
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 180);
+          lines.push(`- \`${c.path}\`: ${snip}`);
+        }
+        lines.push('');
+      }
 
-        if (mode === 'lexical') {
-          display = queryChunkHits(db, tokens, maxHits, opts.workId || null);
-        } else {
-          const qEmb = rt ? await embedText(String(q), rt) : null;
-          if (!qEmb || !rt) {
+      const fleetChunks = queryFleetSubmissionChunksDb(db, 4);
+      if (fleetChunks.length) {
+        lines.push('### Fleet learnings (archived consumer submissions)');
+        lines.push('');
+        lines.push('Cross-repo muscle-memory signals from fleet-submit → ingest. Advisory only.');
+        lines.push('');
+        for (const c of fleetChunks) {
+          const snip = redactSecrets(String(c.body || '')).redacted
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 220);
+          lines.push(`- ${snip}`);
+        }
+        lines.push('');
+      }
+
+      appendAdvisoryDigests(lines, projectRoot);
+
+      const q = opts.query != null ? opts.query : null;
+      if (q && opts.querySource) {
+        lines.push(`- **Query source:** \`${opts.querySource}\``);
+        lines.push('');
+      }
+      const tokens = q ? extractSearchTokens(q) : [];
+      if (tokens.length) {
+        const rt = resolveEmbeddingRuntime(merged);
+        let requested = String(retrievalMode).toLowerCase();
+        if (
+          requested !== 'lexical' &&
+          requested !== 'semantic' &&
+          requested !== 'hybrid' &&
+          requested !== 'auto'
+        ) {
+          requested = 'auto';
+        }
+        let mode =
+          requested === 'auto'
+            ? embCount > 0 && rt
+              ? 'hybrid'
+              : 'lexical'
+            : requested;
+
+        if ((mode === 'semantic' || mode === 'hybrid') && (!rt || embCount === 0)) {
+          const explicitFail = requested === 'semantic' || requested === 'hybrid';
+          if (explicitFail) {
+            lines.push(
+              `_Retrieval mode \`${requested}\` needs embeddings enabled and indexed rows; falling back to lexical._`
+            );
+            lines.push('');
+          }
+          mode = 'lexical';
+        }
+
+        lines.push(`### Chunk search (${mode})`);
+        lines.push(`- **Query:** ${JSON.stringify(redactSecrets(String(q)).redacted)}`);
+        if (opts.workId) {
+          lines.push(`- **Work id filter:** \`${opts.workId}\``);
+        }
+        lines.push('');
+
+        try {
+          let display = [];
+
+          if (mode === 'lexical') {
             display = queryChunkHits(db, tokens, maxHits, opts.workId || null);
-          } else if (mode === 'semantic') {
-            display = queryChunkHitsSemantic(
-              db,
-              qEmb.vec,
-              qEmb.modelId,
-              maxHits,
-              opts.workId || null,
-              semScan,
-              tokens
-            );
           } else {
-            const lex = queryChunkHits(db, tokens, lexPool, opts.workId || null);
-            const sem = queryChunkHitsSemantic(
-              db,
-              qEmb.vec,
-              qEmb.modelId,
-              lexPool,
-              opts.workId || null,
-              semScan,
-              tokens
-            );
-            display = rrfFuseChunkHits(lex, sem, rrfK, maxHits);
+            const qEmb = rt ? await embedText(String(q), rt) : null;
+            if (!qEmb || !rt) {
+              display = queryChunkHits(db, tokens, maxHits, opts.workId || null);
+            } else if (mode === 'semantic') {
+              display = queryChunkHitsSemantic(
+                db,
+                qEmb.vec,
+                qEmb.modelId,
+                maxHits,
+                opts.workId || null,
+                semScan,
+                tokens
+              );
+            } else {
+              const lex = queryChunkHits(db, tokens, lexPool, opts.workId || null);
+              const sem = queryChunkHitsSemantic(
+                db,
+                qEmb.vec,
+                qEmb.modelId,
+                lexPool,
+                opts.workId || null,
+                semScan,
+                tokens
+              );
+              display = rrfFuseChunkHits(lex, sem, rrfK, maxHits);
+            }
           }
-        }
 
-        if (display.length === 0) {
-          lines.push('_No matching chunks._');
-        } else {
-          for (const h of display) {
-            const ref = `${h.path}:${h.start_line}-${h.end_line}`;
-            lines.push(`- **${ref}** — ${h.snip || ''}`);
+          if (display.length === 0) {
+            lines.push('_No matching chunks._');
+          } else {
+            for (const h of display) {
+              const ref = `${h.path}:${h.start_line}-${h.end_line}`;
+              lines.push(`- **${ref}** — ${h.snip || ''}`);
+            }
           }
+        } catch (e) {
+          lines.push(`_Chunk search failed: ${e && e.message ? e.message : String(e)}_`);
         }
-      } catch (e) {
-        lines.push(`_Chunk search failed: ${e && e.message ? e.message : String(e)}_`);
+        lines.push('');
+      } else if (q) {
+        lines.push('### Chunk search');
+        lines.push('_Query produced no searchable tokens (use 2+ characters per term)._');
+        lines.push('');
       }
-      lines.push('');
-    } else if (q) {
-      lines.push('### Chunk search');
-      lines.push('_Query produced no searchable tokens (use 2+ characters per term)._');
-      lines.push('');
+
+      const body = limitChars(redactSecrets(lines.join('\n')).redacted, maxOut);
+      return {
+        trust: 'untrusted',
+        body,
+        citation: {
+          kind: 'memory-prime',
+          projectRoot,
+          sqlitePath,
+          query: opts.query != null ? String(opts.query) : null,
+          workId: opts.workId != null ? String(opts.workId) : null,
+          querySource: opts.querySource != null ? String(opts.querySource) : null,
+        },
+      };
+    };
+
+    if (sqlitePathOverride) {
+      const { createNodeSqliteMemoryStore } = require('./adapters/node-sqlite-memory-store.cjs');
+      const store = createNodeSqliteMemoryStore({ sqlitePath: path.resolve(sqlitePathOverride) });
+      try {
+        return await store.withDb((db) => run(db, path.resolve(sqlitePathOverride)));
+      } finally {
+        await store.close();
+      }
     }
 
-    const body = limitChars(redactSecrets(lines.join('\n')).redacted, maxOut);
-    return {
-      trust: 'untrusted',
-      body,
-      citation: {
-        kind: 'memory-prime',
-        projectRoot,
-        sqlitePath,
-        query: opts.query != null ? String(opts.query) : null,
-        workId: opts.workId != null ? String(opts.workId) : null,
-        querySource: opts.querySource != null ? String(opts.querySource) : null,
-      },
-    };
+    return await svc.withProjectDb((db, ctx) => run(db, ctx.sqlitePath));
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
 }
 
