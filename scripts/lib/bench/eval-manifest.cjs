@@ -10,6 +10,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Ajv = require('ajv').default;
 
+const { hashTaskContent, verifyTaskContentPin } = require('./holdout-packaging.cjs');
+
 const SCHEMA_PATH = path.join(__dirname, '..', '..', '..', 'schemas', 'eval-manifest.schema.json');
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'llama.cpp']);
@@ -166,7 +168,7 @@ function validateEvalManifest(manifest) {
  * @param {string} filePath
  * @returns {{ ok: true, manifest: object, digest: string, path: string } | { ok: false, code: string, errors: string[], path: string }}
  */
-function validateEvalManifestFile(filePath) {
+function validateEvalManifestFile(filePath, opts = {}) {
   const abs = path.resolve(filePath);
   if (!fs.existsSync(abs)) {
     return { ok: false, code: 'MANIFEST_MISSING', errors: [`${abs}: file not found`], path: abs };
@@ -184,6 +186,21 @@ function validateEvalManifestFile(filePath) {
   }
   const check = validateEvalManifest(parsed);
   if (!check.ok) return { ...check, path: abs };
+
+  // AE-034b: when task paths resolve under the repo, content_sha256 must match disk.
+  const repoRoot = path.resolve(opts.repoRoot || path.join(__dirname, '..', '..', '..'));
+  const pinErrors = [];
+  for (let i = 0; i < (parsed.tasks || []).length; i++) {
+    const task = parsed.tasks[i];
+    if (!task || !task.path) continue;
+    const pin = verifyTaskContentPin(task, repoRoot);
+    if (!pin.ok) {
+      pinErrors.push(`/tasks/${i}/content_sha256 ${pin.errors.join('; ')}`);
+    }
+  }
+  if (pinErrors.length) {
+    return { ok: false, code: 'MANIFEST_INVALID', errors: pinErrors, path: abs };
+  }
   return { ok: true, manifest: check.manifest, digest: check.digest, path: abs };
 }
 
@@ -210,4 +227,5 @@ module.exports = {
   validateEvalManifestFile,
   discoverEvalManifests,
   formatAjvErrors,
+  hashTaskContent,
 };
