@@ -63,9 +63,11 @@ jobs:
 
       # AE-028b / PD-36: DCO 1.1 on PR commits only (range = base..head; commits on main excluded).
       # Lives inside the existing required check `test (22)` — no new required status.
+      # --require-commits: refuse vacuous PASS when the PR range checks 0 non-merge commits (M3-F4).
+      # merge_group: not wired — merge queue is not enabled on this repo (M3-F3; see DCO.md).
       - name: DCO check (pull requests)
         if: github.event_name == 'pull_request'
-        run: node scripts/dco-check.cjs "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+        run: node scripts/dco-check.cjs --require-commits "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 
       - name: Test (repo + platform wiring + plugin validate when claude available)
         run: npm test
