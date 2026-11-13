@@ -6,8 +6,26 @@ const { annotateTrust, promoteTrust } = require('../memory/trust.cjs');
 const { DEFAULT_STORE, loadStore, saveStore } = require('../memory/procedure-store.cjs');
 
 /**
- * @typedef {{ fingerprint: string, tier: string, procedure: object, failures: number, promoted_at?: string, human_approved?: boolean }} ProcedureRecord
+ * @typedef {{ fingerprint: string, tier: string, procedure: object, failures: number, promoted_at?: string, human_approved?: boolean, auto_confirmed?: boolean }} ProcedureRecord
  */
+
+/**
+ * AE-R04 / AE-031b: auto L0 confirmation is never human approval.
+ * Trusted learning and replay gates must not treat auto_confirmed as human_approved.
+ * @param {ProcedureRecord|object} record
+ * @returns {boolean}
+ */
+function isHumanApprovedProcedure(record) {
+  return Boolean(record && record.human_approved === true);
+}
+
+/**
+ * @param {ProcedureRecord|object} record
+ * @returns {boolean}
+ */
+function isAutoConfirmedOnly(record) {
+  return Boolean(record && record.auto_confirmed === true && record.human_approved !== true);
+}
 
 /**
  * Promotion pipeline: L3 → L1 candidate → L0 after eval + human approval.
@@ -198,6 +216,8 @@ module.exports = {
   promoteRecordTrust,
   approveProcedure,
   migrateUnattestedApprovals,
+  isHumanApprovedProcedure,
+  isAutoConfirmedOnly,
   DEFAULT_STORE,
   APPROVAL_LOG,
 };
