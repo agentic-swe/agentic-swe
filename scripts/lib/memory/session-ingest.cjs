@@ -5,6 +5,9 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { redactSecrets, distillSessionChunk, upsertTypedNodes } = require('./session-capture.cjs');
 const { makeChunkId } = require('./chunk-split.cjs');
+const { upsertChunkRow, ensureRecordColumns } = require('./graph-store.cjs');
+const { buildIngestProvenance } = require('./provenance.cjs');
+const { mapLegacyWorkId } = require('./taxonomy.cjs');
 
 /**
  * Compact one Cursor/Claude tool_use part for memory (no file bodies, no secrets-heavy dumps).
@@ -124,32 +127,53 @@ function findJsonlFiles(dir) {
 }
 
 /**
- * Insert session chunk into chunks table.
+ * Insert session chunk into chunks table (provenance required — ADR-012 / AE-030h1).
  * @param {*} db
- * @param {{ sessionId: string, turnIdx: number, role: string, body: string }} row
+ * @param {{
+ *   sessionId: string,
+ *   turnIdx: number,
+ *   role: string,
+ *   body: string,
+ *   sourcePath?: string,
+ *   ingestedAt?: string,
+ * }} row
  */
 function insertSessionChunk(db, row) {
+  ensureRecordColumns(db);
   const body = redactSecrets(String(row.body || '')).redacted;
-  const chunkId = makeChunkId(
-    `.agentic-swe/sessions/${row.sessionId}.md`,
-    row.turnIdx,
-    row.turnIdx,
-    crypto.createHash('sha256').update(body).digest('hex')
-  );
-  const stmt = db.prepare(
-    `INSERT OR REPLACE INTO chunks (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  );
-  stmt.run([
+  const sha = crypto.createHash('sha256').update(body).digest('hex');
+  const relPath = `.agentic-swe/sessions/${row.sessionId}.md`;
+  const chunkId = makeChunkId(relPath, row.turnIdx, row.turnIdx, sha);
+  const workId = `session:${row.sessionId}`;
+  const scope = mapLegacyWorkId(workId);
+  const originRef = row.sourcePath
+    ? String(row.sourcePath)
+    : `session:${row.sessionId}:turn:${row.turnIdx}`;
+  const provenance = buildIngestProvenance({
+    source: 'session-ingest',
+    originPathOrEvent: originRef,
+    actor: 'system:session-ingest',
+    sourceHash: sha,
+    ingestedAt: row.ingestedAt || new Date().toISOString(),
+  });
+  upsertChunkRow(db, {
     chunkId,
-    `.agentic-swe/sessions/${row.sessionId}.md`,
-    `session:${row.sessionId}`,
-    row.turnIdx,
-    row.turnIdx,
-    crypto.createHash('sha256').update(body).digest('hex'),
+    path: relPath,
+    workId,
+    scope,
     body,
-  ]);
-  stmt.free();
+    startLine: row.turnIdx,
+    endLine: row.turnIdx,
+    contentSha256: sha,
+    recordJson: JSON.stringify({
+      id: chunkId,
+      scope,
+      provenance,
+      trust: 'untrusted',
+      redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+      role: row.role != null ? String(row.role) : undefined,
+    }),
+  });
 }
 
 /**
@@ -172,8 +196,10 @@ async function ingestTranscripts(opts) {
   let blocked = 0;
 
   const { db } = await openOrCreateDatabase(sqlitePath);
+  const ingestedAt = new Date().toISOString();
   try {
     ensureChunksSchema(db);
+    ensureRecordColumns(db);
     for (const file of files) {
       const { sessionId, turns } = parseTranscriptFile(file);
       for (let i = 0; i < turns.length; i++) {
@@ -184,7 +210,14 @@ async function ingestTranscripts(opts) {
           blocked++;
           continue;
         }
-        insertSessionChunk(db, { sessionId, turnIdx: i + 1, role: t.role, body: redacted.slice(0, 8000) });
+        insertSessionChunk(db, {
+          sessionId,
+          turnIdx: i + 1,
+          role: t.role,
+          body: redacted.slice(0, 8000),
+          sourcePath: file,
+          ingestedAt,
+        });
         chunks++;
         const distilled = distillSessionChunk({
           text: redacted,
