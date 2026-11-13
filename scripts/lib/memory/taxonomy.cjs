@@ -73,8 +73,9 @@ function mapLegacyCliScope(legacyScope) {
  * | work:* | execution |
  * | other (worklog id) | project |
  *
- * Note: git-history ingest today stamps work_id=team; AE-030b should route those
- * rows to repository. Callers that know the source may override.
+ * Note: git-history ingest still stamps work_id=team; MemoryService.resolveScopeAtSeam
+ * (AE-030b) remaps path `.agentic-swe/sync/git/*` + work_id=team → repository at read
+ * time without rewriting historical chunk bytes.
  *
  * @param {string|null|undefined} workId
  * @returns {(typeof MEMORY_SCOPES)[number]}
