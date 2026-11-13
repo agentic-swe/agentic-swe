@@ -3,10 +3,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('../memory/graph-store.cjs');
+const {
+  openOrCreateDatabase,
+  persistDatabase,
+  closeDatabase,
+  ensureChunksSchema,
+  upsertChunkRow,
+} = require('../memory/graph-store.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
 const { upsertTypedNodes, redactSecrets } = require('../memory/session-capture.cjs');
 const { makeChunkId } = require('../memory/chunk-split.cjs');
+const { buildIngestProvenance } = require('../memory/provenance.cjs');
+const { mapLegacyWorkId } = require('../memory/taxonomy.cjs');
 
 function submissionDigest(submissionPath) {
   return crypto.createHash('sha256').update(fs.readFileSync(submissionPath)).digest('hex').slice(0, 12);
@@ -65,12 +73,31 @@ async function ingestFleetSubmissionMemory(opts) {
     ensureChunksSchema(db);
     const chunkId = makeChunkId(chunkPath, 1, 1, body);
     const sha = crypto.createHash('sha256').update(body).digest('hex');
-    const stmt = db.prepare(
-      `INSERT OR REPLACE INTO chunks (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    );
-    stmt.run([chunkId, chunkPath, 'team', 1, 1, sha, body]);
-    stmt.free();
+    const workId = 'team';
+    const scope = mapLegacyWorkId(workId);
+    const provenance = buildIngestProvenance({
+      source: 'fleet-ingest',
+      originPathOrEvent: archiveRel,
+      actor: 'system:fleet-ingest',
+      sourceHash: sha,
+    });
+    upsertChunkRow(db, {
+      chunkId,
+      path: chunkPath,
+      workId,
+      scope,
+      body,
+      startLine: 1,
+      endLine: 1,
+      contentSha256: sha,
+      recordJson: JSON.stringify({
+        id: chunkId,
+        scope,
+        provenance,
+        trust: 'untrusted',
+        redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+      }),
+    });
     upsertTypedNodes(db, [
       {
         id: `fleet:${digest}`,

@@ -3,7 +3,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('./graph-store.cjs');
+const {
+  openOrCreateDatabase,
+  persistDatabase,
+  closeDatabase,
+  ensureChunksSchema,
+  upsertChunkRow,
+} = require('./graph-store.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
 const { sqlitePathForScope, personalRoot } = require('./scopes.cjs');
 const { spawnSync } = require('node:child_process');
@@ -12,17 +18,62 @@ const { makeChunkId } = require('./chunk-split.cjs');
 const { parseGitLogNameOnly } = require('./git-log-parse.cjs');
 const { EVENTS_DIR } = require('../sync/git-sync.cjs');
 const { buildStyleProfile, writeStyleProfile } = require('./style-profile.cjs');
+const { buildIngestProvenance, requireProvenance } = require('./provenance.cjs');
+const { mapLegacyWorkId } = require('./taxonomy.cjs');
 
+/**
+ * AE-030h4 — scoped chunk write via provenance-checked upsertChunkRow (no direct SQL).
+ * Caller must supply real provenance (source/origin/actor) — no fake defaults.
+ * @param {*} db
+ * @param {{
+ *   path: string,
+ *   workId: string|null,
+ *   body: string,
+ *   start?: number,
+ *   end?: number,
+ *   scope?: string,
+ *   source?: string,
+ *   originPathOrEvent?: string,
+ *   actor?: string,
+ *   sourceHash?: string,
+ *   ingestedAt?: string,
+ *   provenance?: object,
+ * }} opts
+ */
 function insertScopedChunk(db, opts) {
   const body = redactSecrets(String(opts.body || '')).redacted;
   const sha = crypto.createHash('sha256').update(body).digest('hex');
-  const chunkId = makeChunkId(opts.path, opts.start || 1, opts.end || 1, body);
-  const stmt = db.prepare(
-    `INSERT OR REPLACE INTO chunks (chunk_id, path, work_id, start_line, end_line, content_sha256, body)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  );
-  stmt.run([chunkId, opts.path, opts.workId, opts.start || 1, opts.end || 1, sha, body]);
-  stmt.free();
+  const start = opts.start || 1;
+  const end = opts.end || 1;
+  const chunkId = makeChunkId(opts.path, start, end, body);
+  const workId = opts.workId == null || opts.workId === '' ? null : String(opts.workId);
+  const scope = opts.scope != null ? String(opts.scope) : mapLegacyWorkId(workId);
+  const provenance = opts.provenance
+    ? requireProvenance({ provenance: opts.provenance })
+    : buildIngestProvenance({
+        source: opts.source,
+        originPathOrEvent: opts.originPathOrEvent || opts.path,
+        actor: opts.actor,
+        sourceHash: opts.sourceHash || sha,
+        ingestedAt: opts.ingestedAt,
+      });
+  upsertChunkRow(db, {
+    chunkId,
+    path: opts.path,
+    workId,
+    scope,
+    body,
+    startLine: start,
+    endLine: end,
+    contentSha256: sha,
+    recordJson: JSON.stringify({
+      id: chunkId,
+      scope,
+      provenance,
+      trust: 'untrusted',
+      redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
+    }),
+  });
   return chunkId;
 }
 
@@ -56,10 +107,14 @@ async function ingestTeamEvents(opts) {
       }
       const label = String(ev.label || ev.kind || f);
       const body = JSON.stringify({ kind: ev.kind, label, ts: ev.ts, scope: ev.scope || 'team' });
+      const eventPath = `.agentic-swe/sync/events/${f}`;
       insertScopedChunk(db, {
-        path: `.agentic-swe/sync/events/${f}`,
+        path: eventPath,
         workId: 'team',
         body: `${label}\n${body}`,
+        source: 'ingest-scopes:team-events',
+        originPathOrEvent: eventPath,
+        actor: 'system:ingest-scopes',
       });
       nodes.push({
         id: `team:${ev.id || f}`,
@@ -97,6 +152,9 @@ async function ingestPersonalProfile(opts) {
       path: 'personal/style-profile.md',
       workId: 'personal',
       body: body || 'personal style profile',
+      source: 'ingest-scopes:personal-profile',
+      originPathOrEvent: 'personal/style-profile.md',
+      actor: 'system:ingest-scopes',
     });
     upsertTypedNodes(db, [
       {
@@ -161,10 +219,14 @@ async function ingestGitTeamHistory(opts) {
       const files = (c.files || []).filter((f) => f && !f.includes('\0')).slice(0, 24);
       const raw = `commit ${c.hash}\nauthor ${c.author}\n${c.subject}\n${files.join('\n')}`;
       const body = redactSecrets(raw).redacted.slice(0, 4000);
+      const gitPath = `.agentic-swe/sync/git/${c.hash.slice(0, 12)}.md`;
       insertScopedChunk(db, {
-        path: `.agentic-swe/sync/git/${c.hash.slice(0, 12)}.md`,
+        path: gitPath,
         workId: 'team',
         body,
+        source: 'ingest-scopes:git-history',
+        originPathOrEvent: `git:${c.hash}`,
+        actor: 'system:ingest-scopes',
       });
       nodes.push({
         id: `git:${c.hash}`,
@@ -221,10 +283,14 @@ async function ingestMuscleReplayWorklogs(opts) {
         }
       }
       const body = redactSecrets(parts.join('\n\n')).redacted.slice(0, 12000);
+      const musclePath = `.worklogs/${name}/muscle-replay.md`;
       insertScopedChunk(db, {
-        path: `.worklogs/${name}/muscle-replay.md`,
+        path: musclePath,
         workId: name,
         body,
+        source: 'ingest-scopes:muscle-replay',
+        originPathOrEvent: musclePath,
+        actor: 'system:ingest-scopes',
       });
       chunks++;
       nodes.push({
@@ -282,10 +348,14 @@ async function ingestOrganicWorklogs(opts) {
         parts.push(`## ${md}\n${fs.readFileSync(p, 'utf8').slice(0, 4000)}`);
       }
       const body = parts.join('\n\n').slice(0, 12000);
+      const organicPath = `.worklogs/${name}/organic-distill.md`;
       insertScopedChunk(db, {
-        path: `.worklogs/${name}/organic-distill.md`,
+        path: organicPath,
         workId: name,
         body,
+        source: 'ingest-scopes:organic-worklogs',
+        originPathOrEvent: organicPath,
+        actor: 'system:ingest-scopes',
       });
       chunks++;
       nodes.push({
