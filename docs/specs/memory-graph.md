@@ -115,6 +115,13 @@ Runtime writers still stamp `work_id` and the three CLI scopes above. The Accept
 - **Isolation:** an `execution` (session) write is not returned by an `organizational` (team) read on the same fixture DB.
 - **Fields:** write threads AE-030a record fields (`tenant_id`, `provenance`, `trust`, `retention_class`, `redaction`, optional `visibility` / `expires_at`) into `record_json`; TTL/tombstones and the untrusted MCP envelope are AE-030d / AE-030c.
 
+## S8c — Execution learning from journal (AE-031a)
+
+- **Schema:** [`schemas/learning-record.schema.json`](../../schemas/learning-record.schema.json) — kinds `tool.completed` | `transition` | `usage.recorded`; every record requires `source_seq`, `event_hash`, and `evidence_refs[]` (ADR-011).
+- **Store:** append-only **`.agentic-swe/learning_records.jsonl`** via [`learning-store.cjs`](../../scripts/lib/memory/learning-store.cjs) — **not** the SQLite memory DB (independent of AE-030e graph-store cutover).
+- **Subscriber:** [`learning-from-journal.cjs`](../../scripts/lib/memory/learning-from-journal.cjs) maps a verified work journal into a learning bundle; default `trust: untrusted`. Missing evidence fails `promoteLearningTrust` (`MISSING_EVIDENCE_REF`). Verified-only promotion, redact, and dedupe are AE-031b.
+- **Network:** ingest is local filesystem + hash verify only; no non-loopback network.
+
 ## Session lifecycle
 
 Session start and session stop run the same maintenance cycle. Users do not run npm commands after each task.

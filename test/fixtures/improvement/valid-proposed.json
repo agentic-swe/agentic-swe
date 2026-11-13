@@ -1,0 +1,9 @@
+{
+  "proposal_id": "imp-001",
+  "summary": "Tighten compare gate before skill promote",
+  "baseline_ref": "bench/results/baseline-scorecard.json",
+  "actor": "agent:self-improvement",
+  "scope": "platform",
+  "target_paths": ["scripts/lib/descent/promotion.cjs"],
+  "evidence_refs": ["journal:seq:12"]
+}
