@@ -5,7 +5,7 @@ const { redactSecrets } = require('./session-capture.cjs');
 
 /**
  * Embed chunks that are missing or stale for the active embedding model.
- * @param {*} db sql.js
+ * @param {*} db node:sqlite wrapped database
  * @param {object} merged
  * @returns {Promise<{ embedded: number, skipped?: boolean, error?: string }>}
  */

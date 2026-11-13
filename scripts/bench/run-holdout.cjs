@@ -23,12 +23,14 @@ function parseArgs(argv) {
     manifest: 'bench/manifests/public-holdout.json',
     out: null,
     e8Cited: true,
+    packRoot: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--provider') out.provider = argv[++i];
     else if (a === '--manifest') out.manifest = argv[++i];
     else if (a === '--out') out.out = argv[++i];
+    else if (a === '--pack-root') out.packRoot = argv[++i];
     else if (a === '--no-e8-cited') out.e8Cited = false;
     else if (a === '--help' || a === '-h') out.help = true;
   }
@@ -127,8 +129,9 @@ async function runAgentHosted(ctx) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
-    console.log(`Usage: node scripts/bench/run-holdout.cjs [--provider fixture|ollama|llama.cpp] [--manifest path] [--out bench/results/holdout-….json]
-Default provider=fixture. Local providers are labeled observed and never sole E8 proof (PD-41).`);
+    console.log(`Usage: node scripts/bench/run-holdout.cjs [--provider fixture|ollama|llama.cpp] [--manifest path] [--out bench/results/holdout-….json] [--pack-root path]
+Default provider=fixture. Local providers are labeled observed and never sole E8 proof (PD-41).
+Honesty pack_commit is git rev-parse HEAD of --pack-root (default: repo root); E8-cited cold runs refuse a dirty tree.`);
     process.exit(0);
   }
 
@@ -143,6 +146,7 @@ Default provider=fixture. Local providers are labeled observed and never sole E8
 
   const result = await runHoldoutSuite({
     repoRoot,
+    packRoot: args.packRoot || repoRoot,
     manifest: args.manifest,
     provider,
     out: args.out,

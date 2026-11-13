@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const { chunkMarkdown, makeChunkId, workIdFromPath } = require('./chunk-split.cjs');
 const { redactSecrets } = require('./session-capture.cjs');
 const { isPathIncluded } = require('./glob-match.cjs');
-const { upsertChunkRow, ensureRecordColumns } = require('./graph-store.cjs');
+const { writeIngestChunkToDb } = require('./memory-service.cjs');
 const { buildIngestProvenance } = require('./provenance.cjs');
 const { mapLegacyWorkId } = require('./taxonomy.cjs');
 
@@ -73,7 +73,6 @@ function ingestChunksIntoDb(merged, projectRoot, db) {
 
   const all = [];
   walkAllFiles(projectRoot, projectRoot, all);
-  ensureRecordColumns(db);
 
   let n = 0;
   for (const rel of all) {
@@ -111,7 +110,7 @@ function ingestChunksIntoDb(merged, projectRoot, db) {
         sourceHash: sha,
         ingestedAt,
       });
-      upsertChunkRow(db, {
+      writeIngestChunkToDb(db, {
         chunkId: cid,
         path: rel,
         workId,

@@ -36,7 +36,7 @@ This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAU
 - **Tables:** `nodes` (`project`, `manifest`, `file`, `npm`) and `edges` (`has_manifest`, `depends_on`, `has_file`, `imports`).
 - **Manifests:** every `package.json` under the tree (skipping `node_modules`, `dist`, `.git`, `coverage`, `.agentic-swe`) feeds `depends_on` edges from declared dependency sections.
 - **Imports:** line-scanned `import` / `export … from` / `require()` in `.{js,cjs,mjs,ts,tsx}`; relative specifiers resolve to existing files; bare specifiers map to `npm:<package>` (first segment, scoped packages preserved).
-- **Implementation:** [`scripts/lib/memory/graph-ingest.cjs`](../../scripts/lib/memory/graph-ingest.cjs), [`scripts/lib/memory/import-extract.cjs`](../../scripts/lib/memory/import-extract.cjs), [`scripts/lib/memory/graph-store.cjs`](../../scripts/lib/memory/graph-store.cjs) (SQLite via [`sql.js`](https://github.com/sql-js/sql.js)); stats helpers in [`scripts/lib/memory/graph-query.cjs`](../../scripts/lib/memory/graph-query.cjs).
+- **Implementation:** [`scripts/lib/memory/graph-ingest.cjs`](../../scripts/lib/memory/graph-ingest.cjs), [`scripts/lib/memory/import-extract.cjs`](../../scripts/lib/memory/import-extract.cjs), [`scripts/lib/memory/graph-store.cjs`](../../scripts/lib/memory/graph-store.cjs) (SQLite via Node built-in `node:sqlite`); stats helpers in [`scripts/lib/memory/graph-query.cjs`](../../scripts/lib/memory/graph-query.cjs).
 - **Full index:** [`scripts/lib/memory/memory-pipeline.cjs`](../../scripts/lib/memory/memory-pipeline.cjs) `runMemoryIndex` — graph + chunks (unless `--graph-only` / `--chunks-only` on the CLI).
 
 ## S2 — Chunked text index
@@ -45,7 +45,7 @@ This spec complements [`docs/roadmap.md`](../roadmap.md) Phase 2 and root [`CLAU
 - **Table:** `chunks` (`chunk_id`, `path`, `work_id`, `start_line`, `end_line`, `content_sha256`, `body`). `work_id` is set for paths under `.worklogs/<id>/`.
 - **Chunking:** markdown split on heading lines; oversized sections split by size (`ingest.max_chunk_chars`, default 8000). Extensions from `ingest.chunk_extensions` (default `.md` only).
 - **Glob filtering:** `ingest.include_globs` / `exclude_globs` (see [`glob-match.cjs`](../../scripts/lib/memory/glob-match.cjs) + [`minimatch`](https://github.com/isaacs/minimatch)).
-- **Search:** the [`sql.js`](https://github.com/sql-js/sql.js) build does **not** load SQLite’s FTS5 extension, so retrieval uses **LIKE** over `chunks.body` (all query tokens must match, case-insensitive). Good enough for modest corpora; a native SQLite binding could add FTS5 later.
+- **Search:** retrieval uses **LIKE** over `chunks.body` (all query tokens must match, case-insensitive). Good enough for modest corpora; FTS5 can be added later on the same `node:sqlite` store.
 
 ## S3 — Memory prime
 
@@ -105,12 +105,12 @@ Runtime writers still stamp `work_id` and the three CLI scopes above. The Accept
 
 **Schema defaults (not enforced on write yet):** `tenant_id` → `personal`; `trust` → `untrusted`; `visibility` → `private`. Provenance requires `origin`, `actor`, `source_hash`, `ingested_at` (`source_uri` optional). Redaction metadata `{ applied, ruleset, hits }` is required on the stored record shape.
 
-**Residual (closed by AE-030b):** git-history ingest still stamps `work_id=team` on disk. [`memory-service.cjs`](../../scripts/lib/memory/memory-service.cjs) `resolveScopeAtSeam` remaps rows whose `path` starts with `.agentic-swe/sync/git/` to `repository` at the read seam (no in-place rewrite of historical chunk bytes; sql.js whole-file persist is unchanged). Sync-event rows under `.agentic-swe/sync/events/` stay `organizational`.
+**Residual (closed by AE-030b):** git-history ingest still stamps `work_id=team` on disk. [`memory-service.cjs`](../../scripts/lib/memory/memory-service.cjs) `resolveScopeAtSeam` remaps rows whose `path` starts with `.agentic-swe/sync/git/` to `repository` at the read seam (no in-place rewrite of historical chunk bytes; `node:sqlite` WAL persist is unchanged). Sync-event rows under `.agentic-swe/sync/events/` stay `organizational`.
 
 ## S8b — MemoryService seam + scope router (AE-030b)
 
 - **API:** [`scripts/lib/memory/memory-service.cjs`](../../scripts/lib/memory/memory-service.cjs) `createMemoryService({ pluginRoot, projectRoot }).write/read`.
-- **Adapter:** store-agnostic; only concrete adapter is [`adapters/sqljs-memory-store.cjs`](../../scripts/lib/memory/adapters/sqljs-memory-store.cjs) wrapping `graph-store.cjs`. No new sql.js call sites outside that adapter. Native `node:sqlite` is AE-030e.
+- **Adapter:** store-agnostic; concrete adapter is [`adapters/node-sqlite-memory-store.cjs`](../../scripts/lib/memory/adapters/node-sqlite-memory-store.cjs) wrapping `graph-store.cjs` (`node:sqlite`, AE-030e).
 - **Routing:** six AE-030a scopes via `taxonomy.cjs`. `skill` (personal) uses `personalRoot()` only (`~/.agentic-swe/memory.sqlite` or `AGENTIC_SWE_PERSONAL_ROOT`). Other scopes use the project sqlite. Unknown scope fails closed (`UNKNOWN_MEMORY_SCOPE`, path `scope`) — never defaults broader.
 - **Isolation:** an `execution` (session) write is not returned by an `organizational` (team) read on the same fixture DB.
 - **Fields:** write threads AE-030a record fields (`tenant_id`, `provenance`, `trust`, `retention_class`, `redaction`, optional `visibility` / `expires_at`) into `record_json`; TTL/tombstones and the untrusted MCP envelope are AE-030d / AE-030c.

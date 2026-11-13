@@ -5,7 +5,10 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { redactSecrets, distillSessionChunk, upsertTypedNodes } = require('./session-capture.cjs');
 const { makeChunkId } = require('./chunk-split.cjs');
-const { upsertChunkRow, ensureRecordColumns } = require('./graph-store.cjs');
+const {
+  createMemoryService,
+  writeIngestChunkToDb,
+} = require('./memory-service.cjs');
 const { buildIngestProvenance } = require('./provenance.cjs');
 const { mapLegacyWorkId } = require('./taxonomy.cjs');
 
@@ -139,7 +142,6 @@ function findJsonlFiles(dir) {
  * }} row
  */
 function insertSessionChunk(db, row) {
-  ensureRecordColumns(db);
   const body = redactSecrets(String(row.body || '')).redacted;
   const sha = crypto.createHash('sha256').update(body).digest('hex');
   const relPath = `.agentic-swe/sessions/${row.sessionId}.md`;
@@ -156,7 +158,7 @@ function insertSessionChunk(db, row) {
     sourceHash: sha,
     ingestedAt: row.ingestedAt || new Date().toISOString(),
   });
-  upsertChunkRow(db, {
+  writeIngestChunkToDb(db, {
     chunkId,
     path: relPath,
     workId,
@@ -181,87 +183,84 @@ function insertSessionChunk(db, row) {
  * @param {{ projectRoot: string, pluginRoot: string, transcriptPaths: string[], maxFiles?: number }} opts
  */
 async function ingestTranscripts(opts) {
-  const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('./graph-store.cjs');
-  const { loadMergedMemoryConfig, sqlitePathForProject } = require('./config.cjs');
-
   const projectRoot = path.resolve(opts.projectRoot);
   const pluginRoot = path.resolve(opts.pluginRoot);
-  const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = sqlitePathForProject(merged, projectRoot);
 
   const files = (opts.transcriptPaths || []).slice(0, opts.maxFiles || 50);
   let nodes = 0;
   let chunks = 0;
   let redactionHits = 0;
   let blocked = 0;
+  let sqlitePath = null;
 
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  const svc = createMemoryService({ pluginRoot, projectRoot });
   const ingestedAt = new Date().toISOString();
   try {
-    ensureChunksSchema(db);
-    ensureRecordColumns(db);
-    for (const file of files) {
-      const { sessionId, turns } = parseTranscriptFile(file);
-      for (let i = 0; i < turns.length; i++) {
-        const t = turns[i];
-        const { redacted, hits } = redactSecrets(t.text);
-        redactionHits += hits;
-        if (hits > 0 && redacted.trim().length < 40) {
-          blocked++;
-          continue;
+    await svc.withProjectDb(async (db, ctx) => {
+      sqlitePath = ctx.sqlitePath;
+      for (const file of files) {
+        const { sessionId, turns } = parseTranscriptFile(file);
+        for (let i = 0; i < turns.length; i++) {
+          const t = turns[i];
+          const { redacted, hits } = redactSecrets(t.text);
+          redactionHits += hits;
+          if (hits > 0 && redacted.trim().length < 40) {
+            blocked++;
+            continue;
+          }
+          insertSessionChunk(db, {
+            sessionId,
+            turnIdx: i + 1,
+            role: t.role,
+            body: redacted.slice(0, 8000),
+            sourcePath: file,
+            ingestedAt,
+          });
+          chunks++;
+          const distilled = distillSessionChunk({
+            text: redacted,
+            workId: `session:${sessionId}`,
+            source: file,
+          });
+          if (!distilled.blocked && distilled.nodes.length) {
+            const distilledWithProv = distilled.nodes.map((n) => ({
+              ...n,
+              provenance: buildIngestProvenance({
+                source: 'session-ingest',
+                originPathOrEvent: `${file}#turn:${i + 1}#${n.id}`,
+                actor: 'system:session-ingest',
+                sourceHash: crypto
+                  .createHash('sha256')
+                  .update(String(n.body || n.id))
+                  .digest('hex'),
+                ingestedAt,
+              }),
+            }));
+            upsertTypedNodes(db, distilledWithProv);
+            nodes += distilled.nodes.length;
+          }
         }
-        insertSessionChunk(db, {
-          sessionId,
-          turnIdx: i + 1,
-          role: t.role,
-          body: redacted.slice(0, 8000),
-          sourcePath: file,
-          ingestedAt,
-        });
-        chunks++;
-        const distilled = distillSessionChunk({
-          text: redacted,
-          workId: `session:${sessionId}`,
-          source: file,
-        });
-        if (!distilled.blocked && distilled.nodes.length) {
-          const distilledWithProv = distilled.nodes.map((n) => ({
-            ...n,
-            provenance: buildIngestProvenance({
-              source: 'session-ingest',
-              originPathOrEvent: `${file}#turn:${i + 1}#${n.id}`,
-              actor: 'system:session-ingest',
-              sourceHash: crypto
-                .createHash('sha256')
-                .update(String(n.body || n.id))
-                .digest('hex'),
-              ingestedAt,
-            }),
-          }));
-          upsertTypedNodes(db, distilledWithProv);
-          nodes += distilled.nodes.length;
-        }
+        const sessionBody = `Ingested ${turns.length} turns from ${file}`;
+        const sessionNode = {
+          id: `session:${sessionId}`,
+          kind: 'session',
+          label: path.basename(file),
+          body: sessionBody,
+          provenance: buildIngestProvenance({
+            source: 'session-ingest',
+            originPathOrEvent: file,
+            actor: 'system:session-ingest',
+            sourceHash: crypto.createHash('sha256').update(sessionBody).digest('hex'),
+            ingestedAt,
+          }),
+        };
+        upsertTypedNodes(db, [sessionNode]);
+        nodes++;
       }
-      const sessionBody = `Ingested ${turns.length} turns from ${file}`;
-      const sessionNode = {
-        id: `session:${sessionId}`,
-        kind: 'session',
-        label: path.basename(file),
-        body: sessionBody,
-        provenance: buildIngestProvenance({
-          source: 'session-ingest',
-          originPathOrEvent: file,
-          actor: 'system:session-ingest',
-          sourceHash: crypto.createHash('sha256').update(sessionBody).digest('hex'),
-          ingestedAt,
-        }),
-      };
-      upsertTypedNodes(db, [sessionNode]);
-      nodes++;
-    }
-    persistDatabase(db, sqlitePath);
+      await ctx.store.persist();
+    });
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
 
   return { ok: true, sqlitePath, files: files.length, chunks, nodes, redactionHits, blocked };

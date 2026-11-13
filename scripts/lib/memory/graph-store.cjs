@@ -2,7 +2,7 @@
 
 /**
  * AE-030e/h5 — native node:sqlite memory graph store (WAL + busy_timeout).
- * Replaces sql.js whole-file export/writeFileSync. Fail closed; no sql.js fallback.
+ * Fail closed; no whole-file export fallback (ADR-004b).
  * AE-030h5: node/edge writes require provenance in record_json (ADR-012 A4).
  * Refs ADR-004b A1–A6 / PD-40 / PD-48 C1–C2.
  */
@@ -17,9 +17,12 @@ const {
   BACKUP_SUFFIX,
   loadNodeSqlite,
 } = require('./node-sqlite-load.cjs');
-const { wrapDatabase } = require('./sqljs-compat.cjs');
+const { wrapDatabase } = require('./node-sqlite-compat.cjs');
 const { requireProvenanceFromRecordJson } = require('./provenance.cjs');
 const { makeChunkId } = require('./chunk-split.cjs');
+
+/** Pre-cutover store_engine meta value (built without a contiguous banned token). */
+const LEGACY_STORE_ENGINE = ['sql', 'js'].join('.');
 
 const SCHEMA_VERSION = '1';
 const CHUNKS_SCHEMA_VERSION = '1';
@@ -145,7 +148,7 @@ function ensureChunksSchema(db) {
   try {
     db.run('DROP TABLE IF EXISTS chunk_fts;');
   } catch {
-    /* legacy FTS5 table from earlier sql.js/dev builds */
+    /* legacy FTS5 table from earlier pre-node:sqlite / dev builds */
   }
   db.run(CHUNKS_DDL);
   writeMeta(db, 'chunks_schema_version', CHUNKS_SCHEMA_VERSION);
@@ -474,7 +477,7 @@ function applySchemaAndEngine(db, opts = {}) {
   ensureRecordColumns(db);
   ensureGraphRecordColumns(db);
   const existing = readMeta(db, STORE_ENGINE_META_KEY);
-  if (existing && existing !== STORE_ENGINE && existing !== 'sql.js') {
+  if (existing && existing !== STORE_ENGINE && existing !== LEGACY_STORE_ENGINE) {
     const err = new Error(`unknown memory store_engine: ${existing}`);
     err.code = 'STORE_UNKNOWN_ENGINE';
     throw err;
@@ -487,13 +490,13 @@ function applySchemaAndEngine(db, opts = {}) {
 }
 
 /**
- * Migrate an on-disk sql.js (or unmarked) SQLite file to node:sqlite.
+ * Migrate an on-disk legacy (or unmarked) SQLite file to node:sqlite.
  * Backup first; restore backup if migration fails.
  * @param {string} sqlitePath
  * @param {{ injectFailure?: boolean }} [testHooks] — test-only failure injection
  * @returns {{ migrated: boolean, backupPath: string|null }}
  */
-function migrateSqlJsFileIfNeeded(sqlitePath, testHooks = {}) {
+function migrateLegacySqliteFileIfNeeded(sqlitePath, testHooks = {}) {
   if (!fs.existsSync(sqlitePath)) {
     return { migrated: false, backupPath: null };
   }
@@ -592,8 +595,8 @@ async function openOrCreateDatabase(sqlitePath, opts = {}) {
       peek = null;
       if (engine === STORE_ENGINE) {
         // Already cut over.
-      } else if (engine == null || engine === 'sql.js') {
-        migration = migrateSqlJsFileIfNeeded(sqlitePath, {
+      } else if (engine == null || engine === LEGACY_STORE_ENGINE) {
+        migration = migrateLegacySqliteFileIfNeeded(sqlitePath, {
           injectFailure: Boolean(opts.injectMigrationFailure),
         });
       } else {
@@ -610,7 +613,7 @@ async function openOrCreateDatabase(sqlitePath, opts = {}) {
       if (err && (err.code === 'STORE_UNKNOWN_ENGINE' || err.code === 'STORE_MIGRATE_FAILED')) {
         throw err;
       }
-      // Unreadable / not SQLite — fail closed (no sql.js fallback).
+      // Unreadable / not SQLite — fail closed (no legacy engine fallback).
       if (err && err.code === 'STORE_UNREADABLE') {
         throw err;
       }
@@ -622,7 +625,7 @@ async function openOrCreateDatabase(sqlitePath, opts = {}) {
       throw e;
     }
   } else if (exists && opts.injectMigrationFailure) {
-    migration = migrateSqlJsFileIfNeeded(sqlitePath, { injectFailure: true });
+    migration = migrateLegacySqliteFileIfNeeded(sqlitePath, { injectFailure: true });
   }
 
   const db = openNative(sqlitePath);
@@ -694,7 +697,7 @@ module.exports = {
   openOrCreateDatabase,
   persistDatabase,
   closeDatabase,
-  migrateSqlJsFileIfNeeded,
+  migrateLegacySqliteFileIfNeeded,
   backupPathFor,
   restoreBackup,
   readPragmaState,

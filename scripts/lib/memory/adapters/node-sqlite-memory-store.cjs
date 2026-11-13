@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * AE-030e/h1 — node:sqlite MemoryStore adapter (replaces sql.js adapter from AE-030b).
+ * AE-030e/h1 — node:sqlite MemoryStore adapter (AE-030b seam, AE-030e cutover).
  * All MemoryService open/persist goes through here → graph-store (native).
  * AE-030h1: upsertChunk fails closed without provenance (ADR-012 A4).
- * Refs ADR-004b A1–A6, ADR-012, ADR-016; PD-48 C2 (no sql.js fallback).
+ * Refs ADR-004b A1–A6, ADR-012, ADR-016; PD-48 C2 (fail closed, no legacy fallback).
  */
 
 const path = require('node:path');
@@ -36,6 +36,7 @@ function createNodeSqliteMemoryStore(opts = {}) {
   async function ensureOpen() {
     if (state.open && state.db) return state.db;
     const { db } = await openOrCreateDatabase(sqlitePath);
+    ensureChunksSchema(db);
     ensureRecordColumns(db);
     // Tombstones table (AE-030d) lives on the adapter side of the seam.
     db.run(`
@@ -72,6 +73,16 @@ CREATE INDEX IF NOT EXISTS idx_tombstones_path ON memory_tombstones(path);
     async persist() {
       const db = await ensureOpen();
       persistDatabase(db, sqlitePath);
+    },
+
+    /**
+     * Run against the open native db handle. MemoryService owns who may call this;
+     * ingest/prime must enter via MemoryService.withProjectDb (NB7 / ADR-016).
+     * @param {(db: *) => (any|Promise<any>)} fn
+     */
+    async withDb(fn) {
+      const db = await ensureOpen();
+      return fn(db);
     },
 
     /**
