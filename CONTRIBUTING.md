@@ -18,6 +18,10 @@ Full skill contribution guide: [`docs/skill-contribution.md`](docs/skill-contrib
 
 This project uses **DCO 1.1** (no CLA). By contributing you certify the statements in [`DCO.md`](DCO.md) (also at https://developercertificate.org/).
 
+Sign-off is a **contributor attestation**, not a cryptographic signature: CI
+checks that `Signed-off-by:` is present and that its email matches the commit
+author. It does not verify keys or prove identity beyond that match.
+
 Sign off each commit so the trailer matches the commit author email:
 
 ```bash
@@ -26,7 +30,7 @@ git commit -s -m "feat(skills): add my-skill"
 # Signed-off-by: Your Name <you@example.com>
 ```
 
-CI runs `node scripts/dco-check.cjs` on the PR commit range inside the required **`test (22)`** check. Commits already on `main` are not re-checked. Merge commits are skipped; every other commit (including maintainer/agent commits) must carry a matching `Signed-off-by`.
+CI runs `node scripts/dco-check.cjs --require-commits` on the PR commit range inside the required **`test (22)`** check. Commits already on `main` are not re-checked. Merge commits are skipped; every other commit (including maintainer/agent commits) must carry a matching `Signed-off-by`. An empty PR range (0 commits checked) fails closed. **Merge Queue is not enabled** on this repo, so DCO is not run on `merge_group` events (documented in [`DCO.md`](DCO.md)).
 
 ## Skill contributions (AE-028a / AE-028b)
 

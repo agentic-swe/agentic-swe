@@ -116,6 +116,9 @@ function checkCommitDco(commit) {
 /**
  * Check a list of commits. Fail closed: any non-ok non-skipped failure fails the suite.
  * @param {Array<object>} commits
+ * @param {{ requireNonEmpty?: boolean }} [opts]
+ *   When `requireNonEmpty` is true (CI pull_request), checked===0 fails closed
+ *   so an empty `base..head` range cannot vacuous-PASS. Pushes/local runs omit it.
  * @returns {{
  *   ok: boolean,
  *   checked: number,
@@ -124,7 +127,7 @@ function checkCommitDco(commit) {
  *   results: Array<object>,
  * }}
  */
-function checkCommitsDco(commits) {
+function checkCommitsDco(commits, opts = {}) {
   const list = Array.isArray(commits) ? commits : [];
   const results = [];
   const failures = [];
@@ -140,6 +143,15 @@ function checkCommitsDco(commits) {
     }
     checked += 1;
     if (!r.ok) failures.push(r);
+  }
+
+  if (opts.requireNonEmpty && checked === 0) {
+    failures.push({
+      ok: false,
+      code: 'DCO_EMPTY_RANGE',
+      detail:
+        'pull_request DCO range checked 0 non-merge commits (vacuous PASS refused); expected at least one signed commit in base..head',
+    });
   }
 
   return {

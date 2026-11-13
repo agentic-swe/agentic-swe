@@ -8,16 +8,16 @@ External fork-PR submission, DCO 1.1 sign-off, automated validation, human-gated
 |---|---|
 | Issue / PR templates for skill submission | Available |
 | Local + CI validation (manifest, digest, contract tests) | Available (`npm run verify` / `npm test`) |
-| DCO 1.1 (`Signed-off-by` on each commit) | Required — [`DCO.md`](../DCO.md); CI `dco-check` on PR ranges |
+| DCO 1.1 (`Signed-off-by` on each commit) | Required — attestation (not crypto); [`DCO.md`](../DCO.md); CI `dco-check --require-commits` on PR ranges; merge queue N/A |
 | External contributor → governed skill publish | Available — human approval record required; no silent private→public (§16) |
 
 ## End-to-end path
 
 1. Fork → clone → branch.
 2. Add skill package (`SKILL.md` + `manifest.json` + optional `contract.test.js`).
-3. Commit with `git commit -s` (DCO trailer must match author email).
+3. Commit with `git commit -s` (DCO trailer must match author email — attestation, not a cryptographic signature).
 4. Open PR with [`.github/PULL_REQUEST_TEMPLATE/skill.md`](../.github/PULL_REQUEST_TEMPLATE/skill.md).
-5. CI (`test (22)`): verify (contribution self-check) + tests + **DCO check** on `base_sha..head_sha` (commits already on `main` are not re-checked).
+5. CI (`test (22)`): verify (contribution self-check) + tests + **DCO check** (`--require-commits`) on `base_sha..head_sha` (commits already on `main` are not re-checked; empty ranges fail closed). Merge Queue is not enabled, so there is no `merge_group` DCO pass.
 6. Human review on GitHub; optional worklog receipt.
 7. Maintainer squash-merge under FD-B.
 8. Maintainer runs governed publish with `--actor` + `--approval-ref` (merged PR number) and matching digest.
@@ -124,6 +124,6 @@ Under `test/fixtures/skill-external-contribution/`:
 
 1. Open the PR check **`test (22)`** → job log.
 2. **Contribution validator:** search for `skill-contribution-validate:` (`PASS`/`FAIL` + per-check rows). Also emitted during `npm run verify`.
-3. **DCO:** search for `dco-check:` (`PASS`/`FAIL`, checked/skipped counts, failing SHAs). Only runs on `pull_request` events.
+3. **DCO:** search for `dco-check:` (`PASS`/`FAIL`, checked/skipped counts, failing SHAs, including `DCO_EMPTY_RANGE`). Only runs on `pull_request` events (`--require-commits`); merge queue is not enabled.
 4. Record the decision with a **GitHub review** (Approve / Request changes). An optional worklog receipt may link the PR; it does not replace the review.
 5. Merge still follows FD-B / CODEOWNERS on `main`. Publication after merge is a separate maintainer step with `--approval-ref`.
