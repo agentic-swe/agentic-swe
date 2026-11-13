@@ -552,20 +552,72 @@ function compensatePublishInstall(snap) {
  * Audit-append failure rolls back the just-installed version + index/lock (no partial state).
  */
 /**
- * AE-030d / PD-46 / ADR-012 A6 — skill content sourced only from organizational
- * or private memory must use a governed publish path (approval_ref / governedPublish).
+ * AE-030d/h2 / PD-46 / ADR-012 A6 — publish must declare memorySource.
+ * Omitted or unknown memorySource fails closed (no silent private→public).
+ * Positively declared public-safe content is allowed; org/private still needs
+ * a governed path (approval_ref / governedPublish).
  * @param {object} opts
  */
+const MEMORY_SOURCE_PUBLIC_SAFE = new Set(['public-safe', 'first-party', 'external-public']);
+const MEMORY_SOURCE_SCOPES = new Set([
+  'execution',
+  'repository',
+  'project',
+  'skill',
+  'organizational',
+  'evaluation',
+]);
+const MEMORY_SOURCE_VISIBILITIES = new Set(['private', 'local', 'public']);
+
 function assertMemorySourcePublishAllowed(opts) {
   const src = opts && opts.memorySource;
-  if (!src || typeof src !== 'object') return;
-  const scope = String(src.scope || '').trim();
-  const visibility = String(src.visibility || 'private').trim();
+  if (!src || typeof src !== 'object' || Array.isArray(src)) {
+    const err = new Error(
+      'memorySource is required on publish (omitted source fails closed; declare public-safe or org/private explicitly)'
+    );
+    err.code = 'MEMORY_SOURCE_REQUIRED';
+    err.path = 'memorySource';
+    throw err;
+  }
+
+  const declaration =
+    src.declaration != null ? String(src.declaration).trim().toLowerCase() : '';
+  if (src.publicSafe === true || MEMORY_SOURCE_PUBLIC_SAFE.has(declaration)) {
+    return;
+  }
+
+  const scope = src.scope != null ? String(src.scope).trim() : '';
+  const visibility = src.visibility != null ? String(src.visibility).trim() : '';
+
+  if (!scope && !visibility) {
+    const err = new Error(
+      'unknown memorySource: declare publicSafe/declaration or scope+visibility'
+    );
+    err.code = 'UNKNOWN_MEMORY_SOURCE';
+    err.path = 'memorySource';
+    throw err;
+  }
+  if (scope && !MEMORY_SOURCE_SCOPES.has(scope)) {
+    const err = new Error(`unknown memorySource.scope: ${scope}`);
+    err.code = 'UNKNOWN_MEMORY_SOURCE';
+    err.path = 'memorySource.scope';
+    throw err;
+  }
+  if (visibility && !MEMORY_SOURCE_VISIBILITIES.has(visibility)) {
+    const err = new Error(`unknown memorySource.visibility: ${visibility}`);
+    err.code = 'UNKNOWN_MEMORY_SOURCE';
+    err.path = 'memorySource.visibility';
+    throw err;
+  }
+
   const fromPrivateOrg =
     scope === 'organizational' ||
     visibility === 'private' ||
     visibility === 'local';
-  if (!fromPrivateOrg) return;
+  if (!fromPrivateOrg) {
+    // Known non-private declaration (e.g. visibility public) — allowed.
+    return;
+  }
   const governed =
     opts.governedPublish === true ||
     (opts.approvalRef != null && String(opts.approvalRef).trim() !== '');
@@ -842,6 +894,9 @@ module.exports = {
   installSkill,
   publishSkill,
   assertMemorySourcePublishAllowed,
+  MEMORY_SOURCE_PUBLIC_SAFE,
+  MEMORY_SOURCE_SCOPES,
+  MEMORY_SOURCE_VISIBILITIES,
   deprecateSkill,
   revokeSkill,
   resolveAndVerify,
