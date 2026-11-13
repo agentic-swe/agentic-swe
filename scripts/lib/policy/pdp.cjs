@@ -5,6 +5,7 @@ const { evaluateRoleCall, privilegedActions, readAuthorizations, loadRoles, reso
 const { policyDigest } = require('./digest.cjs');
 const { matchRestrictedOp } = require('./restricted-ops.cjs');
 const { classifyRisk, humanGateRequired } = require('./risk-class.cjs');
+const { evaluateSelfImprovementMergeDeploy } = require('./self-improvement-gate.cjs');
 const { redactDeep } = require('../shared/redact.cjs');
 
 /** Providers treated as local / $0 (PD-14 / PD-15). */
@@ -138,6 +139,7 @@ function summarizeUsage(events) {
  *   pinned_digest?: string|null,
  *   paths?: string[],
  *   transition?: { from?: string, to?: string }|null,
+ *   mode?: string|null,
  * }} input
  * @returns {PolicyDecision}
  */
@@ -299,6 +301,39 @@ function evaluateInner(input) {
         warnings,
       });
     }
+  }
+
+  // Self-improvement merge/deploy/publish: deny unless a disk human authorization
+  // record exists; with a record, follow the §15 require_approval path. Grants are
+  // never taken from caller-supplied `authorized` / flags (M4 audit item 5 / §15).
+  const selfImprovGate = evaluateSelfImprovementMergeDeploy({
+    mode: input.mode,
+    flags: input.flags,
+    actor: input.actor,
+    workDir: input.workDir,
+    toolName,
+    toolInput,
+    op: input.op,
+  });
+  if (selfImprovGate) {
+    const rc = classifyRisk({
+      track: input.track,
+      toolName,
+      paths,
+      riskFlags: input.riskFlags || undefined,
+      restrictedOpId: selfImprovGate.rule_id,
+      privileged: false,
+    });
+    return finish({
+      decision: selfImprovGate.decision,
+      rule_id: selfImprovGate.rule_id,
+      policy_digest: digest,
+      risk_class: rc,
+      reason: selfImprovGate.reason,
+      input_summary,
+      warnings,
+      code: selfImprovGate.code,
+    });
   }
 
   // §15 restricted operations (explicit op/flags; does not steal baseline rule ids).
