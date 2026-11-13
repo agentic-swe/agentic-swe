@@ -91,6 +91,33 @@
         "ruleset": { "type": "string", "minLength": 1, "maxLength": 256 },
         "hits": { "type": "integer", "minimum": 0 }
       }
+    },
+    "fingerprint": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "AE-031b content fingerprint for dedupe."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["live", "quarantined"],
+      "default": "live",
+      "description": "AE-031b: duplicate fingerprints are quarantined; one live remains."
+    },
+    "capture_source": {
+      "type": "string",
+      "maxLength": 256,
+      "description": "AE-031b: unverified sources (e.g. validation-capture) cannot promote to trusted."
+    },
+    "quarantine_reason": { "type": "string", "maxLength": 256 },
+    "duplicate_of": { "type": "string", "maxLength": 2048 },
+    "approved_by": { "type": "string", "maxLength": 512 },
+    "eval_digest": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$"
     }
   }
 }
