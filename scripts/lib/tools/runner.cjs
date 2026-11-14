@@ -9,6 +9,7 @@ const { redactDeep } = require('../shared/redact.cjs');
 const { idempotencyKey, normalizedResult, redactText } = require('./types.cjs');
 const { callerGrantInjection } = require('./grant-guard.cjs');
 const { resolveSandboxProfile } = require('./sandbox-profile.cjs');
+const { resolveRequireApproval } = require('../approval/policy-pause.cjs');
 
 function outputRef(root, value, cap) {
   const text = redactText(value).slice(0, cap || 1024 * 1024);
@@ -145,6 +146,29 @@ class ToolRunner {
         };
       }
     }
+    // AE-039b: require_approval pauses until a matching human approval artifact exists.
+    if (decision.decision === 'require_approval') {
+      const gate = resolveRequireApproval({
+        workDir: this.workDir,
+        toolName: toolId,
+        decision,
+      });
+      if (gate.resumed) {
+        decision = {
+          ...decision,
+          decision: 'allow',
+          reason: gate.reason,
+          code: 'POLICY_APPROVAL_RESUMED',
+        };
+      } else {
+        // Keep require_approval in the journal; execution stays blocked.
+        decision = {
+          ...decision,
+          reason: gate.reason,
+          pending_approval: true,
+        };
+      }
+    }
     const policyEvent = recordPolicyDecision({
       workDir: this.workDir,
       decision,
@@ -158,8 +182,9 @@ class ToolRunner {
     if (decision.decision !== 'allow') {
       const denied = normalizedResult({
         ...base,
-        status: decision.decision === 'require_approval' ? 'denied' : 'denied',
-        pending_approval: decision.decision === 'require_approval',
+        status: 'denied',
+        pending_approval:
+          decision.decision === 'require_approval' || decision.pending_approval === true,
         effects: 'none',
         critical_failure: decision.critical_failure === true,
         policy_rule_id: decision.rule_id || null,
