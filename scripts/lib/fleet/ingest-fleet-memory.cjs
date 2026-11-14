@@ -1,16 +1,15 @@
 'use strict';
 
+/**
+ * Fleet submission → maintainer team memory.
+ * AE-R2: chunk writes go through MemoryService.withProjectDb / writeIngestChunkToDb
+ * (no direct graph-store require outside scripts/lib/memory/).
+ */
+
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const {
-  openOrCreateDatabase,
-  persistDatabase,
-  closeDatabase,
-  ensureChunksSchema,
-  upsertChunkRow,
-} = require('../memory/graph-store.cjs');
-const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
+const { createMemoryService, writeIngestChunkToDb } = require('../memory/memory-service.cjs');
 const { upsertTypedNodes, redactSecrets } = require('../memory/session-capture.cjs');
 const { makeChunkId } = require('../memory/chunk-split.cjs');
 const { buildIngestProvenance } = require('../memory/provenance.cjs');
@@ -62,62 +61,60 @@ async function ingestFleetSubmissionMemory(opts) {
   const submission = opts.submission;
   const archivePath = path.resolve(opts.archivePath);
   const archiveRel = path.relative(pluginRoot, archivePath);
-  const merged = loadMergedMemoryConfig(pluginRoot, pluginRoot);
-  const sqlitePath = sqlitePathForProject(merged, pluginRoot);
   const body = redactSecrets(buildFleetMemoryBody(submission, archiveRel)).redacted;
   const digest = crypto.createHash('sha256').update(body).digest('hex').slice(0, 12);
   const chunkPath = `bench/results/fleet-submissions/${path.basename(archivePath)}#memory`;
 
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  const svc = createMemoryService({ pluginRoot, projectRoot: pluginRoot });
   try {
-    ensureChunksSchema(db);
-    const chunkId = makeChunkId(chunkPath, 1, 1, body);
-    const sha = crypto.createHash('sha256').update(body).digest('hex');
-    const workId = 'team';
-    const scope = mapLegacyWorkId(workId);
-    const provenance = buildIngestProvenance({
-      source: 'fleet-ingest',
-      originPathOrEvent: archiveRel,
-      actor: 'system:fleet-ingest',
-      sourceHash: sha,
-    });
-    upsertChunkRow(db, {
-      chunkId,
-      path: chunkPath,
-      workId,
-      scope,
-      body,
-      startLine: 1,
-      endLine: 1,
-      contentSha256: sha,
-      recordJson: JSON.stringify({
-        id: chunkId,
+    const sqlitePath = await svc.withProjectDb(async (db, ctx) => {
+      const chunkId = makeChunkId(chunkPath, 1, 1, body);
+      const sha = crypto.createHash('sha256').update(body).digest('hex');
+      const workId = 'team';
+      const scope = mapLegacyWorkId(workId);
+      const provenance = buildIngestProvenance({
+        source: 'fleet-ingest',
+        originPathOrEvent: archiveRel,
+        actor: 'system:fleet-ingest',
+        sourceHash: sha,
+      });
+      writeIngestChunkToDb(db, {
+        chunkId,
+        path: chunkPath,
+        workId,
         scope,
-        provenance,
-        trust: 'untrusted',
-        redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
-      }),
-    });
-    upsertTypedNodes(db, [
-      {
-        id: `fleet:${digest}`,
-        kind: 'fleet-submission',
-        label: `fleet ${submission.fleet_evidence_class || 'independent'}: ${path.basename(submission.project_root || 'consumer')}`,
         body,
-        provenance: buildIngestProvenance({
-          source: 'fleet-ingest',
-          originPathOrEvent: archiveRel,
-          actor: 'system:fleet-ingest',
-          sourceHash: sha,
+        startLine: 1,
+        endLine: 1,
+        contentSha256: sha,
+        recordJson: JSON.stringify({
+          id: chunkId,
+          scope,
+          provenance,
+          trust: 'untrusted',
+          redaction: { applied: true, ruleset: 'redact.cjs', hits: 0 },
         }),
-      },
-    ]);
-    persistDatabase(db, sqlitePath);
+      });
+      upsertTypedNodes(db, [
+        {
+          id: `fleet:${digest}`,
+          kind: 'fleet-submission',
+          label: `fleet ${submission.fleet_evidence_class || 'independent'}: ${path.basename(submission.project_root || 'consumer')}`,
+          body,
+          provenance: buildIngestProvenance({
+            source: 'fleet-ingest',
+            originPathOrEvent: archiveRel,
+            actor: 'system:fleet-ingest',
+            sourceHash: sha,
+          }),
+        },
+      ]);
+      return ctx.sqlitePath;
+    });
+    return { ok: true, sqlitePath, chunk_path: chunkPath };
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
-
-  return { ok: true, sqlitePath, chunk_path: chunkPath };
 }
 
 function listArchiveSubmissionPaths(pluginRoot) {

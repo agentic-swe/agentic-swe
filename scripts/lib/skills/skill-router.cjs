@@ -158,25 +158,28 @@ async function computeMemorySkillBoostsAsync(opts) {
     : pluginRoot;
   let haystack = muscleHaystack(storeRoot);
   try {
+    // AE-R2: open project sqlite via MemoryService (no direct graph-store require).
+    const { createMemoryService } = require('../memory/memory-service.cjs');
     const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
-    const { openOrCreateDatabase, closeDatabase } = require('../memory/graph-store.cjs');
     const roots = projectRoot === pluginRoot ? [projectRoot] : [projectRoot, pluginRoot];
     for (const root of roots) {
       const merged = loadMergedMemoryConfig(pluginRoot, root);
       const sqlitePath = sqlitePathForProject(merged, root);
       if (!fs.existsSync(sqlitePath)) continue;
-      const { db } = await openOrCreateDatabase(sqlitePath);
+      const svc = createMemoryService({ pluginRoot, projectRoot: root });
       try {
-        if (root === pluginRoot && root !== projectRoot) {
-          const { queryFleetSubmissionChunksDb } = require('../memory/graph-query.cjs');
-          for (const row of queryFleetSubmissionChunksDb(db, 6)) {
-            if (row.body) haystack = `${haystack}\n${String(row.body)}`;
+        await svc.withProjectDb(async (db) => {
+          if (root === pluginRoot && root !== projectRoot) {
+            const { queryFleetSubmissionChunksDb } = require('../memory/graph-query.cjs');
+            for (const row of queryFleetSubmissionChunksDb(db, 6)) {
+              if (row.body) haystack = `${haystack}\n${String(row.body)}`;
+            }
+          } else {
+            haystack = `${haystack}\n${collectMemoryHaystack(db, opts.query)}`;
           }
-        } else {
-          haystack = `${haystack}\n${collectMemoryHaystack(db, opts.query)}`;
-        }
+        });
       } finally {
-        closeDatabase(db);
+        await svc.close();
       }
     }
   } catch {

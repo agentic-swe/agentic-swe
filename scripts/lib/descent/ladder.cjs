@@ -7,7 +7,7 @@ const { buildFingerprint } = require('./fingerprint.cjs');
 const { replayProcedureWithTelemetry, executeAction } = require('./replay.cjs');
 const { recordTierEvent } = require('./tier-telemetry.cjs');
 const { findProcedureByVerify } = require('./corpus-seed.cjs');
-const { openOrCreateDatabase, closeDatabase } = require('../memory/graph-store.cjs');
+const { createMemoryService } = require('../memory/memory-service.cjs');
 const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
 const { extractSearchTokens, queryChunkHits } = require('../memory/memory-prime.cjs');
 const { buildRepoMap } = require('../repo-map/build.cjs');
@@ -82,29 +82,36 @@ async function tryL2MemoryVerify(opts) {
   const tokens = extractSearchTokens(`${verify} ${(opts.files || []).join(' ')}`);
   if (!tokens.length) return { ok: false };
 
-  let db;
+  // AE-R2: MemoryService.withProjectDb — no direct graph-store require.
+  const svc = createMemoryService({
+    pluginRoot: opts.pluginRoot || projectRoot,
+    projectRoot,
+  });
   try {
-    const opened = await openOrCreateDatabase(sqlitePath);
-    db = opened.db;
-    const hits = queryChunkHits(db, tokens, 3, null);
-    if (hits.length < 2) return { ok: false };
+    return await svc.withProjectDb(async (db) => {
+      const hits = queryChunkHits(db, tokens, 3, null);
+      if (hits.length < 2) return { ok: false };
 
-    const r = executeAction({ type: 'RUN', command: verify, cwd: opts.cwd || projectRoot }, projectRoot);
-    recordTierEvent(opts.telemetryRoot || projectRoot, 'L2', r.ok);
-    if (!r.ok) return { ok: false, tier: 'L2', reason: 'memory-guided verify failed' };
+      const r = executeAction(
+        { type: 'RUN', command: verify, cwd: opts.cwd || projectRoot },
+        projectRoot
+      );
+      recordTierEvent(opts.telemetryRoot || projectRoot, 'L2', r.ok);
+      if (!r.ok) return { ok: false, tier: 'L2', reason: 'memory-guided verify failed' };
 
-    return {
-      ok: true,
-      tier: 'L2',
-      escalate: false,
-      reason: 'memory-guided verify',
-      memory_hits: hits.length,
-      steps: [{ phase: 'verify', action: { type: 'RUN', command: verify }, ...r }],
-    };
+      return {
+        ok: true,
+        tier: 'L2',
+        escalate: false,
+        reason: 'memory-guided verify',
+        memory_hits: hits.length,
+        steps: [{ phase: 'verify', action: { type: 'RUN', command: verify }, ...r }],
+      };
+    });
   } catch {
     return { ok: false };
   } finally {
-    if (db) closeDatabase(db);
+    await svc.close();
   }
 }
 
