@@ -50,7 +50,8 @@ describe('AE-036c memory tenant/org binding', () => {
     fs.mkdirSync(path.join(tmp, '.agentic-swe'), { recursive: true });
     fs.writeFileSync(
       path.join(tmp, '.agentic-swe', 'tenant.json'),
-      JSON.stringify({ tenant_id: 'pilot-acme', share_org_memory: false }),
+      // AE-038a: shared org writes require share_org_memory opt-in.
+      JSON.stringify({ tenant_id: 'pilot-acme', share_org_memory: true }),
       'utf8'
     );
   });
