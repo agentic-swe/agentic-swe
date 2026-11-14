@@ -29,6 +29,19 @@ const { scanInstallPackage } = require('./install-scan.cjs');
 const { requirePublishReview } = require('./skill-publish-review.cjs');
 const { assertPublishCompareGate } = require('./skill-version-compare.cjs');
 const { assertPublishPermissionsGate } = require('./skill-permissions-diff.cjs');
+const {
+  SKILL_VISIBILITY_PUBLIC,
+  SKILL_VISIBILITY_ORGANIZATION,
+  SKILL_VISIBILITY_TEAM,
+  SKILL_VISIBILITY_PRIVATE,
+  SKILL_VISIBILITIES,
+  normalizeSkillVisibility,
+  entryVisibility,
+  resolvePublishVisibility,
+  visibilityIndexFields,
+  viewerMayAccessSkill,
+  isPubliclyListable,
+} = require('./skill-visibility.cjs');
 
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
@@ -208,11 +221,33 @@ function isRevokedInList(list, name, version) {
 }
 
 /**
+ * Build viewer context for visibility checks. Never infers tenant from caller identity.
+ * @param {object} [opts]
+ * @returns {object}
+ */
+function resolveViewerContext(opts = {}) {
+  const viewer = opts.viewer && typeof opts.viewer === 'object' ? { ...opts.viewer } : {};
+  if (opts.tenant_id != null && viewer.tenant_id == null) viewer.tenant_id = opts.tenant_id;
+  if (opts.org_id != null && viewer.org_id == null) viewer.org_id = opts.org_id;
+  if (opts.team_id != null && viewer.team_id == null) viewer.team_id = opts.team_id;
+  if (opts.user_id != null && viewer.user_id == null) viewer.user_id = opts.user_id;
+  if (opts.owner_id != null && viewer.owner_id == null) viewer.owner_id = opts.owner_id;
+  if (opts.catalog != null && viewer.catalog == null) viewer.catalog = opts.catalog;
+  // Default: public catalog unless an explicit tenant_id is provided.
+  if (viewer.catalog == null) {
+    const hasTenant =
+      viewer.tenant_id != null && String(viewer.tenant_id).trim() !== '';
+    viewer.catalog = hasTenant ? 'tenant' : 'public';
+  }
+  return viewer;
+}
+
+/**
  * @param {string} name
  * @param {string} range
  * @param {object} index
- * @param {{ allowRevoked?: boolean, revocation?: object }} [opts]
- * @returns {{ ok: true, manifest: object, version: string, status: string, warning?: object } | { ok: false, code: string }}
+ * @param {{ allowRevoked?: boolean, revocation?: object, viewer?: object, tenant_id?: string, catalog?: string }} [opts]
+ * @returns {{ ok: true, manifest: object, version: string, status: string, visibility?: string, warning?: object } | { ok: false, code: string }}
  */
 function resolve(name, range, index, opts = {}) {
   const n = String(name || '').trim();
@@ -223,6 +258,7 @@ function resolve(name, range, index, opts = {}) {
   }
   const allowRevoked = opts.allowRevoked === true;
   const revocation = opts.revocation || null;
+  const viewer = resolveViewerContext(opts);
 
   const matching = entry.versions
     .filter((v) => v && v.manifest && satisfiesRange(v.manifest.version, range || '*'))
@@ -251,13 +287,28 @@ function resolve(name, range, index, opts = {}) {
     return { ok: false, code: 'NO_SATISFYING_VERSION' };
   }
 
-  const chosen = matching[0];
+  // AE-037a: pick highest semver the viewer may access; fail closed on visibility.
+  let deniedCode = null;
+  let chosen = null;
+  for (const candidate of matching) {
+    const access = viewerMayAccessSkill(candidate, viewer);
+    if (access.ok) {
+      chosen = candidate;
+      break;
+    }
+    deniedCode = access.code || 'VISIBILITY_DENIED';
+  }
+  if (!chosen) {
+    return { ok: false, code: deniedCode || 'VISIBILITY_DENIED' };
+  }
+
   const status = versionStatus(chosen);
   const result = {
     ok: true,
     manifest: structuredClone(chosen.manifest),
     version: chosen.manifest.version,
     status,
+    visibility: entryVisibility(chosen),
   };
   if (status === STATUS_DEPRECATED) {
     result.warning = {
@@ -268,6 +319,60 @@ function resolve(name, range, index, opts = {}) {
     };
   }
   return result;
+}
+
+/**
+ * List registry skills for a viewer. Public catalog never includes non-public skills.
+ * Server-side filter (AE-037a); AE-037b extends search.
+ * @param {object} index
+ * @param {{ viewer?: object, tenant_id?: string, catalog?: string, query?: string }} [opts]
+ * @returns {{ ok: true, skills: Array<object> } | { ok: false, code: string, errors?: string[] }}
+ */
+function listRegistrySkills(index, opts = {}) {
+  if (!index || !isPlainObject(index.skills)) {
+    return { ok: false, code: 'INDEX_INVALID', errors: ['skills index schema invalid'] };
+  }
+  const viewer = resolveViewerContext(opts);
+  const q =
+    opts.query != null && String(opts.query).trim()
+      ? String(opts.query).trim().toLowerCase()
+      : '';
+
+  // Ignore any client attempt to widen visibility (fail closed; AE-037b hardens further).
+  if (opts.includePrivate === true || opts.include_private === true) {
+    // Do not honor; keep server-side public/tenant filter only.
+  }
+
+  const skills = [];
+  for (const [name, skillEntry] of Object.entries(index.skills)) {
+    if (!skillEntry || !Array.isArray(skillEntry.versions)) continue;
+    if (q && !String(name).toLowerCase().includes(q)) continue;
+    // Prefer highest accessible non-revoked version for listing.
+    const versions = [...skillEntry.versions]
+      .filter((v) => v && v.manifest && versionStatus(v) !== STATUS_REVOKED)
+      .sort((a, b) =>
+        String(b.manifest.version).localeCompare(String(a.manifest.version), undefined, {
+          numeric: true,
+        })
+      );
+    let listed = null;
+    for (const v of versions) {
+      if (viewerMayAccessSkill(v, viewer).ok) {
+        listed = v;
+        break;
+      }
+    }
+    if (!listed) continue;
+    skills.push({
+      name,
+      version: listed.manifest.version,
+      visibility: entryVisibility(listed),
+      status: versionStatus(listed),
+      description: listed.manifest.description || '',
+    });
+  }
+  skills.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  return { ok: true, skills };
 }
 
 function detectDepCycle(name, index, stack = []) {
@@ -414,6 +519,39 @@ function installSkill(opts) {
     return { ok: false, code: 'REVOKED', name: manifest.name, version: manifest.version };
   }
 
+  // AE-037a: validate visibility before activation (unknown fails closed).
+  // Non-public requires explicit tenant_id. Idempotent reinstall without an
+  // explicit visibility opts preserves the prior index visibility fields.
+  const visibilityExplicit =
+    (opts && opts.visibility != null) || (opts && opts.skillVisibility != null);
+  let publishVis;
+  if (!visibilityExplicit && existingEntry && existingEntry.visibility != null) {
+    publishVis = {
+      ok: true,
+      visibility: entryVisibility(existingEntry),
+      tenant_id: existingEntry.tenant_id,
+      org_id: existingEntry.org_id,
+      team_id: existingEntry.team_id,
+      owner_id: existingEntry.owner_id,
+    };
+    if (publishVis.visibility === '__invalid__') {
+      return {
+        ok: false,
+        code: 'UNKNOWN_VISIBILITY',
+        errors: ['existing index visibility is unknown; refuse install'],
+      };
+    }
+  } else {
+    publishVis = resolvePublishVisibility(opts || {});
+    if (!publishVis.ok) {
+      return {
+        ok: false,
+        code: publishVis.code || 'UNKNOWN_VISIBILITY',
+        errors: publishVis.errors || ['invalid skill visibility'],
+      };
+    }
+  }
+
   const deps = validateDependencies(manifest, index, { revocation });
   if (!deps.ok) return deps;
 
@@ -458,11 +596,13 @@ function installSkill(opts) {
       (v) => v.manifest.version !== manifest.version
     );
     const priorStatus = existingEntry ? versionStatus(existingEntry) : STATUS_ACTIVE;
+    const visFields = visibilityIndexFields(publishVis);
     versions.push({
       manifest,
       path: path.relative(registryRoot, destDir),
       status: priorStatus === STATUS_REVOKED ? STATUS_REVOKED : priorStatus,
       tag: gitTagRef(manifest.name, manifest.version),
+      ...visFields,
     });
     index.skills[manifest.name].versions = versions;
     writeIndexAtomic(indexPath, index);
@@ -470,7 +610,13 @@ function installSkill(opts) {
     lockPin(lock, manifest.name, { version: manifest.version, digest: manifest.digest });
     writeLockfileAtomic(lockPath, lock);
 
-    return { ok: true, path: destDir, manifest, digest: manifest.digest };
+    return {
+      ok: true,
+      path: destDir,
+      manifest,
+      digest: manifest.digest,
+      visibility: publishVis.visibility,
+    };
   } catch (err) {
     fs.rmSync(staging, { recursive: true, force: true });
     return { ok: false, code: 'INSTALL_FAILED', errors: [err.message] };
@@ -803,6 +949,7 @@ function publishSkill(opts) {
     approvalRef,
     review: postReview.review,
     compare_digest: compareGate.compare_digest,
+    visibility: result.visibility || SKILL_VISIBILITY_PUBLIC,
   };
 }
 
@@ -960,7 +1107,7 @@ function revokeSkill(opts) {
 /**
  * Resolve from registry and verify lock pin.
  */
-function resolveAndVerify(registryRoot, name, range) {
+function resolveAndVerify(registryRoot, name, range, opts = {}) {
   const root = path.resolve(registryRoot);
   let index;
   let revocation;
@@ -970,7 +1117,7 @@ function resolveAndVerify(registryRoot, name, range) {
   } catch (err) {
     return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
   }
-  const r = resolve(name, range, index, { revocation });
+  const r = resolve(name, range, index, { ...opts, revocation });
   if (!r.ok) return r;
   const lockPath = path.join(root, LOCKFILE_NAME);
   if (!fs.existsSync(lockPath)) return { ok: false, code: 'LOCK_NOT_FOUND' };
@@ -990,6 +1137,7 @@ function resolveAndVerify(registryRoot, name, range) {
     version: r.version,
     digest: pin.digest,
     status: r.status,
+    visibility: r.visibility,
     warning: r.warning,
   };
 }
@@ -1001,6 +1149,11 @@ module.exports = {
   STATUS_ACTIVE,
   STATUS_DEPRECATED,
   STATUS_REVOKED,
+  SKILL_VISIBILITY_PUBLIC,
+  SKILL_VISIBILITY_ORGANIZATION,
+  SKILL_VISIBILITY_TEAM,
+  SKILL_VISIBILITY_PRIVATE,
+  SKILL_VISIBILITIES,
   emptyIndex,
   emptyRevocation,
   readIndex,
@@ -1011,6 +1164,7 @@ module.exports = {
   appendRegistryLog,
   readRegistryLog,
   resolve,
+  listRegistrySkills,
   validateDependencies,
   installSkill,
   publishSkill,
@@ -1018,6 +1172,11 @@ module.exports = {
   MEMORY_SOURCE_PUBLIC_SAFE,
   MEMORY_SOURCE_SCOPES,
   MEMORY_SOURCE_VISIBILITIES,
+  normalizeSkillVisibility,
+  entryVisibility,
+  resolvePublishVisibility,
+  viewerMayAccessSkill,
+  isPubliclyListable,
   deprecateSkill,
   revokeSkill,
   resolveAndVerify,
