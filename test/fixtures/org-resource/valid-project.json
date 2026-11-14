@@ -1,0 +1,9 @@
+{
+  "id": "project:autoeng",
+  "type": "project",
+  "tenant_id": "pilot-acme",
+  "display_name": "AutoEng",
+  "owner": { "kind": "team", "id": "team:platform" },
+  "parent_id": "team:platform",
+  "org_id": "org:acme"
+}

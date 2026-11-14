@@ -1,0 +1,9 @@
+{
+  "id": "role:org-admin",
+  "type": "role",
+  "tenant_id": "pilot-acme",
+  "display_name": "Org Admin",
+  "owner": { "kind": "organization", "id": "org:acme" },
+  "parent_id": "org:acme",
+  "org_id": "org:acme"
+}
