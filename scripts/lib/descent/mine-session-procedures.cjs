@@ -2,8 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { openOrCreateDatabase, closeDatabase } = require('../memory/graph-store.cjs');
-const { loadMergedMemoryConfig, sqlitePathForProject } = require('../memory/config.cjs');
+const { createMemoryService } = require('../memory/memory-service.cjs');
 const { buildFingerprint } = require('./fingerprint.cjs');
 const { promoteOrDemote } = require('./promotion.cjs');
 const { evalProcedureVerify, isolatedVerifyRel } = require('./procedure-eval.cjs');
@@ -42,33 +41,36 @@ function extractExistingRepoPaths(body, projectRoot) {
 async function mineSessionProcedures(opts) {
   const projectRoot = opts.projectRoot;
   const pluginRoot = opts.pluginRoot;
-  const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = sqlitePathForProject(merged, projectRoot);
 
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  // AE-R2: MemoryService.withProjectDb — no direct graph-store require.
+  const svc = createMemoryService({ pluginRoot, projectRoot });
   const mined = new Map();
   try {
-    const r = db.exec(
-      "SELECT work_id, body FROM chunks WHERE (body LIKE '%npm %' OR body LIKE '%node %' OR body LIKE '%npx %') LIMIT 8000"
-    );
-    if (!r.length) return { ok: true, mined: 0, procedures: 0 };
-    const rows = r[0].values;
-    for (const [workId, body] of rows) {
-      if (!body || typeof body !== 'string') continue;
-      let m;
-      CMD_RE.lastIndex = 0;
-      while ((m = CMD_RE.exec(body)) !== null) {
-        const cmd = m[1].trim().replace(/\s+/g, ' ');
-        if (cmd.length < 6 || cmd.length > 120) continue;
-        if (/password|secret|token|api[_-]?key/i.test(cmd)) continue;
-        const key = `${workId || 'session'}::${cmd}`;
-        if (!mined.has(key)) {
-          mined.set(key, { workId: workId || 'session', command: cmd, body });
+    const early = await svc.withProjectDb(async (db) => {
+      const r = db.exec(
+        "SELECT work_id, body FROM chunks WHERE (body LIKE '%npm %' OR body LIKE '%node %' OR body LIKE '%npx %') LIMIT 8000"
+      );
+      if (!r.length) return { empty: true };
+      const rows = r[0].values;
+      for (const [workId, body] of rows) {
+        if (!body || typeof body !== 'string') continue;
+        let m;
+        CMD_RE.lastIndex = 0;
+        while ((m = CMD_RE.exec(body)) !== null) {
+          const cmd = m[1].trim().replace(/\s+/g, ' ');
+          if (cmd.length < 6 || cmd.length > 120) continue;
+          if (/password|secret|token|api[_-]?key/i.test(cmd)) continue;
+          const key = `${workId || 'session'}::${cmd}`;
+          if (!mined.has(key)) {
+            mined.set(key, { workId: workId || 'session', command: cmd, body });
+          }
         }
       }
-    }
+      return { empty: false };
+    });
+    if (early.empty) return { ok: true, mined: 0, procedures: 0 };
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
 
   let procedures = 0;
