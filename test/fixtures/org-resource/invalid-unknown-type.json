@@ -1,0 +1,7 @@
+{
+  "id": "x:1",
+  "type": "galaxy",
+  "tenant_id": "pilot-acme",
+  "display_name": "Nope",
+  "owner": { "kind": "user", "id": "user:founder" }
+}

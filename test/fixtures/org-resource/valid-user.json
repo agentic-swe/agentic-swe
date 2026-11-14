@@ -1,0 +1,9 @@
+{
+  "id": "user:alice",
+  "type": "user",
+  "tenant_id": "pilot-acme",
+  "display_name": "Alice",
+  "owner": { "kind": "organization", "id": "org:acme" },
+  "parent_id": "org:acme",
+  "org_id": "org:acme"
+}
