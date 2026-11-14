@@ -12,6 +12,7 @@
     "approval": "core",
     "bench": "service",
     "catalog": "service",
+    "connectors": "service",
     "context": "runtime",
     "context-budget": "service",
     "descent": "service",
