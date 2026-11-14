@@ -36,6 +36,7 @@ const {
   filterRecordsForBinding,
   bindWriteTenant,
 } = require('./memory-binding.cjs');
+const { prepareOrgShareWrite } = require('./org-share.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
 const TRUST_VALUES = new Set(['untrusted', 'reviewed', 'human_approved']);
@@ -283,6 +284,10 @@ function normalizeWriteRecord(input) {
     input.org_id != null && String(input.org_id).trim() !== ''
       ? String(input.org_id).trim()
       : undefined;
+  const teamId =
+    input.team_id != null && String(input.team_id).trim() !== ''
+      ? String(input.team_id).trim()
+      : undefined;
 
   return {
     id,
@@ -304,6 +309,7 @@ function normalizeWriteRecord(input) {
     visibility,
     expires_at: input.expires_at === undefined ? undefined : input.expires_at,
     ...(orgId ? { org_id: orgId } : {}),
+    ...(teamId ? { team_id: teamId } : {}),
   };
 }
 
@@ -372,6 +378,9 @@ function rowToMemoryRecord(row) {
   if (parsed && parsed.org_id != null && String(parsed.org_id).trim() !== '') {
     base.org_id = String(parsed.org_id).trim();
   }
+  if (parsed && parsed.team_id != null && String(parsed.team_id).trim() !== '') {
+    base.team_id = String(parsed.team_id).trim();
+  }
   return base;
 }
 
@@ -406,8 +415,9 @@ function createMemoryService(opts) {
    * @param {{ sessionId?: string, workId?: string, projectId?: string, path?: string }} [writeOpts]
    */
   async function write(input, writeOpts = {}) {
-    // AE-036c: bind pilot tenant on shared org writes; callers cannot widen tenant.
-    const boundInput = bindWriteTenant(projectRoot, input);
+    // AE-038a: org/team share opt-in gate; AE-036c: cannot widen tenant.
+    const sharePrepared = prepareOrgShareWrite(projectRoot, input);
+    const boundInput = bindWriteTenant(projectRoot, sharePrepared);
     const record = normalizeWriteRecord(boundInput);
     const sqlitePath = sqlitePathForMemoryScope(record.scope, {
       pluginRoot,
@@ -459,6 +469,7 @@ function createMemoryService(opts) {
       visibility: record.visibility,
       ...(record.expires_at !== undefined ? { expires_at: record.expires_at } : {}),
       ...(record.org_id ? { org_id: record.org_id } : {}),
+      ...(record.team_id ? { team_id: record.team_id } : {}),
     });
 
     const result = await store.upsertChunk({

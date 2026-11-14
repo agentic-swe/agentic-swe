@@ -46,6 +46,8 @@ const {
 const INDEX_NAME = 'skills-index.json';
 const REVOCATION_NAME = 'skills-revocation.json';
 const REGISTRY_LOG_NAME = 'skills-registry.jsonl';
+/** AE-037c: shared org/team/private install ledger (revocation propagates here). */
+const SHARED_INSTALLS_NAME = 'skills-shared-installs.json';
 
 const STATUS_ACTIVE = 'active';
 const STATUS_DEPRECATED = 'deprecated';
@@ -74,6 +76,36 @@ function emptyIndex() {
 
 function emptyRevocation() {
   return { version: 1, entries: [] };
+}
+
+function emptySharedInstalls() {
+  return { version: 1, installs: [] };
+}
+
+function readSharedInstalls(sharedPath) {
+  if (!fs.existsSync(sharedPath)) return emptySharedInstalls();
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(sharedPath, 'utf8'));
+  } catch {
+    const err = new Error('skills shared-installs parse failed');
+    err.code = 'SHARED_INSTALLS_INVALID';
+    throw err;
+  }
+  if (!isPlainObject(parsed) || !Array.isArray(parsed.installs)) {
+    const err = new Error('skills shared-installs schema invalid');
+    err.code = 'SHARED_INSTALLS_INVALID';
+    throw err;
+  }
+  return parsed;
+}
+
+function writeSharedInstallsAtomic(sharedPath, list) {
+  const dir = path.dirname(sharedPath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${sharedPath}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmp, sharedPath);
 }
 
 function isPlainObject(value) {
@@ -174,6 +206,9 @@ function appendRegistryLog(registryRoot, event) {
     reviewer: event.reviewer != null ? String(event.reviewer) : undefined,
     review_verdict: event.review_verdict != null ? String(event.review_verdict) : undefined,
     compare_digest: event.compare_digest != null ? String(event.compare_digest) : undefined,
+    // AE-037c: how many shared installs were marked revoked in this revoke event.
+    shared_installs_revoked:
+      event.shared_installs_revoked != null ? Number(event.shared_installs_revoked) : undefined,
   });
   const logPath = path.join(path.resolve(registryRoot), REGISTRY_LOG_NAME);
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -1133,9 +1168,172 @@ function deprecateSkill(opts) {
 }
 
 /**
+ * AE-037c: register a shared install of an org/team/private skill.
+ * Subsequent revokeSkill propagates to all installs for that name+version.
+ * @param {object} opts
+ * @returns {{ ok: true, install: object } | { ok: false, code: string, errors?: string[] }}
+ */
+function registerSharedInstall(opts) {
+  const registryRoot = path.resolve(opts.registryRoot);
+  const name = String(opts.name || '').trim();
+  const version = String(opts.version || '').trim();
+  const install_id =
+    opts.install_id != null && String(opts.install_id).trim()
+      ? String(opts.install_id).trim()
+      : opts.installId != null && String(opts.installId).trim()
+        ? String(opts.installId).trim()
+        : '';
+  if (!name || !version || !install_id) {
+    return { ok: false, code: 'SHARED_INSTALL_INVALID', errors: ['name, version, install_id required'] };
+  }
+
+  const indexPath = path.join(registryRoot, INDEX_NAME);
+  const revocationPath = path.join(registryRoot, REVOCATION_NAME);
+  const sharedPath = path.join(registryRoot, SHARED_INSTALLS_NAME);
+
+  let index;
+  let revocation;
+  let shared;
+  try {
+    index = readIndex(indexPath);
+    revocation = readRevocation(revocationPath);
+    shared = readSharedInstalls(sharedPath);
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
+  }
+
+  const entry = findVersionEntry(index, name, version);
+  if (!entry) return { ok: false, code: 'NOT_FOUND' };
+  if (
+    versionStatus(entry) === STATUS_REVOKED ||
+    isRevokedInList(revocation, name, version)
+  ) {
+    return { ok: false, code: 'REVOKED', name, version };
+  }
+
+  const visibility = entryVisibility(entry);
+  if (
+    visibility !== SKILL_VISIBILITY_ORGANIZATION &&
+    visibility !== SKILL_VISIBILITY_TEAM &&
+    visibility !== SKILL_VISIBILITY_PRIVATE
+  ) {
+    return {
+      ok: false,
+      code: 'NOT_SHAREABLE',
+      errors: ['only organization/team/private skills may register shared installs'],
+    };
+  }
+
+  const tenant_id =
+    opts.tenant_id != null && String(opts.tenant_id).trim()
+      ? String(opts.tenant_id).trim()
+      : entry.tenant_id != null && String(entry.tenant_id).trim()
+        ? String(entry.tenant_id).trim()
+        : '';
+  if (!tenant_id) {
+    return {
+      ok: false,
+      code: 'TENANT_REQUIRED',
+      errors: ['shared install requires explicit tenant_id'],
+    };
+  }
+
+  const existing = (shared.installs || []).find(
+    (i) =>
+      i &&
+      String(i.install_id || '').trim() === install_id &&
+      String(i.name || '').trim() === name &&
+      String(i.version || '').trim() === version
+  );
+  if (existing) {
+    if (String(existing.status || STATUS_ACTIVE) === STATUS_REVOKED) {
+      return { ok: false, code: 'REVOKED', name, version, install_id };
+    }
+    return { ok: true, install: structuredClone(existing), idempotent: true };
+  }
+
+  const install = {
+    install_id,
+    name,
+    version,
+    visibility,
+    tenant_id,
+    org_id: entry.org_id,
+    team_id: entry.team_id,
+    owner_id: entry.owner_id,
+    status: STATUS_ACTIVE,
+    registered_at: new Date().toISOString(),
+  };
+  shared.installs.push(install);
+  writeSharedInstallsAtomic(sharedPath, shared);
+  return { ok: true, install: structuredClone(install) };
+}
+
+/**
+ * Resolve via a shared install binding. Fail closed if the install or skill is revoked.
+ * @param {object} opts
+ * @returns {{ ok: true, manifest: object, version: string, install: object, visibility: string }
+ *   | { ok: false, code: string }}
+ */
+function resolveSharedInstall(opts) {
+  const registryRoot = path.resolve(opts.registryRoot);
+  const install_id =
+    opts.install_id != null && String(opts.install_id).trim()
+      ? String(opts.install_id).trim()
+      : opts.installId != null && String(opts.installId).trim()
+        ? String(opts.installId).trim()
+        : '';
+  if (!install_id) return { ok: false, code: 'SHARED_INSTALL_INVALID' };
+
+  const indexPath = path.join(registryRoot, INDEX_NAME);
+  const revocationPath = path.join(registryRoot, REVOCATION_NAME);
+  const sharedPath = path.join(registryRoot, SHARED_INSTALLS_NAME);
+
+  let index;
+  let revocation;
+  let shared;
+  try {
+    index = readIndex(indexPath);
+    revocation = readRevocation(revocationPath);
+    shared = readSharedInstalls(sharedPath);
+  } catch (err) {
+    return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
+  }
+
+  const install = (shared.installs || []).find(
+    (i) => i && String(i.install_id || '').trim() === install_id
+  );
+  if (!install) return { ok: false, code: 'NOT_FOUND' };
+  if (String(install.status || STATUS_ACTIVE) === STATUS_REVOKED) {
+    return { ok: false, code: 'REVOKED', name: install.name, version: install.version, install_id };
+  }
+  if (isRevokedInList(revocation, install.name, install.version)) {
+    return { ok: false, code: 'REVOKED', name: install.name, version: install.version, install_id };
+  }
+
+  const r = resolve(install.name, install.version, index, {
+    revocation,
+    tenant_id: install.tenant_id,
+    org_id: install.org_id,
+    team_id: install.team_id,
+    owner_id: install.owner_id,
+  });
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    manifest: r.manifest,
+    version: r.version,
+    visibility: r.visibility,
+    status: r.status,
+    install: structuredClone(install),
+  };
+}
+
+/**
  * Revoke a version: blocks NEW installs; does not delete already-installed files.
+ * AE-037c: propagates revocation to all shared installs of the same name+version.
  * Dependency resolve will not newly select a revoked version.
- * Audit-append failure restores prior index + revocation list (no partial revoke).
+ * Audit-append failure restores prior index + revocation + shared-installs (no partial revoke).
  */
 function revokeSkill(opts) {
   const registryRoot = path.resolve(opts.registryRoot);
@@ -1151,12 +1349,15 @@ function revokeSkill(opts) {
 
   const indexPath = path.join(registryRoot, INDEX_NAME);
   const revocationPath = path.join(registryRoot, REVOCATION_NAME);
+  const sharedPath = path.join(registryRoot, SHARED_INSTALLS_NAME);
 
   let index;
   let revocation;
+  let shared;
   try {
     index = readIndex(indexPath);
     revocation = readRevocation(revocationPath);
+    shared = readSharedInstalls(sharedPath);
   } catch (err) {
     return { ok: false, code: err.code || 'REGISTRY_INVALID', errors: [err.message] };
   }
@@ -1166,10 +1367,13 @@ function revokeSkill(opts) {
 
   const priorIndex = structuredClone(index);
   const priorRevocation = structuredClone(revocation);
+  const priorShared = structuredClone(shared);
   const revocationExisted = fs.existsSync(revocationPath);
+  const sharedExisted = fs.existsSync(sharedPath);
 
+  const revokedAt = new Date().toISOString();
   entry.status = STATUS_REVOKED;
-  entry.revoked_at = new Date().toISOString();
+  entry.revoked_at = revokedAt;
   entry.revoked_by = actor;
   if (opts.reason != null && String(opts.reason).trim()) {
     entry.revoked_reason = String(opts.reason).trim();
@@ -1189,6 +1393,32 @@ function revokeSkill(opts) {
     writeRevocationAtomic(revocationPath, revocation);
   }
 
+  // Propagate to shared installs (AE-037c).
+  let shared_revoked = 0;
+  for (const inst of shared.installs || []) {
+    if (
+      !inst ||
+      String(inst.name || '').trim() !== name ||
+      String(inst.version || '').trim() !== version
+    ) {
+      continue;
+    }
+    if (String(inst.status || STATUS_ACTIVE) === STATUS_REVOKED) continue;
+    inst.status = STATUS_REVOKED;
+    inst.revoked_at = revokedAt;
+    inst.revoked_by = actor;
+    if (entry.revoked_reason) inst.revoked_reason = entry.revoked_reason;
+    shared_revoked += 1;
+  }
+  if (shared_revoked > 0 || (shared.installs || []).some(
+    (i) =>
+      i &&
+      String(i.name || '').trim() === name &&
+      String(i.version || '').trim() === version
+  )) {
+    writeSharedInstallsAtomic(sharedPath, shared);
+  }
+
   try {
     appendRegistryLog(registryRoot, {
       action: 'revoke',
@@ -1198,6 +1428,7 @@ function revokeSkill(opts) {
       digest: entry.manifest && entry.manifest.digest,
       reason: entry.revoked_reason,
       tag: entry.tag || gitTagRef(name, version),
+      shared_installs_revoked: shared_revoked,
     });
   } catch (err) {
     return registryLogFailure(err, () => {
@@ -1206,6 +1437,11 @@ function revokeSkill(opts) {
         if (fs.existsSync(revocationPath)) fs.rmSync(revocationPath, { force: true });
       } else {
         writeRevocationAtomic(revocationPath, priorRevocation);
+      }
+      if (!sharedExisted) {
+        if (fs.existsSync(sharedPath)) fs.rmSync(sharedPath, { force: true });
+      } else {
+        writeSharedInstallsAtomic(sharedPath, priorShared);
       }
     });
   }
@@ -1217,6 +1453,7 @@ function revokeSkill(opts) {
     version,
     status: STATUS_REVOKED,
     actor,
+    shared_installs_revoked: shared_revoked,
     // Document already-installed behavior (ADR / M3.2): files remain; new installs blocked.
     already_installed: fs.existsSync(installedPath)
       ? 'retained; new installs blocked'
@@ -1266,6 +1503,7 @@ module.exports = {
   INDEX_NAME,
   REVOCATION_NAME,
   REGISTRY_LOG_NAME,
+  SHARED_INSTALLS_NAME,
   STATUS_ACTIVE,
   STATUS_DEPRECATED,
   STATUS_REVOKED,
@@ -1276,10 +1514,13 @@ module.exports = {
   SKILL_VISIBILITIES,
   emptyIndex,
   emptyRevocation,
+  emptySharedInstalls,
   readIndex,
   writeIndexAtomic,
   readRevocation,
   writeRevocationAtomic,
+  readSharedInstalls,
+  writeSharedInstallsAtomic,
   gitTagRef,
   appendRegistryLog,
   readRegistryLog,
@@ -1299,6 +1540,8 @@ module.exports = {
   resolvePublishVisibility,
   viewerMayAccessSkill,
   isPubliclyListable,
+  registerSharedInstall,
+  resolveSharedInstall,
   deprecateSkill,
   revokeSkill,
   resolveAndVerify,
