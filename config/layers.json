@@ -16,6 +16,7 @@
     "context": "runtime",
     "context-budget": "service",
     "descent": "service",
+    "deployment": "service",
     "dispatch": "runtime",
     "doctor": "clients",
     "feasibility": "service",
