@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentic-swe.github.io/schemas/org-rbac-binding.schema.json",
+  "title": "Org RBAC binding (ADR-017 / AE-039a)",
+  "description": "Disk-backed org/team/project role binding. Separate from agent config/roles/*.json. Empty or missing store denies org-scoped ops (fail closed). Grants are never taken from caller input.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tenant_id", "principal", "actions", "resource"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Pilot tenant_id (human-written in project config; not inferred)."
+    },
+    "principal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Principal this binding authorizes (e.g. user:<id>, role:<id>). Exact match only."
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "uniqueItems": true,
+      "description": "Actions this principal may perform on the resource under the tenant."
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["organization", "team", "project"]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "description": "Org-scoped resource this binding covers (exactly one of org/team/project)."
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 2048
+    }
+  }
+}
