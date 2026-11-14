@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "skills": {
+    "fixture-public-search": {
+      "versions": [
+        {
+          "manifest": {
+            "name": "fixture-public-search",
+            "version": "1.0.0",
+            "description": "Public searchable skill for AE-037b"
+          },
+          "path": "skills/fixture-public-search/1.0.0",
+          "status": "active",
+          "visibility": "public",
+          "tag": "skill/fixture-public-search/v1.0.0"
+        }
+      ]
+    },
+    "fixture-private-secret": {
+      "versions": [
+        {
+          "manifest": {
+            "name": "fixture-private-secret",
+            "version": "1.0.0",
+            "description": "Private secret skill must not appear in public search"
+          },
+          "path": "skills/fixture-private-secret/1.0.0",
+          "status": "active",
+          "visibility": "private",
+          "tenant_id": "pilot-t1",
+          "owner_id": "user-1",
+          "tag": "skill/fixture-private-secret/v1.0.0"
+        }
+      ]
+    },
+    "fixture-org-internal": {
+      "versions": [
+        {
+          "manifest": {
+            "name": "fixture-org-internal",
+            "version": "1.0.0",
+            "description": "Organization skill hidden from public search"
+          },
+          "path": "skills/fixture-org-internal/1.0.0",
+          "status": "active",
+          "visibility": "organization",
+          "tenant_id": "pilot-t1",
+          "org_id": "org-a",
+          "tag": "skill/fixture-org-internal/v1.0.0"
+        }
+      ]
+    }
+  }
+}

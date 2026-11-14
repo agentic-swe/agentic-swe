@@ -322,26 +322,74 @@ function resolve(name, range, index, opts = {}) {
 }
 
 /**
- * List registry skills for a viewer. Public catalog never includes non-public skills.
- * Server-side filter (AE-037a); AE-037b extends search.
+ * AE-037b: strip client-side visibility widen attempts. Server never honors
+ * includePrivate / include_private / visibilities supersets / forcePublic=false tricks.
+ * @param {object} [opts]
+ * @returns {{ opts: object, ignored: string[] }}
+ */
+function sanitizeRegistryQueryOpts(opts = {}) {
+  const ignored = [];
+  const cleaned = { ...opts };
+
+  if (cleaned.includePrivate === true || cleaned.include_private === true) {
+    ignored.push('includePrivate');
+    delete cleaned.includePrivate;
+    delete cleaned.include_private;
+  }
+  if (cleaned.includePrivate === false) delete cleaned.includePrivate;
+  if (cleaned.include_private === false) delete cleaned.include_private;
+
+  // Reject client-supplied visibility allow-lists that try to pull private into public.
+  if (cleaned.visibilities != null || cleaned.visibilityFilter != null) {
+    ignored.push('visibilities');
+    delete cleaned.visibilities;
+    delete cleaned.visibilityFilter;
+  }
+  // Never let a client force catalog away from public without an explicit tenant_id.
+  if (
+    cleaned.catalog != null &&
+    String(cleaned.catalog).trim().toLowerCase() !== 'public' &&
+    !(cleaned.tenant_id != null && String(cleaned.tenant_id).trim()) &&
+    !(cleaned.viewer && cleaned.viewer.tenant_id != null && String(cleaned.viewer.tenant_id).trim())
+  ) {
+    ignored.push('catalog');
+    cleaned.catalog = 'public';
+  }
+  if (cleaned.viewer && typeof cleaned.viewer === 'object') {
+    const v = { ...cleaned.viewer };
+    if (v.includePrivate === true || v.include_private === true) {
+      ignored.push('viewer.includePrivate');
+      delete v.includePrivate;
+      delete v.include_private;
+    }
+    cleaned.viewer = v;
+  }
+  return { opts: cleaned, ignored: [...new Set(ignored)] };
+}
+
+/**
+ * Shared server-side list/search implementation (visibility enforced here, not client-side).
  * @param {object} index
- * @param {{ viewer?: object, tenant_id?: string, catalog?: string, query?: string }} [opts]
- * @returns {{ ok: true, skills: Array<object> } | { ok: false, code: string, errors?: string[] }}
+ * @param {object} [opts]
+ * @returns {{ ok: true, skills: Array<object>, ignored?: string[] } | { ok: false, code: string, errors?: string[] }}
  */
 function listRegistrySkills(index, opts = {}) {
   if (!index || !isPlainObject(index.skills)) {
     return { ok: false, code: 'INDEX_INVALID', errors: ['skills index schema invalid'] };
   }
-  const viewer = resolveViewerContext(opts);
-  const q =
-    opts.query != null && String(opts.query).trim()
-      ? String(opts.query).trim().toLowerCase()
-      : '';
-
-  // Ignore any client attempt to widen visibility (fail closed; AE-037b hardens further).
-  if (opts.includePrivate === true || opts.include_private === true) {
-    // Do not honor; keep server-side public/tenant filter only.
+  const sanitized = sanitizeRegistryQueryOpts(opts);
+  const safeOpts = sanitized.opts;
+  const viewer = resolveViewerContext(safeOpts);
+  // Public catalog viewers never see non-public, even if ignored widen flags were present.
+  if (viewer.catalog === 'public' || !(viewer.tenant_id && String(viewer.tenant_id).trim())) {
+    viewer.catalog = 'public';
+    delete viewer.tenant_id;
   }
+
+  const q =
+    safeOpts.query != null && String(safeOpts.query).trim()
+      ? String(safeOpts.query).trim().toLowerCase()
+      : '';
 
   const skills = [];
   for (const [name, skillEntry] of Object.entries(index.skills)) {
@@ -363,6 +411,8 @@ function listRegistrySkills(index, opts = {}) {
       }
     }
     if (!listed) continue;
+    // Defense in depth: public catalog results must be publicly listable.
+    if (viewer.catalog === 'public' && !isPubliclyListable(listed)) continue;
     skills.push({
       name,
       version: listed.manifest.version,
@@ -372,7 +422,77 @@ function listRegistrySkills(index, opts = {}) {
     });
   }
   skills.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  return { ok: true, skills };
+  const out = { ok: true, skills };
+  if (sanitized.ignored.length) out.ignored = sanitized.ignored;
+  return out;
+}
+
+/**
+ * AE-037b: server-side search. Same visibility enforcement as list; query matches
+ * name and description. Client includePrivate cannot widen results.
+ * @param {object} index
+ * @param {string|object} queryOrOpts
+ * @param {object} [maybeOpts]
+ * @returns {{ ok: true, skills: Array<object>, ignored?: string[] } | { ok: false, code: string, errors?: string[] }}
+ */
+function searchRegistrySkills(index, queryOrOpts, maybeOpts) {
+  let opts;
+  if (typeof queryOrOpts === 'string' || queryOrOpts == null) {
+    opts = { ...(maybeOpts || {}), query: queryOrOpts == null ? '' : queryOrOpts };
+  } else if (typeof queryOrOpts === 'object') {
+    opts = { ...queryOrOpts, ...(maybeOpts || {}) };
+  } else {
+    return { ok: false, code: 'QUERY_INVALID', errors: ['search query must be string or options object'] };
+  }
+  // Search matches name OR description (list only filters name when query set).
+  if (!index || !isPlainObject(index.skills)) {
+    return { ok: false, code: 'INDEX_INVALID', errors: ['skills index schema invalid'] };
+  }
+  const sanitized = sanitizeRegistryQueryOpts(opts);
+  const safeOpts = sanitized.opts;
+  const viewer = resolveViewerContext(safeOpts);
+  if (viewer.catalog === 'public' || !(viewer.tenant_id && String(viewer.tenant_id).trim())) {
+    viewer.catalog = 'public';
+    delete viewer.tenant_id;
+  }
+  const q =
+    safeOpts.query != null && String(safeOpts.query).trim()
+      ? String(safeOpts.query).trim().toLowerCase()
+      : '';
+
+  const skills = [];
+  for (const [name, skillEntry] of Object.entries(index.skills)) {
+    if (!skillEntry || !Array.isArray(skillEntry.versions)) continue;
+    const versions = [...skillEntry.versions]
+      .filter((v) => v && v.manifest && versionStatus(v) !== STATUS_REVOKED)
+      .sort((a, b) =>
+        String(b.manifest.version).localeCompare(String(a.manifest.version), undefined, {
+          numeric: true,
+        })
+      );
+    let listed = null;
+    for (const v of versions) {
+      if (viewerMayAccessSkill(v, viewer).ok) {
+        listed = v;
+        break;
+      }
+    }
+    if (!listed) continue;
+    if (viewer.catalog === 'public' && !isPubliclyListable(listed)) continue;
+    const desc = String((listed.manifest && listed.manifest.description) || '').toLowerCase();
+    if (q && !String(name).toLowerCase().includes(q) && !desc.includes(q)) continue;
+    skills.push({
+      name,
+      version: listed.manifest.version,
+      visibility: entryVisibility(listed),
+      status: versionStatus(listed),
+      description: listed.manifest.description || '',
+    });
+  }
+  skills.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const out = { ok: true, skills };
+  if (sanitized.ignored.length) out.ignored = sanitized.ignored;
+  return out;
 }
 
 function detectDepCycle(name, index, stack = []) {
@@ -1165,6 +1285,8 @@ module.exports = {
   readRegistryLog,
   resolve,
   listRegistrySkills,
+  searchRegistrySkills,
+  sanitizeRegistryQueryOpts,
   validateDependencies,
   installSkill,
   publishSkill,
