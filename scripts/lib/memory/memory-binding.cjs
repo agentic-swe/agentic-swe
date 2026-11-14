@@ -144,11 +144,8 @@ function bindWriteTenant(projectRoot, input) {
     throw err;
   }
 
-  // Explicit shared write: stamp pilot tenant when caller asks for share path.
-  if (cfg && out.share === true) {
-    out.tenant_id = cfg.tenant_id;
-  }
-
+  // AE-038a: share stamping / opt-in gate lives in org-share.prepareOrgShareWrite.
+  // Here only enforce tenant mismatch against pilot config for explicit shared ids.
   if (out.org_id != null) {
     out.org_id = nonEmpty(out.org_id);
   }
