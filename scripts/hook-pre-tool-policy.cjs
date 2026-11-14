@@ -152,11 +152,25 @@ function main() {
       });
       summary = pdp.input_summary || summarizeInput(toolName, normalized.toolInput);
       for (const w of pdp.warnings || []) process.stderr.write(`agentic-swe policy: ${w}\n`);
+      // AE-039b: require_approval pauses for a human artifact instead of a silent deny-map.
+      let decision = pdp.decision;
+      let reason = pdp.reason;
+      if (pdp.decision === 'require_approval') {
+        const { resolveRequireApproval } = require('./lib/approval/policy-pause.cjs');
+        const gate = resolveRequireApproval({ workDir, toolName, decision: pdp });
+        if (gate.resumed) {
+          decision = 'allow';
+          reason = gate.reason;
+        } else {
+          decision = 'deny';
+          reason = gate.reason;
+        }
+      }
       // Legacy shape for audit/host messages (rule vs rule_id).
       verdict = {
-        decision: pdp.decision === 'require_approval' ? 'deny' : pdp.decision,
+        decision,
         rule: pdp.rule_id,
-        reason: pdp.reason,
+        reason,
         warnings: pdp.warnings || [],
         pdp,
       };
