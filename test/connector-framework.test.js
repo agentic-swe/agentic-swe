@@ -2,14 +2,39 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { createInMemoryVault } = require('../scripts/lib/connectors/vault.cjs');
 const { createFixtureConnector } = require('../scripts/lib/connectors/fixture-connector.cjs');
 const { createConnectorRuntime } = require('../scripts/lib/connectors/framework.cjs');
 
+function writeBinding(dir, name, binding) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, name), JSON.stringify(binding, null, 2) + '\n');
+}
+
 function buildRuntime() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ae040a-conn-'));
+  const bindingsDir = path.join(root, '.agentic-swe', 'org-rbac');
+  writeBinding(bindingsDir, 'tenantA.json', {
+    schema_version: 1,
+    tenant_id: 'tenantA',
+    principal: 'user:alice@example.com',
+    actions: ['connector.fixture.read'],
+    resource: { type: 'organization', id: 'orgA' },
+  });
+  writeBinding(bindingsDir, 'tenantB.json', {
+    schema_version: 1,
+    tenant_id: 'tenantB',
+    principal: 'user:bob@example.com',
+    actions: ['connector.fixture.read'],
+    resource: { type: 'organization', id: 'orgB' },
+  });
+
   const publicMemorySink = { writes: [] };
   const vault = createInMemoryVault();
-  const runtime = createConnectorRuntime({ vault, publicMemorySink });
+  const runtime = createConnectorRuntime({ vault, publicMemorySink, bindingsDir, projectRoot: root });
   const connector = createFixtureConnector({
     id: 'fixture.echo',
     required_permissions: ['connector.fixture.read'],
@@ -21,7 +46,6 @@ function buildRuntime() {
       tenantA: undefined,
     },
   });
-  // Separate failing connector for isolation tests.
   const failing = createFixtureConnector({
     id: 'fixture.fail',
     required_permissions: ['connector.fixture.read'],
@@ -65,17 +89,17 @@ function buildRuntime() {
     connector_id: 'fixture.fail',
     secret: 'vault-secret-B-fail',
   });
-  return { runtime, publicMemorySink, vault };
+  return { runtime, publicMemorySink, vault, root, bindingsDir };
 }
 
 test('AE-040a: credential isolation — caller credentials and grants rejected; vault secrets not logged', async () => {
-  const { runtime, publicMemorySink } = buildRuntime();
+  const { runtime, publicMemorySink, root } = buildRuntime();
 
   const withToken = await runtime.invoke({
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     input: { token: 'caller-supplied-token-SHOULD-REJECT' },
   });
   assert.equal(withToken.ok, false);
@@ -87,7 +111,7 @@ test('AE-040a: credential isolation — caller credentials and grants rejected; 
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     input: { grants: ['connector.fixture.read', 'admin'] },
   });
   assert.equal(withGrant.ok, false);
@@ -97,7 +121,7 @@ test('AE-040a: credential isolation — caller credentials and grants rejected; 
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     input: { query: 'hello' },
   });
   assert.equal(ok.ok, true);
@@ -105,16 +129,17 @@ test('AE-040a: credential isolation — caller credentials and grants rejected; 
   assert.doesNotMatch(serialized, /vault-secret-A/);
   assert.doesNotMatch(serialized, /ghp_SHOULD_NOT_LOG/);
   assert.equal(publicMemorySink.writes.length, 0);
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('AE-040a: failure isolation — tenant A failure does not leak into tenant B or public memory', async () => {
-  const { runtime, publicMemorySink } = buildRuntime();
+  const { runtime, publicMemorySink, root } = buildRuntime();
 
   const failA = await runtime.invoke({
     connector_id: 'fixture.fail',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     input: {},
   });
   assert.equal(failA.ok, false);
@@ -129,47 +154,49 @@ test('AE-040a: failure isolation — tenant A failure does not leak into tenant 
     connector_id: 'fixture.fail',
     tenant_id: 'tenantB',
     org_id: 'orgB',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:bob@example.com',
     input: {},
   });
   assert.equal(okB.ok, true);
   assert.deepEqual(okB.data.records, ['b-ok']);
   assert.doesNotMatch(JSON.stringify(okB), /a-ok|super-secret|tenantA/);
   assert.equal(publicMemorySink.writes.length, 0);
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('AE-040a: least privilege — missing permission denies; authorized set is runtime-supplied only', async () => {
-  const { runtime } = buildRuntime();
+test('AE-040a/AE-039d: least privilege — binding grants enforced; caller authorized ignored', async () => {
+  const { runtime, root } = buildRuntime();
 
   const denied = await runtime.invoke({
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: [],
+    principal: 'user:nobody@example.com',
+    authorized: ['connector.fixture.read'],
     input: {},
   });
   assert.equal(denied.ok, false);
   assert.equal(denied.error.code, 'PERMISSION_DENIED');
-  assert.match(denied.error.message, /connector\.fixture\.read/);
 
   const allowed = await runtime.invoke({
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: new Set(['connector.fixture.read']),
+    principal: 'user:alice@example.com',
     input: {},
   });
   assert.equal(allowed.ok, true);
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('AE-040a: boundary — cross-org resource access denied; missing credential is isolated', async () => {
-  const { runtime, vault, publicMemorySink } = buildRuntime();
+  const { runtime, vault, publicMemorySink, root } = buildRuntime();
 
   const crossOrg = await runtime.invoke({
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     resource: { tenant_id: 'tenantA', org_id: 'orgB' },
     action: 'read',
     input: {},
@@ -181,7 +208,7 @@ test('AE-040a: boundary — cross-org resource access denied; missing credential
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     resource: { tenant_id: 'tenantB', org_id: 'orgB' },
     action: 'read',
     input: {},
@@ -193,23 +220,23 @@ test('AE-040a: boundary — cross-org resource access denied; missing credential
     connector_id: 'fixture.echo',
     tenant_id: 'tenantA',
     org_id: 'orgA',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:alice@example.com',
     input: {},
   });
   assert.equal(missingCred.ok, false);
   assert.equal(missingCred.error.code, 'CREDENTIAL_MISSING');
   assert.equal(publicMemorySink.writes.length, 0);
 
-  // Tenant B still works after A credential cleared.
   const stillB = await runtime.invoke({
     connector_id: 'fixture.echo',
     tenant_id: 'tenantB',
     org_id: 'orgB',
-    authorized: ['connector.fixture.read'],
+    principal: 'user:bob@example.com',
     input: {},
   });
   assert.equal(stillB.ok, true);
   assert.deepEqual(stillB.data.records, ['b-private-record']);
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('AE-040a: fixture connectors are in-process only (no network flag)', () => {

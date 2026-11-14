@@ -9,6 +9,7 @@
  */
 
 const { checkOrgAccess } = require('../memory/org-access.cjs');
+const { resolveIntegrationGrants } = require('../policy/integration-grants.cjs');
 const { createInMemoryVault, SECRET_FIELD_NAMES } = require('./vault.cjs');
 
 // Local copies of grant/credential rejection keys so this service module does
@@ -62,6 +63,8 @@ function callerCredentialInjection(value) {
  *   vault?: ReturnType<typeof createInMemoryVault>,
  *   connectors?: Map<string, object>|Record<string, object>,
  *   publicMemorySink?: { writes: unknown[] },
+ *   bindingsDir?: string|null,
+ *   projectRoot?: string|null,
  * }} [opts]
  */
 function createConnectorRuntime(opts = {}) {
@@ -74,6 +77,8 @@ function createConnectorRuntime(opts = {}) {
     for (const [id, c] of Object.entries(opts.connectors)) registry.set(id, c);
   }
   const publicMemorySink = opts.publicMemorySink || { writes: [] };
+  const defaultBindingsDir = opts.bindingsDir || null;
+  const defaultProjectRoot = opts.projectRoot || null;
 
   function register(connector) {
     if (!connector || !connector.id) throw new Error('connector.id required');
@@ -88,7 +93,11 @@ function createConnectorRuntime(opts = {}) {
    *   resource?: { tenant_id: string, org_id: string|null, type?: string, id?: string },
    *   action?: string,
    *   input?: object,
-   *   authorized?: Iterable<string>|Set<string>,
+   *   principal?: string,
+   *   bindingsDir?: string|null,
+   *   projectRoot?: string|null,
+   *   workDir?: string|null,
+   *   authorized?: Iterable<string>|Set<string>, // IGNORED (AE-039d); grants from org RBAC only
    * }} request
    */
   async function invoke(request) {
@@ -98,6 +107,8 @@ function createConnectorRuntime(opts = {}) {
     const orgId = request && request.org_id != null ? String(request.org_id).trim() : '';
     const action = String(request && request.action != null ? request.action : 'read').trim() || 'read';
     const input = (request && request.input && typeof request.input === 'object') ? request.input : {};
+    const principal =
+      request && request.principal != null ? String(request.principal).trim() : '';
 
     try {
       if (!connectorId) {
@@ -111,7 +122,7 @@ function createConnectorRuntime(opts = {}) {
       if (grantKey) {
         return failClosed(
           'CALLER_GRANT_REJECTED',
-          `caller-supplied ${grantKey} is not accepted; grants come only from the policy engine`,
+          `caller-supplied ${grantKey} is not accepted; grants come only from org RBAC bindings (AE-039d)`,
           logSafe,
         );
       }
@@ -129,9 +140,17 @@ function createConnectorRuntime(opts = {}) {
         return failClosed('UNKNOWN_CONNECTOR', `unknown connector: ${connectorId}`, logSafe);
       }
 
-      // Least privilege: required permissions must be present in authorized set
-      // supplied by the runtime/PDP path — never from caller input.
-      const authorized = toAuthSet(request.authorized);
+      // AE-039d: integration grants come only from disk org RBAC bindings.
+      // request.authorized / caller grants are ignored for elevation.
+      const resolved = resolveIntegrationGrants({
+        tenantId,
+        orgId: orgId || null,
+        principal,
+        bindingsDir: request.bindingsDir || defaultBindingsDir,
+        projectRoot: request.projectRoot || defaultProjectRoot,
+        workDir: request.workDir || null,
+      });
+      const authorized = resolved.grants;
       const required = Array.isArray(connector.required_permissions)
         ? connector.required_permissions
         : [];
@@ -139,7 +158,9 @@ function createConnectorRuntime(opts = {}) {
         if (!authorized.has(perm)) {
           return failClosed(
             'PERMISSION_DENIED',
-            `missing required permission: ${perm}`,
+            resolved.ok
+              ? `missing required permission: ${perm}`
+              : `missing required permission: ${perm} (${resolved.reason})`,
             logSafe,
             { permission: perm },
           );
@@ -230,16 +251,6 @@ function createConnectorRuntime(opts = {}) {
       return [...registry.keys()].sort();
     },
   };
-}
-
-function toAuthSet(authorized) {
-  if (!authorized) return new Set();
-  if (authorized instanceof Set) return authorized;
-  if (Array.isArray(authorized)) return new Set(authorized.map(String));
-  if (typeof authorized[Symbol.iterator] === 'function') {
-    return new Set([...authorized].map(String));
-  }
-  return new Set();
 }
 
 module.exports = {
