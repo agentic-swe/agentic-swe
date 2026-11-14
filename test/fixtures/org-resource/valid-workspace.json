@@ -1,0 +1,9 @@
+{
+  "id": "workspace:main",
+  "type": "workspace",
+  "tenant_id": "pilot-acme",
+  "display_name": "Main Workspace",
+  "owner": { "kind": "project", "id": "project:autoeng" },
+  "parent_id": "project:autoeng",
+  "org_id": "org:acme"
+}
