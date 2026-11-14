@@ -37,6 +37,7 @@ const {
   bindWriteTenant,
 } = require('./memory-binding.cjs');
 const { prepareOrgShareWrite } = require('./org-share.cjs');
+const { appendMemoryAccessAudit } = require('./memory-access-audit.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
 const TRUST_VALUES = new Set(['untrusted', 'reviewed', 'human_approved']);
@@ -537,6 +538,15 @@ function createMemoryService(opts) {
     }
     const out = filterRecordsForBinding(collected, binding).slice(0, limit);
     const envelopes = out.map((rec) => toUntrustedEnvelope(rec));
+    // AE-038c: access is auditable (ids only; never log bodies/secrets).
+    appendMemoryAccessAudit(projectRoot, {
+      action: 'read',
+      scope,
+      tenant_id: binding.tenant_id,
+      org_id: binding.org_id,
+      record_ids: out.map((r) => r.id),
+      count: out.length,
+    });
     return {
       scope,
       sqlitePath,
@@ -595,7 +605,21 @@ function createMemoryService(opts) {
       if (ids.length && deleted.length >= ids.length) break;
       if (selector.path && result.count > 0) break;
     }
-    return { deleted: [...new Set(deleted)], count: new Set(deleted).size };
+    const uniqueDeleted = [...new Set(deleted)];
+    // AE-038c: delete is auditable (ids only).
+    appendMemoryAccessAudit(projectRoot, {
+      action: 'delete',
+      scope: scopeHint || null,
+      record_ids: uniqueDeleted,
+      count: uniqueDeleted.length,
+      selector: {
+        id: selector.id || null,
+        ids: Array.isArray(selector.ids) ? selector.ids.map(String) : null,
+        path: selector.path || null,
+        scope: selector.scope || null,
+      },
+    });
+    return { deleted: uniqueDeleted, count: uniqueDeleted.length };
   }
 
   /**
