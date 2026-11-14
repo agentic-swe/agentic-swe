@@ -36,38 +36,28 @@ const MUST_NOT_REQUIRE_GRAPH_STORE = new Set([
 
 /**
  * Outside scripts/lib/memory/ — only these may require graph-store directly.
- * Each entry is justified; shrink this list when those paths move to MemoryService.
+ * AE-R2: fleet/skills/descent routes migrated to MemoryService.withProjectDb.
+ * Every remaining entry needs a one-line justification (enforced below).
  */
 const OUTSIDE_MEMORY_ALLOWLIST = new Map([
   [
     'scripts/session-capture.cjs',
-    'CLI entry opens project sqlite for typed session capture (nodes via upsertNodeRow).',
+    'CLI entry opens project sqlite for typed session capture nodes via upsertNodeRow (not chunk MemoryService writes).',
   ],
   [
     'scripts/seed-memory-corpus.cjs',
-    'Bench corpus seeder writes fixture sqlite outside the MemoryService seam.',
-  ],
-  [
-    'scripts/lib/skills/ingest-project-skills.cjs',
-    'Skill→memory bridge; chunk writes already go through upsertChunkRow (AE-030h4).',
-  ],
-  [
-    'scripts/lib/fleet/ingest-fleet-memory.cjs',
-    'Fleet ingest bridge; chunk writes already go through upsertChunkRow (AE-030h4).',
-  ],
-  [
-    'scripts/lib/skills/skill-router.cjs',
-    'Optional memory-hint lookup opens project sqlite read-only for routing context.',
-  ],
-  [
-    'scripts/lib/descent/ladder.cjs',
-    'Procedure ladder reads muscle-memory digests from project sqlite.',
-  ],
-  [
-    'scripts/lib/descent/mine-session-procedures.cjs',
-    'Mines procedures from session chunks in project sqlite.',
+    'Bench corpus seeder builds fixture sqlite trees outside the MemoryService seam for offline replay.',
   ],
 ]);
+
+/** AE-R2 migrated paths — must not require graph-store directly. */
+const MIGRATED_TO_MEMORY_SERVICE = [
+  'scripts/lib/skills/ingest-project-skills.cjs',
+  'scripts/lib/fleet/ingest-fleet-memory.cjs',
+  'scripts/lib/skills/skill-router.cjs',
+  'scripts/lib/descent/ladder.cjs',
+  'scripts/lib/descent/mine-session-procedures.cjs',
+];
 
 function walkJsFiles(root, out) {
   let ents;
@@ -128,9 +118,11 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
     );
   });
 
-  it('allowlist entries exist and still require graph-store', () => {
+  it('allowlist entries exist, still require graph-store, and each has a one-line justification', () => {
+    assert.equal(OUTSIDE_MEMORY_ALLOWLIST.size, 2, 'AE-R2 should leave only CLI+seed allowlist entries');
     for (const [rel, reason] of OUTSIDE_MEMORY_ALLOWLIST) {
       assert.ok(String(reason || '').trim().length > 10, `justify ${rel}`);
+      assert.ok(!String(reason).includes('\n'), `justification for ${rel} must be one line`);
       const abs = path.join(pluginRoot, rel);
       assert.ok(fs.existsSync(abs), `allowlisted missing: ${rel}`);
       const text = fs.readFileSync(abs, 'utf8');
@@ -139,6 +131,21 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
         `allowlisted ${rel} no longer requires graph-store — remove from allowlist`
       );
     }
+  });
+
+  it('AE-R2 migrated fleet/skills/descent modules do not require graph-store', () => {
+    const offenders = [];
+    for (const rel of MIGRATED_TO_MEMORY_SERVICE) {
+      const abs = path.join(pluginRoot, rel);
+      assert.ok(fs.existsSync(abs), `missing ${rel}`);
+      const text = fs.readFileSync(abs, 'utf8');
+      if (GRAPH_STORE_REQUIRE_RE.test(text)) offenders.push(rel);
+      assert.ok(
+        /createMemoryService|withProjectDb|writeIngestChunkToDb/.test(text),
+        `${rel} should route through MemoryService`
+      );
+    }
+    assert.deepEqual(offenders, [], `migrated modules still require graph-store:\n${offenders.join('\n')}`);
   });
 
   it('writeIngestChunkToDb fails closed on unknown scope', async () => {
