@@ -1,0 +1,9 @@
+{
+  "id": "org:acme",
+  "type": "organization",
+  "tenant_id": "pilot-acme",
+  "display_name": "Acme Corp",
+  "owner": { "kind": "user", "id": "user:founder" },
+  "parent_id": null,
+  "org_id": null
+}

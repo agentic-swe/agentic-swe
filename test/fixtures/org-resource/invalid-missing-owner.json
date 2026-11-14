@@ -1,0 +1,6 @@
+{
+  "id": "org:orphan",
+  "type": "organization",
+  "tenant_id": "pilot-acme",
+  "display_name": "Orphan Org"
+}

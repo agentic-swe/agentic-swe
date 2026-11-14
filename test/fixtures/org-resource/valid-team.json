@@ -1,0 +1,9 @@
+{
+  "id": "team:platform",
+  "type": "team",
+  "tenant_id": "pilot-acme",
+  "display_name": "Platform",
+  "owner": { "kind": "organization", "id": "org:acme" },
+  "parent_id": "org:acme",
+  "org_id": "org:acme"
+}

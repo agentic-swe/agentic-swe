@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-swe.local/schemas/org-resource.schema.json",
+  "title": "agentic-swe Organization resource (AE-036a / ADR-017)",
+  "description": "First-class Organization / Team / Project / User / Role / Workspace records with explicit ownership. Schema + ownership validation; access checks are AE-036b.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "tenant_id", "display_name", "owner"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Stable resource id (e.g. org:acme, team:platform)."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["organization", "team", "project", "user", "role", "workspace"],
+      "description": "ADR-017 A3 resource kinds. Unknown types fail closed."
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Pilot tenant_id from human-written project config (ADR-017 C1). Not inferred from caller input."
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "description": "Explicit ownership. Owner must resolve in the known-owner catalog or validation fails closed.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["user", "organization", "team", "project"],
+          "description": "Owner resource kind. Role and workspace cannot own other resources."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "parent_id": {
+      "type": ["string", "null"],
+      "maxLength": 512,
+      "description": "Optional parent resource id (team→org, project→team/org, workspace→project)."
+    },
+    "org_id": {
+      "type": ["string", "null"],
+      "maxLength": 512,
+      "description": "Organization binding when type is not organization."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Non-authoritative labels; never used for access elevation."
+    }
+  }
+}
