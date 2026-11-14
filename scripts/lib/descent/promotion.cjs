@@ -36,13 +36,18 @@ function promoteOrDemote(opts) {
   const data = loadStore(opts.projectRoot);
   let rec = data.procedures.find((p) => p.fingerprint === opts.fingerprint);
   if (!rec) {
+    // AE-R1: never silently default to 'manual'; descent-created records use an
+    // explicit system source (caller may override via opts.source).
+    const createSource = opts.source != null && String(opts.source).trim() !== ''
+      ? String(opts.source).trim()
+      : 'descent-promotion';
     rec = annotateTrust({
       fingerprint: opts.fingerprint,
       tier: 'L1',
       procedure: opts.procedure,
       failures: 0,
       eval_status: 'unevaluated',
-      source: opts.source,
+      source: createSource,
       scope: opts.scope,
       external: opts.external,
     }, new Date().toISOString());
@@ -124,10 +129,14 @@ function importExternalProcedure(opts) {
     rec = { fingerprint: opts.fingerprint, tier: 'L1', procedure: opts.procedure, failures: 0, eval_status: 'unevaluated' };
     data.procedures.push(rec);
   }
+  // AE-R1: explicit non-manual source (caller override or 'external-import').
+  const importSource = opts.source != null && String(opts.source).trim() !== ''
+    ? String(opts.source).trim()
+    : 'external-import';
   const annotated = annotateTrust({
     ...rec,
     procedure: opts.procedure || rec.procedure,
-    source: opts.source || 'external-import',
+    source: importSource,
     scope: opts.scope,
     external: true,
     promoted: false,
