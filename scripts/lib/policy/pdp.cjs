@@ -6,6 +6,7 @@ const { policyDigest } = require('./digest.cjs');
 const { matchRestrictedOp } = require('./restricted-ops.cjs');
 const { classifyRisk, humanGateRequired } = require('./risk-class.cjs');
 const { evaluateSelfImprovementMergeDeploy } = require('./self-improvement-gate.cjs');
+const { extractOrgScopedContext, evaluateOrgAccess } = require('./org-rbac.cjs');
 const { redactDeep } = require('../shared/redact.cjs');
 
 /** Providers treated as local / $0 (PD-14 / PD-15). */
@@ -140,6 +141,14 @@ function summarizeUsage(events) {
  *   paths?: string[],
  *   transition?: { from?: string, to?: string }|null,
  *   mode?: string|null,
+ *   tenant_id?: string|null,
+ *   org_id?: string|null,
+ *   team_id?: string|null,
+ *   project_id?: string|null,
+ *   principal?: string|null,
+ *   action?: string|null,
+ *   orgRbacDir?: string|null,
+ *   projectRoot?: string|null,
  * }} input
  * @returns {PolicyDecision}
  */
@@ -420,6 +429,38 @@ function evaluateInner(input) {
         input_summary,
         warnings,
         code: 'HUMAN_GATE_REQUIRED',
+      });
+    }
+  }
+
+  // AE-039a / PD-62 C2: org-scoped ops require a disk binding. Skip when no
+  // org context. Never elevate via caller-supplied authorized / grants.
+  const orgCtx = extractOrgScopedContext(input);
+  if (orgCtx) {
+    const orgVerdict = evaluateOrgAccess({
+      tenantId: orgCtx.tenantId,
+      resource: orgCtx.resource,
+      action: orgCtx.action,
+      principal: orgCtx.principal,
+      bindingsDir: input.orgRbacDir || input.bindingsDir || null,
+      projectRoot: input.projectRoot || null,
+      workDir: input.workDir || null,
+    });
+    if (orgVerdict.decision === 'deny') {
+      return finish({
+        decision: 'deny',
+        rule_id: orgVerdict.rule_id,
+        policy_digest: digest,
+        risk_class: classifyRisk({
+          track: input.track,
+          toolName,
+          paths,
+          riskFlags: input.riskFlags || undefined,
+        }),
+        reason: orgVerdict.reason,
+        input_summary,
+        warnings,
+        code: orgVerdict.code,
       });
     }
   }
