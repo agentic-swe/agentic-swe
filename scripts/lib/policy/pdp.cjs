@@ -7,6 +7,7 @@ const { matchRestrictedOp } = require('./restricted-ops.cjs');
 const { classifyRisk, humanGateRequired } = require('./risk-class.cjs');
 const { evaluateSelfImprovementMergeDeploy } = require('./self-improvement-gate.cjs');
 const { extractOrgScopedContext, evaluateOrgAccess } = require('./org-rbac.cjs');
+const { appendOrgAccessAudit } = require('./org-access-audit.cjs');
 const { redactDeep } = require('../shared/redact.cjs');
 
 /** Providers treated as local / $0 (PD-14 / PD-15). */
@@ -446,6 +447,24 @@ function evaluateInner(input) {
       projectRoot: input.projectRoot || null,
       workDir: input.workDir || null,
     });
+    // AE-039c: append admin-auditable org access decision when a project root exists.
+    const auditRoot = input.projectRoot || input.orgAuditRoot || null;
+    if (auditRoot) {
+      try {
+        appendOrgAccessAudit(auditRoot, {
+          tenant_id: orgCtx.tenantId,
+          resource_type: orgCtx.resource.type,
+          resource_id: orgCtx.resource.id,
+          principal: orgCtx.principal,
+          action: orgCtx.action,
+          decision: orgVerdict.decision,
+          rule_id: orgVerdict.rule_id,
+          code: orgVerdict.code,
+        });
+      } catch (err) {
+        warnings.push(`org access audit write failed: ${err && err.message ? err.message : err}`);
+      }
+    }
     if (orgVerdict.decision === 'deny') {
       return finish({
         decision: 'deny',
