@@ -45,8 +45,10 @@ async function mineSessionProcedures(opts) {
   // AE-R2: MemoryService.withProjectDb — no direct graph-store require.
   const svc = createMemoryService({ pluginRoot, projectRoot });
   const mined = new Map();
+  let sqlitePath;
   try {
-    const early = await svc.withProjectDb(async (db) => {
+    const early = await svc.withProjectDb(async (db, ctx) => {
+      sqlitePath = ctx.sqlitePath;
       const r = db.exec(
         "SELECT work_id, body FROM chunks WHERE (body LIKE '%npm %' OR body LIKE '%node %' OR body LIKE '%npx %') LIMIT 8000"
       );
@@ -68,7 +70,7 @@ async function mineSessionProcedures(opts) {
       }
       return { empty: false };
     });
-    if (early.empty) return { ok: true, mined: 0, procedures: 0 };
+    if (early.empty) return { ok: true, mined: 0, procedures: 0, sqlitePath };
   } finally {
     await svc.close();
   }
