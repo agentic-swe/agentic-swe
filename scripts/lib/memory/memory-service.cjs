@@ -31,6 +31,12 @@ const {
   evaluateExpiry,
 } = require('./memory-retention.cjs');
 const { requireProvenance } = require('./provenance.cjs');
+const {
+  resolveMemoryBinding,
+  filterRecordsForBinding,
+  bindWriteTenant,
+} = require('./memory-binding.cjs');
+const { prepareOrgShareWrite } = require('./org-share.cjs');
 
 const GIT_HISTORY_PATH_PREFIX = '.agentic-swe/sync/git/';
 const TRUST_VALUES = new Set(['untrusted', 'reviewed', 'human_approved']);
@@ -274,6 +280,15 @@ function normalizeWriteRecord(input) {
       ? String(input.id)
       : `mem:${scope}:${crypto.randomBytes(8).toString('hex')}`;
 
+  const orgId =
+    input.org_id != null && String(input.org_id).trim() !== ''
+      ? String(input.org_id).trim()
+      : undefined;
+  const teamId =
+    input.team_id != null && String(input.team_id).trim() !== ''
+      ? String(input.team_id).trim()
+      : undefined;
+
   return {
     id,
     tenant_id: resolveTenantLabel(scope, input.tenant_id, DEFAULT_TENANT_ID),
@@ -293,6 +308,8 @@ function normalizeWriteRecord(input) {
     redaction,
     visibility,
     expires_at: input.expires_at === undefined ? undefined : input.expires_at,
+    ...(orgId ? { org_id: orgId } : {}),
+    ...(teamId ? { team_id: teamId } : {}),
   };
 }
 
@@ -358,6 +375,12 @@ function rowToMemoryRecord(row) {
   if (parsed && parsed.expires_at !== undefined) {
     base.expires_at = parsed.expires_at;
   }
+  if (parsed && parsed.org_id != null && String(parsed.org_id).trim() !== '') {
+    base.org_id = String(parsed.org_id).trim();
+  }
+  if (parsed && parsed.team_id != null && String(parsed.team_id).trim() !== '') {
+    base.team_id = String(parsed.team_id).trim();
+  }
   return base;
 }
 
@@ -392,7 +415,10 @@ function createMemoryService(opts) {
    * @param {{ sessionId?: string, workId?: string, projectId?: string, path?: string }} [writeOpts]
    */
   async function write(input, writeOpts = {}) {
-    const record = normalizeWriteRecord(input);
+    // AE-038a: org/team share opt-in gate; AE-036c: cannot widen tenant.
+    const sharePrepared = prepareOrgShareWrite(projectRoot, input);
+    const boundInput = bindWriteTenant(projectRoot, sharePrepared);
+    const record = normalizeWriteRecord(boundInput);
     const sqlitePath = sqlitePathForMemoryScope(record.scope, {
       pluginRoot,
       projectRoot,
@@ -442,6 +468,8 @@ function createMemoryService(opts) {
       redaction: record.redaction,
       visibility: record.visibility,
       ...(record.expires_at !== undefined ? { expires_at: record.expires_at } : {}),
+      ...(record.org_id ? { org_id: record.org_id } : {}),
+      ...(record.team_id ? { team_id: record.team_id } : {}),
     });
 
     const result = await store.upsertChunk({
@@ -464,15 +492,22 @@ function createMemoryService(opts) {
 
   /**
    * Read MemoryRecords for a scope. Isolation is enforced here (not at SQL alone).
+   * AE-036c: shared org memory requires explicit tenant_id binding.
    * @param {{
    *   scope: string,
    *   query?: string,
    *   limit?: number,
+   *   tenant_id?: string|null,
+   *   org_id?: string|null,
    * }} query
    */
   async function read(query) {
     const scope = assertKnownScope(query.scope);
     const limit = Math.min(500, Math.max(1, Number(query.limit) || 50));
+    const binding = resolveMemoryBinding(projectRoot, {
+      tenant_id: query.tenant_id,
+      org_id: query.org_id,
+    });
     const sqlitePath = sqlitePathForMemoryScope(scope, { pluginRoot, projectRoot });
     const store = storeForPath(sqlitePath);
     await store.open();
@@ -489,7 +524,7 @@ function createMemoryService(opts) {
       .map((t) => t.trim())
       .filter(Boolean);
 
-    const out = [];
+    const collected = [];
     for (const row of rows) {
       if (tombIds.has(String(row.chunk_id || ''))) continue;
       const resolved = resolveScopeAtSeam(row);
@@ -498,13 +533,14 @@ function createMemoryService(opts) {
         const body = String(row.body || '').toLowerCase();
         if (!tokens.every((t) => body.includes(t))) continue;
       }
-      out.push(rowToMemoryRecord(row));
-      if (out.length >= limit) break;
+      collected.push(rowToMemoryRecord(row));
     }
+    const out = filterRecordsForBinding(collected, binding).slice(0, limit);
     const envelopes = out.map((rec) => toUntrustedEnvelope(rec));
     return {
       scope,
       sqlitePath,
+      binding,
       records: out,
       envelopes,
     };
