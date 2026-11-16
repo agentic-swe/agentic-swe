@@ -1,15 +1,17 @@
 'use strict';
 
 /**
- * M4 audit NB7 — ingest/prime must not require graph-store directly;
- * modules outside scripts/lib/memory/ need an explicit allowlist.
+ * M4 audit NB7 / OT-01 AE-R2 — ingest/prime must not require graph-store directly;
+ * modules outside scripts/lib/memory/ need an explicit allowlist (empty after OT-01).
  * Refs ADR-012, ADR-016; provenance writers remain graph-store helpers under the adapter.
  */
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const {
   createMemoryService,
   writeIngestChunkToDb,
@@ -36,27 +38,20 @@ const MUST_NOT_REQUIRE_GRAPH_STORE = new Set([
 
 /**
  * Outside scripts/lib/memory/ — only these may require graph-store directly.
- * AE-R2: fleet/skills/descent routes migrated to MemoryService.withProjectDb.
- * Every remaining entry needs a one-line justification (enforced below).
+ * OT-01 / AE-R2 complete: session-capture + seed-memory-corpus migrated; allowlist empty.
+ * Keep the Map so a future residual must re-add a justified entry (size must stay 0).
  */
-const OUTSIDE_MEMORY_ALLOWLIST = new Map([
-  [
-    'scripts/session-capture.cjs',
-    'CLI entry opens project sqlite for typed session capture nodes via upsertNodeRow (not chunk MemoryService writes).',
-  ],
-  [
-    'scripts/seed-memory-corpus.cjs',
-    'Bench corpus seeder builds fixture sqlite trees outside the MemoryService seam for offline replay.',
-  ],
-]);
+const OUTSIDE_MEMORY_ALLOWLIST = new Map([]);
 
-/** AE-R2 migrated paths — must not require graph-store directly. */
+/** AE-R2 + OT-01 migrated paths — must not require graph-store directly. */
 const MIGRATED_TO_MEMORY_SERVICE = [
   'scripts/lib/skills/ingest-project-skills.cjs',
   'scripts/lib/fleet/ingest-fleet-memory.cjs',
   'scripts/lib/skills/skill-router.cjs',
   'scripts/lib/descent/ladder.cjs',
   'scripts/lib/descent/mine-session-procedures.cjs',
+  'scripts/session-capture.cjs',
+  'scripts/seed-memory-corpus.cjs',
 ];
 
 function walkJsFiles(root, out) {
@@ -82,6 +77,16 @@ function walkJsFiles(root, out) {
       out.push(abs);
     }
   }
+}
+
+function parseNodeProvenance(row) {
+  assert.ok(row.record_json, 'node must carry record_json');
+  const parsed = JSON.parse(String(row.record_json));
+  assert.ok(parsed.provenance && typeof parsed.provenance === 'object');
+  for (const key of ['origin', 'actor', 'source_hash', 'ingested_at']) {
+    assert.ok(String(parsed.provenance[key] || '').trim(), `missing provenance.${key}`);
+  }
+  return parsed.provenance;
 }
 
 describe('NB7 MemoryService layering for ingest/prime', () => {
@@ -118,8 +123,12 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
     );
   });
 
-  it('allowlist entries exist, still require graph-store, and each has a one-line justification', () => {
-    assert.equal(OUTSIDE_MEMORY_ALLOWLIST.size, 2, 'AE-R2 should leave only CLI+seed allowlist entries');
+  it('outside-memory graph-store allowlist is empty after OT-01', () => {
+    assert.equal(
+      OUTSIDE_MEMORY_ALLOWLIST.size,
+      0,
+      'OT-01 / AE-R2 complete: no outside-memory direct graph-store writers remain'
+    );
     for (const [rel, reason] of OUTSIDE_MEMORY_ALLOWLIST) {
       assert.ok(String(reason || '').trim().length > 10, `justify ${rel}`);
       assert.ok(!String(reason).includes('\n'), `justification for ${rel} must be one line`);
@@ -133,7 +142,7 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
     }
   });
 
-  it('AE-R2 migrated fleet/skills/descent modules do not require graph-store', () => {
+  it('AE-R2/OT-01 migrated modules do not require graph-store', () => {
     const offenders = [];
     for (const rel of MIGRATED_TO_MEMORY_SERVICE) {
       const abs = path.join(pluginRoot, rel);
@@ -149,7 +158,7 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
   });
 
   it('writeIngestChunkToDb fails closed on unknown scope', async () => {
-    const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'nb7-scope-'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nb7-scope-'));
     const sqlitePath = path.join(tmp, 'memory.sqlite');
     try {
       const { db } = await openOrCreateDatabase(sqlitePath);
@@ -185,7 +194,7 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
   });
 
   it('writeIngestChunkToDb accepts known scope and persists via provenance helper', async () => {
-    const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'nb7-write-'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nb7-write-'));
     const sqlitePath = path.join(tmp, 'memory.sqlite');
     try {
       const { db } = await openOrCreateDatabase(sqlitePath);
@@ -229,8 +238,8 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
   });
 
   it('MemoryService.withProjectDb opens through the adapter seam', async () => {
-    const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'nb7-prime-'));
-    const personal = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'nb7-personal-'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nb7-prime-'));
+    const personal = fs.mkdtempSync(path.join(os.tmpdir(), 'nb7-personal-'));
     const prev = process.env.AGENTIC_SWE_PERSONAL_ROOT;
     process.env.AGENTIC_SWE_PERSONAL_ROOT = personal;
     fs.writeFileSync(path.join(tmp, 'package.json'), '{"name":"nb7"}\n');
@@ -250,6 +259,181 @@ describe('NB7 MemoryService layering for ingest/prime', () => {
     } finally {
       if (prev === undefined) delete process.env.AGENTIC_SWE_PERSONAL_ROOT;
       else process.env.AGENTIC_SWE_PERSONAL_ROOT = prev;
+      fs.rmSync(tmp, { recursive: true, force: true });
+      fs.rmSync(personal, { recursive: true, force: true });
+    }
+  });
+
+  it('session-capture CLI stamps provenance via MemoryService and stays stdout-clean', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ot01-sess-'));
+    const personal = fs.mkdtempSync(path.join(os.tmpdir(), 'ot01-sess-personal-'));
+    const prevPersonal = process.env.AGENTIC_SWE_PERSONAL_ROOT;
+    process.env.AGENTIC_SWE_PERSONAL_ROOT = personal;
+    try {
+      const richTranscript = [
+        '{"type":"user","message":{"role":"user","content":"Decision: migrate session-capture through MemoryService withProjectDb for AE-R2."}}',
+        '{"type":"assistant","message":{"role":"assistant","content":"Lesson: provenance must stamp on every node write; never skip origin refs when closing the allowlist."}}',
+      ].join('\n');
+      const transcriptPath = path.join(tmp, 'session.jsonl');
+      fs.writeFileSync(transcriptPath, richTranscript, 'utf8');
+
+      const quiet = spawnSync(
+        process.execPath,
+        [
+          path.join(pluginRoot, 'scripts/session-capture.cjs'),
+          '--project-root',
+          tmp,
+          '--plugin-root',
+          pluginRoot,
+          '--transcript-path',
+          transcriptPath,
+          '--no-evolve',
+        ],
+        {
+          encoding: 'utf8',
+          cwd: tmp,
+          env: {
+            ...process.env,
+            AGENTIC_SWE_PERSONAL_ROOT: personal,
+            AGENTIC_SWE_HOOK_LIFECYCLE: '0',
+            AGENTIC_SWE_EVOLVE_ON_STOP: '0',
+          },
+        }
+      );
+      assert.equal(quiet.status, 0, quiet.stderr + quiet.stdout);
+      assert.equal(String(quiet.stdout || '').trim(), '', 'hook path must keep stdout clean without --json');
+
+      const json = spawnSync(
+        process.execPath,
+        [
+          path.join(pluginRoot, 'scripts/session-capture.cjs'),
+          '--project-root',
+          tmp,
+          '--plugin-root',
+          pluginRoot,
+          '--transcript-path',
+          transcriptPath,
+          '--no-evolve',
+          '--json',
+        ],
+        {
+          encoding: 'utf8',
+          cwd: tmp,
+          env: {
+            ...process.env,
+            AGENTIC_SWE_PERSONAL_ROOT: personal,
+            AGENTIC_SWE_HOOK_LIFECYCLE: '0',
+            AGENTIC_SWE_EVOLVE_ON_STOP: '0',
+          },
+        }
+      );
+      assert.equal(json.status, 0, json.stderr + json.stdout);
+      const payload = JSON.parse(json.stdout.trim());
+      assert.equal(payload.ok, true);
+      assert.ok(payload.chunks >= 1, 'expected transcript chunks indexed');
+
+      const sqlitePath = path.join(tmp, '.agentic-swe', 'memory.sqlite');
+      assert.ok(fs.existsSync(sqlitePath), 'memory.sqlite should exist');
+
+      const { db } = await openOrCreateDatabase(sqlitePath);
+      try {
+        const chunkStmt = db.prepare(
+          `SELECT chunk_id, record_json FROM chunks WHERE path LIKE '%.agentic-swe/sessions/%' LIMIT 20`
+        );
+        let chunkSaw = 0;
+        while (chunkStmt.step()) {
+          const row = chunkStmt.getAsObject();
+          const parsed = JSON.parse(String(row.record_json || '{}'));
+          assert.ok(parsed.provenance && parsed.provenance.origin, 'chunk provenance.origin');
+          assert.ok(parsed.provenance.actor, 'chunk provenance.actor');
+          assert.match(String(parsed.provenance.origin), /session-ingest:/);
+          chunkSaw++;
+        }
+        chunkStmt.free();
+        assert.ok(chunkSaw >= 1, 'expected session chunks with provenance');
+
+        const nodeStmt = db.prepare('SELECT id, kind, record_json FROM nodes LIMIT 20');
+        let nodeSaw = 0;
+        while (nodeStmt.step()) {
+          const row = nodeStmt.getAsObject();
+          const prov = parseNodeProvenance(row);
+          assert.match(String(prov.origin), /^session-capture:/);
+          assert.equal(prov.actor, 'system:session-capture');
+          nodeSaw++;
+        }
+        nodeStmt.free();
+        // Distill may or may not emit nodes depending on evidence score; chunks are required.
+        if (payload.nodes > 0) assert.ok(nodeSaw >= 1, 'expected distilled nodes with provenance');
+      } finally {
+        closeDatabase(db);
+      }
+    } finally {
+      if (prevPersonal === undefined) delete process.env.AGENTIC_SWE_PERSONAL_ROOT;
+      else process.env.AGENTIC_SWE_PERSONAL_ROOT = prevPersonal;
+      fs.rmSync(tmp, { recursive: true, force: true });
+      fs.rmSync(personal, { recursive: true, force: true });
+    }
+  });
+
+  it('seed-memory-corpus stamps provenance via MemoryService', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ot01-seed-'));
+    const personal = fs.mkdtempSync(path.join(os.tmpdir(), 'ot01-seed-personal-'));
+    const prevPersonal = process.env.AGENTIC_SWE_PERSONAL_ROOT;
+    process.env.AGENTIC_SWE_PERSONAL_ROOT = personal;
+    try {
+      fs.writeFileSync(path.join(tmp, 'package.json'), '{"name":"ot01-seed"}\n');
+      fs.writeFileSync(path.join(tmp, 'CHANGELOG.md'), '- **Keep MemoryService seam** — no direct graph-store\n');
+      fs.writeFileSync(path.join(tmp, '.version-bump.json'), '{"files":[]}\n');
+      fs.writeFileSync(path.join(tmp, 'README.md'), '# ot01-seed\n');
+      // Minimal git repo so extractGitConventions does not throw path issues.
+      spawnSync('git', ['init'], { cwd: tmp, encoding: 'utf8' });
+      spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'docs: memory seed'], {
+        cwd: tmp,
+        encoding: 'utf8',
+      });
+
+      const r = spawnSync(
+        process.execPath,
+        [
+          path.join(pluginRoot, 'scripts/seed-memory-corpus.cjs'),
+          '--project-root',
+          tmp,
+          '--plugin-root',
+          pluginRoot,
+          '--json',
+        ],
+        {
+          encoding: 'utf8',
+          cwd: tmp,
+          env: { ...process.env, AGENTIC_SWE_PERSONAL_ROOT: personal },
+        }
+      );
+      assert.equal(r.status, 0, r.stderr + r.stdout);
+      const payload = JSON.parse(r.stdout.trim());
+      assert.equal(payload.ok, true);
+      assert.ok(payload.nodes >= 1, 'expected seeded nodes');
+
+      const sqlitePath = path.join(tmp, '.agentic-swe', 'memory.sqlite');
+      assert.ok(fs.existsSync(sqlitePath), 'seeded memory.sqlite');
+      const { db } = await openOrCreateDatabase(sqlitePath);
+      try {
+        const stmt = db.prepare('SELECT id, kind, record_json FROM nodes LIMIT 50');
+        let saw = 0;
+        while (stmt.step()) {
+          const row = stmt.getAsObject();
+          const prov = parseNodeProvenance(row);
+          assert.match(String(prov.origin), /^seed-memory-corpus:/);
+          assert.equal(prov.actor, 'system:seed-memory-corpus');
+          saw++;
+        }
+        stmt.free();
+        assert.ok(saw >= 1, 'seeded nodes must carry provenance');
+      } finally {
+        closeDatabase(db);
+      }
+    } finally {
+      if (prevPersonal === undefined) delete process.env.AGENTIC_SWE_PERSONAL_ROOT;
+      else process.env.AGENTIC_SWE_PERSONAL_ROOT = prevPersonal;
       fs.rmSync(tmp, { recursive: true, force: true });
       fs.rmSync(personal, { recursive: true, force: true });
     }
