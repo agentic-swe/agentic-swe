@@ -3,6 +3,9 @@
  * Capture session transcript tail on Stop/compact, redact, distill typed nodes, index chunks.
  * Chains chunk indexing → procedure mining (self-evolution) when enabled.
  * Invoked from hooks/hooks.json Stop (best-effort; failures ignored).
+ *
+ * OT-01 / AE-R2: opens project sqlite via MemoryService.withProjectDb
+ * (no direct graph-store require outside scripts/lib/memory/).
  */
 'use strict';
 
@@ -12,8 +15,7 @@ const path = require('node:path');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
 const { discoverActiveWorkDir } = require('./lib/work-engine/discover-workdir.cjs');
 const crypto = require('node:crypto');
-const { openOrCreateDatabase, persistDatabase, closeDatabase, ensureChunksSchema } = require('./lib/memory/graph-store.cjs');
-const { loadMergedMemoryConfig, sqlitePathForProject } = require('./lib/memory/config.cjs');
+const { createMemoryService } = require('./lib/memory/memory-service.cjs');
 const { distillSessionChunk, upsertTypedNodes, redactSecrets } = require('./lib/memory/session-capture.cjs');
 const { buildIngestProvenance } = require('./lib/memory/provenance.cjs');
 const {
@@ -78,6 +80,7 @@ function ingestTranscriptTailChunks(db, transcriptPath, maxLines = 80) {
         turnIdx: lines.length - turns.length + i + 1,
         role: t.role,
         body: redacted.slice(0, 8000),
+        sourcePath: transcriptPath,
       });
       chunks++;
     }
@@ -137,34 +140,32 @@ async function main() {
     process.exit(0);
   }
 
-  const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = sqlitePathForProject(merged, projectRoot);
-  const { db } = await openOrCreateDatabase(sqlitePath);
   let chunkStats = { chunks: 0, blocked: 0 };
+  const svc = createMemoryService({ pluginRoot, projectRoot });
   try {
-    ensureChunksSchema(db);
-    if (transcriptPath) {
-      chunkStats = ingestTranscriptTailChunks(db, transcriptPath);
-    }
-    if (distilled.nodes.length) {
-      const originRef = transcriptPath || `session:${workId || 'anonymous'}`;
-      const nodesWithProv = distilled.nodes.map((n) => ({
-        ...n,
-        provenance: buildIngestProvenance({
-          source: 'session-capture',
-          originPathOrEvent: `${originRef}#${n.id}`,
-          actor: 'system:session-capture',
-          sourceHash: crypto
-            .createHash('sha256')
-            .update(String(n.body || n.id))
-            .digest('hex'),
-        }),
-      }));
-      upsertTypedNodes(db, nodesWithProv);
-    }
-    persistDatabase(db, sqlitePath);
+    await svc.withProjectDb(async (db) => {
+      if (transcriptPath) {
+        chunkStats = ingestTranscriptTailChunks(db, transcriptPath);
+      }
+      if (distilled.nodes.length) {
+        const originRef = transcriptPath || `session:${workId || 'anonymous'}`;
+        const nodesWithProv = distilled.nodes.map((n) => ({
+          ...n,
+          provenance: buildIngestProvenance({
+            source: 'session-capture',
+            originPathOrEvent: `${originRef}#${n.id}`,
+            actor: 'system:session-capture',
+            sourceHash: crypto
+              .createHash('sha256')
+              .update(String(n.body || n.id))
+              .digest('hex'),
+          }),
+        }));
+        upsertTypedNodes(db, nodesWithProv);
+      }
+    });
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
 
   try {

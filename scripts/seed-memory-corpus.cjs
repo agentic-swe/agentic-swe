@@ -2,6 +2,9 @@
 /**
  * Seed memory graph with durable conventions from CHANGELOG, docs, and git history.
  * Complements cold-start-warm for day-one muscle memory.
+ *
+ * OT-01 / AE-R2: opens project sqlite via MemoryService.withProjectDb
+ * (no direct graph-store require outside scripts/lib/memory/).
  */
 'use strict';
 
@@ -10,8 +13,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
 const { getDefaultPluginRoot } = require('./lib/work-engine/engine.cjs');
-const { openOrCreateDatabase, persistDatabase, closeDatabase } = require('./lib/memory/graph-store.cjs');
-const { loadMergedMemoryConfig, sqlitePathForProject } = require('./lib/memory/config.cjs');
+const { createMemoryService } = require('./lib/memory/memory-service.cjs');
 const { upsertTypedNodes } = require('./lib/memory/session-capture.cjs');
 const { buildIngestProvenance } = require('./lib/memory/provenance.cjs');
 const { buildFingerprint } = require('./lib/descent/fingerprint.cjs');
@@ -67,8 +69,6 @@ async function main() {
   const args = parseArgs(process.argv);
   const projectRoot = args.projectRoot || process.cwd();
   const pluginRoot = args.pluginRoot || getDefaultPluginRoot();
-  const merged = loadMergedMemoryConfig(pluginRoot, projectRoot);
-  const sqlitePath = sqlitePathForProject(merged, projectRoot);
 
   const rawNodes = [
     ...extractChangelogConventions(path.join(pluginRoot, 'CHANGELOG.md')),
@@ -87,12 +87,13 @@ async function main() {
     }),
   }));
 
-  const { db } = await openOrCreateDatabase(sqlitePath);
+  const svc = createMemoryService({ pluginRoot, projectRoot });
   try {
-    upsertTypedNodes(db, nodes);
-    persistDatabase(db, sqlitePath);
+    await svc.withProjectDb(async (db) => {
+      upsertTypedNodes(db, nodes);
+    });
   } finally {
-    closeDatabase(db);
+    await svc.close();
   }
 
   const fp = buildFingerprint({
